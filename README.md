@@ -1,12 +1,14 @@
-# Prediction Market Efficiency Analysis (CS2 & EPL)
+# Prediction Market Efficiency Analysis Framework
 
 ## Overview
-This project investigates the nature and efficiency of prediction markets by comparing betting odds for **Counter-Strike 2 (CS2)** and **English Premier League (EPL)** matches on **Polymarket** and **Kalshi**.
+This project provides a **generalized framework** for investigating the efficiency of prediction markets across multiple platforms (Polymarket and Kalshi). While initially instantiated for **Counter-Strike 2 (CS2)** and **English Premier League (EPL)**, the core architecture is designed to be agnostic to the specific sport or event category.
 
-The primary objective is to fetch real-time market data, standardize it into a common format, and perform comparative analysis to identify:
-*   Price spreads between platforms.
-*   Market efficiency and convergence.
-*   Potential arbitrage opportunities.
+The primary objective is to provide a robust pipeline to:
+1.  **Fetch** real-time market data from disparate APIs.
+2.  **Standardize** data into a common schema.
+3.  **Analyze** cross-platform efficiency, spreads, and arbitrage opportunities.
+
+This generality enables researchers and traders to easily extend the work to new domains (e.g., Elections, NBA, NFL) simply by updating the configuration, without rewriting the core collection or analysis logic.
 
 ## Directory Structure
 
@@ -71,10 +73,13 @@ Detailed documentation is available in the `docs/` directory:
     ```
 
 ## Methodological Approach
-1.  **Data Collection**: We utilize the Polymarket Gamma API and Kalshi V2 API to query markets filtered by configured categories (CS2, EPL).
-2.  **Standardization**: All market data is normalized into a `MarketEvent` structure containing event names, outcomes, best bid/ask prices, and liquidity metrics.
-3.  **Matching**: Fuzzy string matching is employed to align events across platforms (e.g., handling team name variations).
-4.  **Analysis**: We compute the spread between the best ask on one platform and the best bid on the other to detect arbitrage conditions ($P_{ask, A} < P_{bid, B}$).
+The project employs a modular **Extract-Transform-Load (ETL)** architecture designed for extensibility:
+
+1.  **Generalized Data Collection**: We utilize a `BaseCollector` pattern to interface with the Polymarket Gamma API and Kalshi V2 API. This abstraction allows for the easy addition of new platforms.
+2.  **Configuration-Driven Execution**: The `src/config.py` file serves as the central control plane. Adding support for a new category (e.g., "US Elections") is as simple as defining its Platform Tags and Series Tickers in this configuration.
+3.  **Standardization**: All market data is normalized into a uniform `MarketEvent` structure, decoupling the analysis layer from API-specific quirks.
+4.  **Cross-Platform Matching**: Fuzzy string matching algorithms align events across platforms, enabling direct comparison of odds regardless of naming conventions.
+5.  **Analysis**: We compute spreads and identify arbitrage conditions ($P_{ask, A} < P_{bid, B}$) on the standardized dataset.
 
 ## Odds Calculation Mechanisms
 
