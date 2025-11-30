@@ -19,7 +19,9 @@ prediction_markets/
 │   ├── api_specs/            # API details
 │   ├── architecture.md       # System design and rationale
 │   ├── index.md              # Documentation table of contents
-│   └── math_and_logic.md     # Mathematical principles and formulas
+│   ├── math_and_logic.md     # Mathematical principles and formulas
+│   └── metrics_and_plots.md  # Guide to interpreting plots
+├── plots/                    # Generated visualizations
 ├── src/
 │   ├── analysis/             # Analysis logic (Arbitrage, Visualization)
 │   ├── collectors/           # Data fetching scripts (Poly, Kalshi)

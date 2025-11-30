@@ -76,7 +76,9 @@ def visualize_dashboard():
 
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
     
-    output_path = "market_dashboard.png"
+    # Ensure plots directory exists
+    os.makedirs("plots", exist_ok=True)
+    output_path = os.path.join("plots", "market_dashboard.png")
     plt.savefig(output_path)
     print(f"Saved dashboard to {output_path}")
 

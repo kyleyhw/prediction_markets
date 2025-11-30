@@ -17,21 +17,6 @@ This guide explains the key metrics used in the analysis and how to interpret th
 
 ### 2. Liquidity
 *   **Definition**: The amount of capital available to absorb buy/sell orders without significantly moving the price.
-*   **Interpretation**:
-    *   **High Liquidity**: Large orders can be executed easily. Prices are stable.
-    *   **Low Liquidity**: Small orders can cause price spikes (slippage).
-
-### 3. Volume
-*   **Definition**: The total value of contracts traded over a specific period (or lifetime of the market).
-*   **Interpretation**: High volume usually correlates with better price discovery and tighter spreads.
-
-## Dashboard Plots (`market_dashboard.png`)
-
-### 1. Market Counts
-*   **What it shows**: The number of active markets fetched for each platform (Polymarket vs. Kalshi).
-*   **Use case**: Verifies that the collectors are working and finding relevant events.
-
-### 2. Volume Distribution (Log Scale)
 *   **What it shows**: A histogram of trading volume across markets.
 *   **Interpretation**:
     *   A "long tail" to the right indicates a few "superstar" markets with massive volume (e.g., Elections, Major Finals).
