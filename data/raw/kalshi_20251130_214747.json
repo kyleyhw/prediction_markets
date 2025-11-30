@@ -1,0 +1,1802 @@
+[
+  {
+    "event_name": "Will Elon Musk visit Mars before Aug 1, 2099?",
+    "event_id": "KXELONMARS-99",
+    "description": "",
+    "start_time": "2025-08-28T20:45:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.08,
+      0.9
+    ],
+    "volume": 20095.0,
+    "liquidity": 5240841.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXELONMARS-99"
+  },
+  {
+    "event_name": "Who will the next Pope be?",
+    "event_id": "KXNEWPOPE-70-PPIZ",
+    "description": "",
+    "start_time": "2025-07-18T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.01,
+      0.96
+    ],
+    "volume": 610.0,
+    "liquidity": 90250493.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXNEWPOPE-70-PPIZ"
+  },
+  {
+    "event_name": "Who will the next Pope be?",
+    "event_id": "KXNEWPOPE-70-PPAR",
+    "description": "",
+    "start_time": "2025-07-18T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.01,
+      0.95
+    ],
+    "volume": 1422.0,
+    "liquidity": 90250315.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXNEWPOPE-70-PPAR"
+  },
+  {
+    "event_name": "Who will the next Pope be?",
+    "event_id": "KXNEWPOPE-70-PERD",
+    "description": "",
+    "start_time": "2025-07-18T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.97
+    ],
+    "volume": 132.0,
+    "liquidity": 90179874.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXNEWPOPE-70-PERD"
+  },
+  {
+    "event_name": "Who will the next Pope be?",
+    "event_id": "KXNEWPOPE-70-MZUP",
+    "description": "",
+    "start_time": "2025-07-18T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.01,
+      0.97
+    ],
+    "volume": 764.0,
+    "liquidity": 90209940.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXNEWPOPE-70-MZUP"
+  },
+  {
+    "event_name": "Who will the next Pope be?",
+    "event_id": "KXNEWPOPE-70-LANT",
+    "description": "",
+    "start_time": "2025-07-18T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.01,
+      0.97
+    ],
+    "volume": 1573.0,
+    "liquidity": 90223806.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXNEWPOPE-70-LANT"
+  },
+  {
+    "event_name": "Who will the next Pope be?",
+    "event_id": "KXNEWPOPE-70-FAMB",
+    "description": "",
+    "start_time": "2025-07-18T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.01,
+      0.97
+    ],
+    "volume": 671.0,
+    "liquidity": 90222560.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXNEWPOPE-70-FAMB"
+  },
+  {
+    "event_name": "Who will the next Pope be?",
+    "event_id": "KXNEWPOPE-70-AARB",
+    "description": "",
+    "start_time": "2025-07-18T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.01,
+      0.97
+    ],
+    "volume": 395.0,
+    "liquidity": 90240152.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXNEWPOPE-70-AARB"
+  },
+  {
+    "event_name": "Will the world pass 2 degrees Celsius over pre-industrial levels before 2050?",
+    "event_id": "KXWARMING-50",
+    "description": "",
+    "start_time": "2025-06-05T16:45:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.75,
+      0.17
+    ],
+    "volume": 4391.0,
+    "liquidity": 1664729.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXWARMING-50"
+  },
+  {
+    "event_name": "Will a human land on Mars before California starts high-speed rail?",
+    "event_id": "KXMARSVRAIL-50",
+    "description": "",
+    "start_time": "2025-06-27T20:45:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.09,
+      0.86
+    ],
+    "volume": 1316.0,
+    "liquidity": 1769523.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXMARSVRAIL-50"
+  },
+  {
+    "event_name": "When will a supervolcano next erupt?",
+    "event_id": "KXERUPTSUPER-0-50JAN01",
+    "description": "",
+    "start_time": "2025-07-18T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.11,
+      0.84
+    ],
+    "volume": 7764.0,
+    "liquidity": 1536462.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXERUPTSUPER-0-50JAN01"
+  },
+  {
+    "event_name": "Will humans colonize Mars before 2050?",
+    "event_id": "KXCOLONIZEMARS-50",
+    "description": "",
+    "start_time": "2025-06-27T20:45:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.14,
+      0.83
+    ],
+    "volume": 2329.0,
+    "liquidity": 3423281.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCOLONIZEMARS-50"
+  },
+  {
+    "event_name": "Will  become President of the United States before 2045?",
+    "event_id": "KXPERSONPRESMAM-45",
+    "description": "",
+    "start_time": "2025-06-27T16:10:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.04,
+      0.94
+    ],
+    "volume": 9434.0,
+    "liquidity": 69233285.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXPERSONPRESMAM-45"
+  },
+  {
+    "event_name": "Will  become President of the United States before 2045?",
+    "event_id": "KXPERSONPRESFUENTES-45",
+    "description": "",
+    "start_time": "2025-08-13T15:10:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.13,
+      0.83
+    ],
+    "volume": 19448.0,
+    "liquidity": 6310516.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXPERSONPRESFUENTES-45"
+  },
+  {
+    "event_name": "Will Yariv Levin be the next Prime Minister of Israel?",
+    "event_id": "KXNEXTISRAELPM-45JAN01-YLEV",
+    "description": "::",
+    "start_time": "2025-10-24T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.98
+    ],
+    "volume": 1.0,
+    "liquidity": 271387.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXNEXTISRAELPM-45JAN01-YLEV"
+  },
+  {
+    "event_name": "Will Yair Lapid be the next Prime Minister of Israel?",
+    "event_id": "KXNEXTISRAELPM-45JAN01-YLAP",
+    "description": "::",
+    "start_time": "2025-10-24T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.09,
+      0.84
+    ],
+    "volume": 713.0,
+    "liquidity": 414191.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXNEXTISRAELPM-45JAN01-YLAP"
+  },
+  {
+    "event_name": "Will Yair Golan be the next Prime Minister of Israel?",
+    "event_id": "KXNEXTISRAELPM-45JAN01-YGOL",
+    "description": "::",
+    "start_time": "2025-10-24T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.98
+    ],
+    "volume": 0.0,
+    "liquidity": 412233.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXNEXTISRAELPM-45JAN01-YGOL"
+  },
+  {
+    "event_name": "Will Yoav Gallant be the next Prime Minister of Israel?",
+    "event_id": "KXNEXTISRAELPM-45JAN01-YGAL",
+    "description": "::",
+    "start_time": "2025-10-24T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.05,
+      0.93
+    ],
+    "volume": 129.0,
+    "liquidity": 629368.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXNEXTISRAELPM-45JAN01-YGAL"
+  },
+  {
+    "event_name": "Will Yossi Cohen be the next Prime Minister of Israel?",
+    "event_id": "KXNEXTISRAELPM-45JAN01-YCOH",
+    "description": "::",
+    "start_time": "2025-10-24T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.05,
+      0.94
+    ],
+    "volume": 151.0,
+    "liquidity": 628333.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXNEXTISRAELPM-45JAN01-YCOH"
+  },
+  {
+    "event_name": "Will Naftali Bennett be the next Prime Minister of Israel?",
+    "event_id": "KXNEXTISRAELPM-45JAN01-NBEN",
+    "description": "",
+    "start_time": "2025-10-24T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.33,
+      0.61
+    ],
+    "volume": 774.0,
+    "liquidity": 769911.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXNEXTISRAELPM-45JAN01-NBEN"
+  },
+  {
+    "event_name": "Will Israel Katz be the next Prime Minister of Israel?",
+    "event_id": "KXNEXTISRAELPM-45JAN01-IKAT",
+    "description": "::",
+    "start_time": "2025-10-24T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.98
+    ],
+    "volume": 0.0,
+    "liquidity": 412173.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXNEXTISRAELPM-45JAN01-IKAT"
+  },
+  {
+    "event_name": "Will Itamar Ben-Gvir be the next Prime Minister of Israel?",
+    "event_id": "KXNEXTISRAELPM-45JAN01-IBEN",
+    "description": "::",
+    "start_time": "2025-10-24T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.98
+    ],
+    "volume": 0.0,
+    "liquidity": 411739.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXNEXTISRAELPM-45JAN01-IBEN"
+  },
+  {
+    "event_name": "Will Gadi Eisenkot be the next Prime Minister of Israel?",
+    "event_id": "KXNEXTISRAELPM-45JAN01-GEIS",
+    "description": "::",
+    "start_time": "2025-10-24T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.02,
+      0.95
+    ],
+    "volume": 121.0,
+    "liquidity": 527175.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXNEXTISRAELPM-45JAN01-GEIS"
+  },
+  {
+    "event_name": "Will Bezalel Smotrich be the next Prime Minister of Israel?",
+    "event_id": "KXNEXTISRAELPM-45JAN01-BSMO",
+    "description": "::",
+    "start_time": "2025-10-24T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.97
+    ],
+    "volume": 0.0,
+    "liquidity": 412437.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXNEXTISRAELPM-45JAN01-BSMO"
+  },
+  {
+    "event_name": "Will Benny Gantz be the next Prime Minister of Israel?",
+    "event_id": "KXNEXTISRAELPM-45JAN01-BGAN",
+    "description": "::",
+    "start_time": "2025-10-24T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.04,
+      0.93
+    ],
+    "volume": 215.0,
+    "liquidity": 507082.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXNEXTISRAELPM-45JAN01-BGAN"
+  },
+  {
+    "event_name": "Will Avigdor Lieberman be the next Prime Minister of Israel?",
+    "event_id": "KXNEXTISRAELPM-45JAN01-ALIE",
+    "description": "::",
+    "start_time": "2025-10-24T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.01,
+      0.95
+    ],
+    "volume": 121.0,
+    "liquidity": 523328.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXNEXTISRAELPM-45JAN01-ALIE"
+  },
+  {
+    "event_name": "Will Prime Minister of Japan be the first to leave office?",
+    "event_id": "KXG7LEADEROUT-45JAN01-STAK",
+    "description": ":: Prime Minister of Japan",
+    "start_time": "2025-10-23T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.07,
+      0.84
+    ],
+    "volume": 61.0,
+    "liquidity": 389819.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXG7LEADEROUT-45JAN01-STAK"
+  },
+  {
+    "event_name": "Will Prime Minister of Canada be the first to leave office?",
+    "event_id": "KXG7LEADEROUT-45JAN01-MCAR",
+    "description": ":: Prime Minister of Canada",
+    "start_time": "2025-10-23T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.01,
+      0.95
+    ],
+    "volume": 52.0,
+    "liquidity": 308320.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXG7LEADEROUT-45JAN01-MCAR"
+  },
+  {
+    "event_name": "Will Prime Minister of the United Kingdom be the first to leave office?",
+    "event_id": "KXG7LEADEROUT-45JAN01-KSTA",
+    "description": ":: Prime Minister of the United Kingdom",
+    "start_time": "2025-10-23T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.36,
+      0.55
+    ],
+    "volume": 625.0,
+    "liquidity": 620896.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXG7LEADEROUT-45JAN01-KSTA"
+  },
+  {
+    "event_name": "Will Prime Minister of Italy be the first to leave office?",
+    "event_id": "KXG7LEADEROUT-45JAN01-GMEL",
+    "description": ":: Prime Minister of Italy",
+    "start_time": "2025-10-23T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.95
+    ],
+    "volume": 42.0,
+    "liquidity": 298440.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXG7LEADEROUT-45JAN01-GMEL"
+  },
+  {
+    "event_name": "Will Chancellor of Germany be the first to leave office?",
+    "event_id": "KXG7LEADEROUT-45JAN01-FMER",
+    "description": ":: Chancellor of Germany",
+    "start_time": "2025-10-23T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.01,
+      0.95
+    ],
+    "volume": 24.0,
+    "liquidity": 308435.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXG7LEADEROUT-45JAN01-FMER"
+  },
+  {
+    "event_name": "Will President of France be the first to leave office?",
+    "event_id": "KXG7LEADEROUT-45JAN01-EMAC",
+    "description": ":: President of France",
+    "start_time": "2025-10-23T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.4,
+      0.51
+    ],
+    "volume": 587.0,
+    "liquidity": 621061.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXG7LEADEROUT-45JAN01-EMAC"
+  },
+  {
+    "event_name": "Will President of the United States be the first to leave office?",
+    "event_id": "KXG7LEADEROUT-45JAN01-DJT",
+    "description": ":: President of the United States",
+    "start_time": "2025-10-23T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.01,
+      0.93
+    ],
+    "volume": 70.0,
+    "liquidity": 307310.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXG7LEADEROUT-45JAN01-DJT"
+  },
+  {
+    "event_name": "Will Zhao Leji become the next leader of the Chinese Communist Party (CCP) before Jan 1, 2045?",
+    "event_id": "KXXISUCCESSOR-45JAN01-ZLEJ",
+    "description": "",
+    "start_time": "2025-09-24T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.07,
+      0.85
+    ],
+    "volume": 13.0,
+    "liquidity": 507528.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXXISUCCESSOR-45JAN01-ZLEJ"
+  },
+  {
+    "event_name": "Will Zhang Guoqing become the next leader of the Chinese Communist Party (CCP) before Jan 1, 2045?",
+    "event_id": "KXXISUCCESSOR-45JAN01-ZGUO",
+    "description": "",
+    "start_time": "2025-09-24T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.93
+    ],
+    "volume": 0.0,
+    "liquidity": 548374.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXXISUCCESSOR-45JAN01-ZGUO"
+  },
+  {
+    "event_name": "Will Yin Yong become the next leader of the Chinese Communist Party (CCP) before Jan 1, 2045?",
+    "event_id": "KXXISUCCESSOR-45JAN01-YYON",
+    "description": "",
+    "start_time": "2025-09-24T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.94
+    ],
+    "volume": 0.0,
+    "liquidity": 349341.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXXISUCCESSOR-45JAN01-YYON"
+  },
+  {
+    "event_name": "Will Yin Li become the next leader of the Chinese Communist Party (CCP) before Jan 1, 2045?",
+    "event_id": "KXXISUCCESSOR-45JAN01-YLI",
+    "description": "",
+    "start_time": "2025-09-24T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.93
+    ],
+    "volume": 13.0,
+    "liquidity": 494149.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXXISUCCESSOR-45JAN01-YLI"
+  },
+  {
+    "event_name": "Will Wang Huning become the next leader of the Chinese Communist Party (CCP) before Jan 1, 2045?",
+    "event_id": "KXXISUCCESSOR-45JAN01-WHUN",
+    "description": "",
+    "start_time": "2025-09-24T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.92
+    ],
+    "volume": 0.0,
+    "liquidity": 351459.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXXISUCCESSOR-45JAN01-WHUN"
+  },
+  {
+    "event_name": "Will Ma Xingrui become the next leader of the Chinese Communist Party (CCP) before Jan 1, 2045?",
+    "event_id": "KXXISUCCESSOR-45JAN01-MXIN",
+    "description": "",
+    "start_time": "2025-09-24T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.94
+    ],
+    "volume": 0.0,
+    "liquidity": 349341.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXXISUCCESSOR-45JAN01-MXIN"
+  },
+  {
+    "event_name": "Will Li Xi become the next leader of the Chinese Communist Party (CCP) before Jan 1, 2045?",
+    "event_id": "KXXISUCCESSOR-45JAN01-LXI",
+    "description": "",
+    "start_time": "2025-09-24T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.09,
+      0.82
+    ],
+    "volume": 0.0,
+    "liquidity": 416095.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXXISUCCESSOR-45JAN01-LXI"
+  },
+  {
+    "event_name": "Will Li Qiang become the next leader of the Chinese Communist Party (CCP) before Jan 1, 2045?",
+    "event_id": "KXXISUCCESSOR-45JAN01-LQIA",
+    "description": "",
+    "start_time": "2025-09-24T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.11,
+      0.8
+    ],
+    "volume": 1.0,
+    "liquidity": 463383.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXXISUCCESSOR-45JAN01-LQIA"
+  },
+  {
+    "event_name": "Will Li Ganjie become the next leader of the Chinese Communist Party (CCP) before Jan 1, 2045?",
+    "event_id": "KXXISUCCESSOR-45JAN01-LGAN",
+    "description": "",
+    "start_time": "2025-09-24T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.94
+    ],
+    "volume": 0.0,
+    "liquidity": 493947.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXXISUCCESSOR-45JAN01-LGAN"
+  },
+  {
+    "event_name": "Will He Lifeng become the next leader of the Chinese Communist Party (CCP) before Jan 1, 2045?",
+    "event_id": "KXXISUCCESSOR-45JAN01-HLIF",
+    "description": "",
+    "start_time": "2025-09-24T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.94
+    ],
+    "volume": 0.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXXISUCCESSOR-45JAN01-HLIF"
+  },
+  {
+    "event_name": "Will Ding Xuexiang become the next leader of the Chinese Communist Party (CCP) before Jan 1, 2045?",
+    "event_id": "KXXISUCCESSOR-45JAN01-DXUE",
+    "description": "",
+    "start_time": "2025-09-24T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.24,
+      0.67
+    ],
+    "volume": 253.0,
+    "liquidity": 877650.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXXISUCCESSOR-45JAN01-DXUE"
+  },
+  {
+    "event_name": "Will Cai Qi become the next leader of the Chinese Communist Party (CCP) before Jan 1, 2045?",
+    "event_id": "KXXISUCCESSOR-45JAN01-CQI",
+    "description": "",
+    "start_time": "2025-09-24T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.08,
+      0.83
+    ],
+    "volume": 1.0,
+    "liquidity": 528243.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXXISUCCESSOR-45JAN01-CQI"
+  },
+  {
+    "event_name": "Will Chen Min'er become the next leader of the Chinese Communist Party (CCP) before Jan 1, 2045?",
+    "event_id": "KXXISUCCESSOR-45JAN01-CMIN",
+    "description": "",
+    "start_time": "2025-09-24T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.94
+    ],
+    "volume": 0.0,
+    "liquidity": 298371.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXXISUCCESSOR-45JAN01-CMIN"
+  },
+  {
+    "event_name": "Will Chen Jining become the next leader of the Chinese Communist Party (CCP) before Jan 1, 2045?",
+    "event_id": "KXXISUCCESSOR-45JAN01-CJIN",
+    "description": "",
+    "start_time": "2025-09-24T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.93
+    ],
+    "volume": 100.0,
+    "liquidity": 301664.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXXISUCCESSOR-45JAN01-CJIN"
+  },
+  {
+    "event_name": "Will Ramp or Brex IPO first?",
+    "event_id": "KXRAMPBREX-40-RAMP",
+    "description": "",
+    "start_time": "2025-08-06T23:45:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.67,
+      0.27
+    ],
+    "volume": 157.0,
+    "liquidity": 665796.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXRAMPBREX-40-RAMP"
+  },
+  {
+    "event_name": "Will Ramp or Brex IPO first?",
+    "event_id": "KXRAMPBREX-40-BREX",
+    "description": "",
+    "start_time": "2025-08-06T23:45:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.34,
+      0.59
+    ],
+    "volume": 560.0,
+    "liquidity": 466070.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXRAMPBREX-40-BREX"
+  },
+  {
+    "event_name": "When will the first useful quantum computer be developed?",
+    "event_id": "KXQUANTUM-40",
+    "description": "",
+    "start_time": "2025-08-14T20:45:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.58,
+      0.33
+    ],
+    "volume": 565.0,
+    "liquidity": 2659831.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXQUANTUM-40"
+  },
+  {
+    "event_name": "Will OpenAI or Anthropic IPO first?",
+    "event_id": "KXOAIANTH-40-OAI",
+    "description": "",
+    "start_time": "2025-08-06T23:30:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.66,
+      0.24
+    ],
+    "volume": 1557.0,
+    "liquidity": 539402.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXOAIANTH-40-OAI"
+  },
+  {
+    "event_name": "Will Open AI or Anthropic IPO first?",
+    "event_id": "KXOAIANTH-40-ANTH",
+    "description": "",
+    "start_time": "2025-08-06T23:30:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.27,
+      0.65
+    ],
+    "volume": 734.0,
+    "liquidity": 564661.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXOAIANTH-40-ANTH"
+  },
+  {
+    "event_name": "When will nuclear fusion be achieved?",
+    "event_id": "KXFUSION-40-JAN01",
+    "description": "",
+    "start_time": "2025-06-04T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.35,
+      0.56
+    ],
+    "volume": 1185.0,
+    "liquidity": 3407569.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXFUSION-40-JAN01"
+  },
+  {
+    "event_name": "Will Deel or Rippling IPO first?",
+    "event_id": "KXDEELRIP-40-RIPP",
+    "description": "",
+    "start_time": "2025-08-06T21:10:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.17,
+      0.78
+    ],
+    "volume": 713.0,
+    "liquidity": 504579.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXDEELRIP-40-RIPP"
+  },
+  {
+    "event_name": "Will Deel or Rippling IPO first?",
+    "event_id": "KXDEELRIP-40-DEEL",
+    "description": "",
+    "start_time": "2025-08-06T21:10:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.76,
+      0.18
+    ],
+    "volume": 1356.0,
+    "liquidity": 513140.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXDEELRIP-40-DEEL"
+  },
+  {
+    "event_name": "Will  experience a population decrease of at least 10% between 2025 and 2035?",
+    "event_id": "KXPOPCHANGESTATE10-35",
+    "description": "",
+    "start_time": "2025-08-13T20:45:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.12,
+      0.84
+    ],
+    "volume": 147.0,
+    "liquidity": 1402703.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXPOPCHANGESTATE10-35"
+  },
+  {
+    "event_name": "Will the US meet its climate goals?",
+    "event_id": "USCLIMATE-2030",
+    "description": "By 2030",
+    "start_time": "2024-04-08T12:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.2,
+      0.78
+    ],
+    "volume": 1881.0,
+    "liquidity": 38690891.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/USCLIMATE-2030"
+  },
+  {
+    "event_name": "Will Tom Hardy be casted in the next Rambo?",
+    "event_id": "KXRAMBO-35-TOM",
+    "description": "",
+    "start_time": "2025-07-10T14:30:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      1.0
+    ],
+    "volume": 0.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXRAMBO-35-TOM"
+  },
+  {
+    "event_name": "Will Scott Eastwood be casted in the next Rambo?",
+    "event_id": "KXRAMBO-35-SCOT",
+    "description": "",
+    "start_time": "2025-07-10T14:30:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      1.0
+    ],
+    "volume": 0.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXRAMBO-35-SCOT"
+  },
+  {
+    "event_name": "Will Ryan Gosling be casted in the next Rambo?",
+    "event_id": "KXRAMBO-35-RYA",
+    "description": "",
+    "start_time": "2025-07-10T14:30:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      1.0
+    ],
+    "volume": 0.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXRAMBO-35-RYA"
+  },
+  {
+    "event_name": "Will Jai Courtney be casted in the next Rambo?",
+    "event_id": "KXRAMBO-35-JAI",
+    "description": "",
+    "start_time": "2025-07-10T14:30:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      1.0
+    ],
+    "volume": 0.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXRAMBO-35-JAI"
+  },
+  {
+    "event_name": "Will Henry Cavill be casted in the next Rambo?",
+    "event_id": "KXRAMBO-35-HENR",
+    "description": "",
+    "start_time": "2025-07-10T14:30:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      1.0
+    ],
+    "volume": 0.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXRAMBO-35-HENR"
+  },
+  {
+    "event_name": "Will Chris Hemsworth be casted in the next Rambo?",
+    "event_id": "KXRAMBO-35-CHR",
+    "description": "",
+    "start_time": "2025-07-10T14:30:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      1.0
+    ],
+    "volume": 0.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXRAMBO-35-CHR"
+  },
+  {
+    "event_name": "Will Charlie Hunnam be casted in the next Rambo?",
+    "event_id": "KXRAMBO-35-CHA",
+    "description": "",
+    "start_time": "2025-07-10T14:30:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      1.0
+    ],
+    "volume": 0.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXRAMBO-35-CHA"
+  },
+  {
+    "event_name": "Will there be an at least 8.0 magnitude earthquake in California before 2035?",
+    "event_id": "KXEARTHQUAKECALIFORNIA-35",
+    "description": "",
+    "start_time": "2025-06-21T17:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.15,
+      0.79
+    ],
+    "volume": 15745.0,
+    "liquidity": 2567901.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXEARTHQUAKECALIFORNIA-35"
+  },
+  {
+    "event_name": "Will a humanoid robot walk on Mars before a human does?",
+    "event_id": "KXROBOTMARS-35",
+    "description": "",
+    "start_time": "2024-12-18T15:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.4,
+      0.56
+    ],
+    "volume": 16065.0,
+    "liquidity": 18635455.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXROBOTMARS-35"
+  },
+  {
+    "event_name": "Who will perform the next James Bond Song?",
+    "event_id": "KXPERFORMBONDSONG-35-WEE",
+    "description": "",
+    "start_time": "2025-06-27T20:45:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.01,
+      0.9
+    ],
+    "volume": 91.0,
+    "liquidity": 686396.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXPERFORMBONDSONG-35-WEE"
+  },
+  {
+    "event_name": "Who will perform the next James Bond Song?",
+    "event_id": "KXPERFORMBONDSONG-35-U2",
+    "description": "",
+    "start_time": "2025-06-27T20:45:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.01,
+      0.91
+    ],
+    "volume": 0.0,
+    "liquidity": 428392.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXPERFORMBONDSONG-35-U2"
+  },
+  {
+    "event_name": "Who will perform the next James Bond Song?",
+    "event_id": "KXPERFORMBONDSONG-35-TAY",
+    "description": "",
+    "start_time": "2025-06-27T20:45:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.94
+    ],
+    "volume": 0.0,
+    "liquidity": 455986.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXPERFORMBONDSONG-35-TAY"
+  },
+  {
+    "event_name": "Who will perform the next James Bond Song?",
+    "event_id": "KXPERFORMBONDSONG-35-SZA",
+    "description": "",
+    "start_time": "2025-06-27T20:45:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.03,
+      0.89
+    ],
+    "volume": 40.0,
+    "liquidity": 453310.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXPERFORMBONDSONG-35-SZA"
+  },
+  {
+    "event_name": "Who will perform the next James Bond Song?",
+    "event_id": "KXPERFORMBONDSONG-35-SAM",
+    "description": "",
+    "start_time": "2025-06-27T20:45:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.93
+    ],
+    "volume": 40.0,
+    "liquidity": 336188.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXPERFORMBONDSONG-35-SAM"
+  },
+  {
+    "event_name": "Who will perform the next James Bond Song?",
+    "event_id": "KXPERFORMBONDSONG-35-SAB",
+    "description": "",
+    "start_time": "2025-06-27T22:42:58+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.03,
+      0.89
+    ],
+    "volume": 117.0,
+    "liquidity": 418610.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXPERFORMBONDSONG-35-SAB"
+  },
+  {
+    "event_name": "Who will perform the next James Bond Song?",
+    "event_id": "KXPERFORMBONDSONG-35-OLI",
+    "description": "",
+    "start_time": "2025-11-26T20:44:53+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.11,
+      0.81
+    ],
+    "volume": 0.0,
+    "liquidity": 449487.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXPERFORMBONDSONG-35-OLI"
+  },
+  {
+    "event_name": "Who will perform the next James Bond Song?",
+    "event_id": "KXPERFORMBONDSONG-35-MIL",
+    "description": "",
+    "start_time": "2025-06-27T22:40:26+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.03,
+      0.89
+    ],
+    "volume": 10.0,
+    "liquidity": 418440.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXPERFORMBONDSONG-35-MIL"
+  },
+  {
+    "event_name": "Who will perform the next James Bond Song?",
+    "event_id": "KXPERFORMBONDSONG-35-LOR",
+    "description": "",
+    "start_time": "2025-06-27T22:35:01+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.01,
+      0.91
+    ],
+    "volume": 10.0,
+    "liquidity": 413806.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXPERFORMBONDSONG-35-LOR"
+  },
+  {
+    "event_name": "Who will perform the next James Bond Song?",
+    "event_id": "KXPERFORMBONDSONG-35-LEW",
+    "description": "",
+    "start_time": "2025-06-27T22:38:46+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.94
+    ],
+    "volume": 10.0,
+    "liquidity": 383638.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXPERFORMBONDSONG-35-LEW"
+  },
+  {
+    "event_name": "Who will perform the next James Bond Song?",
+    "event_id": "KXPERFORMBONDSONG-35-LAN",
+    "description": "",
+    "start_time": "2025-06-27T20:45:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.11,
+      0.88
+    ],
+    "volume": 1210.0,
+    "liquidity": 631823.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXPERFORMBONDSONG-35-LAN"
+  },
+  {
+    "event_name": "Who will perform the next James Bond Song?",
+    "event_id": "KXPERFORMBONDSONG-35-LAD",
+    "description": "",
+    "start_time": "2025-06-27T20:45:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.04,
+      0.88
+    ],
+    "volume": 202.0,
+    "liquidity": 385497.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXPERFORMBONDSONG-35-LAD"
+  },
+  {
+    "event_name": "Who will perform the next James Bond Song?",
+    "event_id": "KXPERFORMBONDSONG-35-HAR",
+    "description": "",
+    "start_time": "2025-06-27T20:45:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.03,
+      0.89
+    ],
+    "volume": 11.0,
+    "liquidity": 358168.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXPERFORMBONDSONG-35-HAR"
+  },
+  {
+    "event_name": "Who will perform the next James Bond Song?",
+    "event_id": "KXPERFORMBONDSONG-35-ELT",
+    "description": "",
+    "start_time": "2025-06-27T22:41:26+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.01,
+      0.91
+    ],
+    "volume": 10.0,
+    "liquidity": 414624.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXPERFORMBONDSONG-35-ELT"
+  },
+  {
+    "event_name": "Who will perform the next James Bond Song?",
+    "event_id": "KXPERFORMBONDSONG-35-ED",
+    "description": "",
+    "start_time": "2025-06-27T20:45:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.03,
+      0.89
+    ],
+    "volume": 10.0,
+    "liquidity": 429398.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXPERFORMBONDSONG-35-ED"
+  },
+  {
+    "event_name": "Who will perform the next James Bond Song?",
+    "event_id": "KXPERFORMBONDSONG-35-DUA",
+    "description": "",
+    "start_time": "2025-06-27T20:45:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.14,
+      0.79
+    ],
+    "volume": 1134.0,
+    "liquidity": 543853.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXPERFORMBONDSONG-35-DUA"
+  },
+  {
+    "event_name": "Who will perform the next James Bond Song?",
+    "event_id": "KXPERFORMBONDSONG-35-COL",
+    "description": "",
+    "start_time": "2025-06-27T20:45:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.92
+    ],
+    "volume": 10.0,
+    "liquidity": 266171.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXPERFORMBONDSONG-35-COL"
+  },
+  {
+    "event_name": "Who will perform the next James Bond Song?",
+    "event_id": "KXPERFORMBONDSONG-35-CHA",
+    "description": "",
+    "start_time": "2025-06-27T22:38:30+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.92
+    ],
+    "volume": 10.0,
+    "liquidity": 390946.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXPERFORMBONDSONG-35-CHA"
+  },
+  {
+    "event_name": "Who will perform the next James Bond Song?",
+    "event_id": "KXPERFORMBONDSONG-35-BEY",
+    "description": "",
+    "start_time": "2025-06-27T22:46:52+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.01,
+      0.91
+    ],
+    "volume": 10.0,
+    "liquidity": 414342.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXPERFORMBONDSONG-35-BEY"
+  },
+  {
+    "event_name": "Who will perform the next James Bond Song?",
+    "event_id": "KXPERFORMBONDSONG-35-ARI",
+    "description": "",
+    "start_time": "2025-06-27T20:45:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.04,
+      0.88
+    ],
+    "volume": 52.0,
+    "liquidity": 416892.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXPERFORMBONDSONG-35-ARI"
+  },
+  {
+    "event_name": "Who will perform the next James Bond theme?",
+    "event_id": "KXPERFORMBOND-35-WEEKND",
+    "description": "",
+    "start_time": "2025-06-27T20:45:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      1.0
+    ],
+    "volume": 0.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXPERFORMBOND-35-WEEKND"
+  },
+  {
+    "event_name": "Who will perform the next James Bond theme?",
+    "event_id": "KXPERFORMBOND-35-AGRAN",
+    "description": "",
+    "start_time": "2025-06-27T20:45:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      1.0
+    ],
+    "volume": 0.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXPERFORMBOND-35-AGRAN"
+  },
+  {
+    "event_name": "Who will the next Pope be?",
+    "event_id": "KXNEWPOPE-35-RLEO",
+    "description": "",
+    "start_time": "2025-03-27T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.01,
+      0.96
+    ],
+    "volume": 23.0,
+    "liquidity": 337301.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXNEWPOPE-35-RLEO"
+  },
+  {
+    "event_name": "Who will the next Pope be?",
+    "event_id": "KXNEWPOPE-35-PPAR",
+    "description": "",
+    "start_time": "2025-03-27T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.09,
+      0.9
+    ],
+    "volume": 761.0,
+    "liquidity": 1008911.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXNEWPOPE-35-PPAR"
+  },
+  {
+    "event_name": "Who will the next Pope be?",
+    "event_id": "KXNEWPOPE-35-PERD",
+    "description": "",
+    "start_time": "2025-03-27T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.01,
+      0.97
+    ],
+    "volume": 699.0,
+    "liquidity": 362438.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXNEWPOPE-35-PERD"
+  },
+  {
+    "event_name": "Who will the next Pope be?",
+    "event_id": "KXNEWPOPE-35-MZUP",
+    "description": "",
+    "start_time": "2025-03-27T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.01,
+      0.96
+    ],
+    "volume": 316.0,
+    "liquidity": 378454.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXNEWPOPE-35-MZUP"
+  },
+  {
+    "event_name": "Who will the next Pope be?",
+    "event_id": "KXNEWPOPE-35-LANT",
+    "description": "",
+    "start_time": "2025-03-27T14:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.06,
+      0.9
+    ],
+    "volume": 300.0,
+    "liquidity": 933168.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXNEWPOPE-35-LANT"
+  },
+  {
+    "event_name": "Will Johnny Depp be casted in the next Pirates of the Caribbean?",
+    "event_id": "KXJOHNNYDEPP-35-JOH",
+    "description": "",
+    "start_time": "2025-07-01T21:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.36,
+      0.56
+    ],
+    "volume": 3852.0,
+    "liquidity": 2135912.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXJOHNNYDEPP-35-JOH"
+  },
+  {
+    "event_name": "Will Britain Restoring Underlying Values (\"BRUV\") win a seat in the next U.K. general election?",
+    "event_id": "KXBRUVSEAT-35",
+    "description": "",
+    "start_time": "2025-01-09T18:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.03,
+      0.92
+    ],
+    "volume": 11770.0,
+    "liquidity": 25267193.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXBRUVSEAT-35"
+  },
+  {
+    "event_name": "Will William Ruto leave office next in this set?",
+    "event_id": "KXAFRICALEADEROUT-35-WR",
+    "description": ":: President of Kenya",
+    "start_time": "2025-02-06T15:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.11,
+      0.84
+    ],
+    "volume": 234.0,
+    "liquidity": 532012.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXAFRICALEADEROUT-35-WR"
+  },
+  {
+    "event_name": "Will Taye Atske Selassie leave office next in this set?",
+    "event_id": "KXAFRICALEADEROUT-35-TAS",
+    "description": ":: President of Ethiopia",
+    "start_time": "2025-02-06T15:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.01,
+      0.95
+    ],
+    "volume": 2.0,
+    "liquidity": 476399.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXAFRICALEADEROUT-35-TAS"
+  },
+  {
+    "event_name": "Will Paul Kagame leave office next in this set?",
+    "event_id": "KXAFRICALEADEROUT-35-PK",
+    "description": ":: President of Rwanda",
+    "start_time": "2025-02-06T15:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.95
+    ],
+    "volume": 1.0,
+    "liquidity": 366289.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXAFRICALEADEROUT-35-PK"
+  },
+  {
+    "event_name": "Will John Mahama leave office next in this set?",
+    "event_id": "KXAFRICALEADEROUT-35-JM",
+    "description": ":: President of Ghana",
+    "start_time": "2025-02-06T15:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.02,
+      0.92
+    ],
+    "volume": 2.0,
+    "liquidity": 491143.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXAFRICALEADEROUT-35-JM"
+  },
+  {
+    "event_name": "Will F\u00e9lix Tshisekedi leave office next in this set?",
+    "event_id": "KXAFRICALEADEROUT-35-FT",
+    "description": ":: President of the DRC",
+    "start_time": "2025-02-06T15:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.15,
+      0.79
+    ],
+    "volume": 3015.0,
+    "liquidity": 657870.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXAFRICALEADEROUT-35-FT"
+  }
+]

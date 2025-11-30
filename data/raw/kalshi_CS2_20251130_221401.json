@@ -1,0 +1,1802 @@
+[
+  {
+    "event_name": "Will M80 win the M80 vs. Imperial match?",
+    "event_id": "KXCSGOGAME-25DEC01M80IMP-M80",
+    "description": "",
+    "start_time": "2025-11-30T21:55:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.62,
+      0.36
+    ],
+    "volume": 0.0,
+    "liquidity": 1173844.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25DEC01M80IMP-M80"
+  },
+  {
+    "event_name": "Will Imperial win the M80 vs. Imperial match?",
+    "event_id": "KXCSGOGAME-25DEC01M80IMP-IMP",
+    "description": "",
+    "start_time": "2025-11-30T21:55:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.36,
+      0.62
+    ],
+    "volume": 0.0,
+    "liquidity": 1173844.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25DEC01M80IMP-IMP"
+  },
+  {
+    "event_name": "Will B8 win the 3DMAX vs. B8 match?",
+    "event_id": "KXCSGOGAME-25DEC013DMAXB8-B8",
+    "description": "",
+    "start_time": "2025-11-30T21:55:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.49,
+      0.49
+    ],
+    "volume": 0.0,
+    "liquidity": 1173844.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25DEC013DMAXB8-B8"
+  },
+  {
+    "event_name": "Will 3DMAX win the 3DMAX vs. B8 match?",
+    "event_id": "KXCSGOGAME-25DEC013DMAXB8-3DMAX",
+    "description": "",
+    "start_time": "2025-11-30T21:55:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.49,
+      0.49
+    ],
+    "volume": 0.0,
+    "liquidity": 1173844.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25DEC013DMAXB8-3DMAX"
+  },
+  {
+    "event_name": "Will Passion UA win the Passion UA vs. fnatic match?",
+    "event_id": "KXCSGOGAME-25DEC01PSSNUAFNC-PSSNUA",
+    "description": "",
+    "start_time": "2025-11-30T21:55:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.41,
+      0.57
+    ],
+    "volume": 0.0,
+    "liquidity": 1173844.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25DEC01PSSNUAFNC-PSSNUA"
+  },
+  {
+    "event_name": "Will fnatic win the Passion UA vs. fnatic match?",
+    "event_id": "KXCSGOGAME-25DEC01PSSNUAFNC-FNC",
+    "description": "",
+    "start_time": "2025-11-30T21:55:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.57,
+      0.41
+    ],
+    "volume": 0.0,
+    "liquidity": 1173844.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25DEC01PSSNUAFNC-FNC"
+  },
+  {
+    "event_name": "Will TYLOO win the TYLOO vs. Liquid match?",
+    "event_id": "KXCSGOGAME-25DEC01TYLOOTL-TYLOO",
+    "description": "",
+    "start_time": "2025-11-30T21:55:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.03,
+      0.03
+    ],
+    "volume": 0.0,
+    "liquidity": 133844.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25DEC01TYLOOTL-TYLOO"
+  },
+  {
+    "event_name": "Will Liquid win the TYLOO vs. Liquid match?",
+    "event_id": "KXCSGOGAME-25DEC01TYLOOTL-TL",
+    "description": "",
+    "start_time": "2025-11-30T21:55:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.03,
+      0.03
+    ],
+    "volume": 0.0,
+    "liquidity": 133844.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25DEC01TYLOOTL-TL"
+  },
+  {
+    "event_name": "Will Aurora Gaming win the Astralis vs. Aurora Gaming match?",
+    "event_id": "KXCSGOGAME-25DEC01ASTAUR-AUR",
+    "description": "",
+    "start_time": "2025-11-30T21:55:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.03,
+      0.03
+    ],
+    "volume": 0.0,
+    "liquidity": 133844.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25DEC01ASTAUR-AUR"
+  },
+  {
+    "event_name": "Will Astralis win the Astralis vs. Aurora Gaming match?",
+    "event_id": "KXCSGOGAME-25DEC01ASTAUR-AST",
+    "description": "",
+    "start_time": "2025-11-30T21:55:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.03,
+      0.03
+    ],
+    "volume": 0.0,
+    "liquidity": 133844.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25DEC01ASTAUR-AST"
+  },
+  {
+    "event_name": "Will PARIVISION win the NIP vs. PARIVISION match?",
+    "event_id": "KXCSGOGAME-25DEC01NIPPRV-PRV",
+    "description": "",
+    "start_time": "2025-11-30T21:55:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.03,
+      0.03
+    ],
+    "volume": 0.0,
+    "liquidity": 133844.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25DEC01NIPPRV-PRV"
+  },
+  {
+    "event_name": "Will NIP win the NIP vs. PARIVISION match?",
+    "event_id": "KXCSGOGAME-25DEC01NIPPRV-NIP",
+    "description": "",
+    "start_time": "2025-11-30T21:55:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.03,
+      0.03
+    ],
+    "volume": 0.0,
+    "liquidity": 133844.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25DEC01NIPPRV-NIP"
+  },
+  {
+    "event_name": "Will FlyQuest win the Astralis vs. FlyQuest match?",
+    "event_id": "KXCSGOGAME-25NOV30ASTFLY-FLY",
+    "description": "",
+    "start_time": "2025-11-29T22:16:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 9416.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV30ASTFLY-FLY"
+  },
+  {
+    "event_name": "Will Astralis win the Astralis vs. FlyQuest match?",
+    "event_id": "KXCSGOGAME-25NOV30ASTFLY-AST",
+    "description": "",
+    "start_time": "2025-11-29T22:16:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 9529.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV30ASTFLY-AST"
+  },
+  {
+    "event_name": "Will PARIVISION win the Aurora Gaming vs. PARIVISION match?",
+    "event_id": "KXCSGOGAME-25NOV30AURPRV-PRV",
+    "description": "",
+    "start_time": "2025-11-29T22:16:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 13530.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV30AURPRV-PRV"
+  },
+  {
+    "event_name": "Will Aurora Gaming win the Aurora Gaming vs. PARIVISION match?",
+    "event_id": "KXCSGOGAME-25NOV30AURPRV-AUR",
+    "description": "",
+    "start_time": "2025-11-29T22:16:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 14879.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV30AURPRV-AUR"
+  },
+  {
+    "event_name": "Will Natus Vincere win the B8 vs. Natus Vincere match?",
+    "event_id": "KXCSGOGAME-25NOV30B8NAVI-NAVI",
+    "description": "",
+    "start_time": "2025-11-29T22:16:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 15361.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV30B8NAVI-NAVI"
+  },
+  {
+    "event_name": "Will B8 win the B8 vs. Natus Vincere match?",
+    "event_id": "KXCSGOGAME-25NOV30B8NAVI-B8",
+    "description": "",
+    "start_time": "2025-11-29T22:16:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 4119.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV30B8NAVI-B8"
+  },
+  {
+    "event_name": "Will NIP win the NIP vs. FaZe match?",
+    "event_id": "KXCSGOGAME-25NOV30NIPFAZE-NIP",
+    "description": "",
+    "start_time": "2025-11-29T22:16:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 19796.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV30NIPFAZE-NIP"
+  },
+  {
+    "event_name": "Will FaZe win the NIP vs. FaZe match?",
+    "event_id": "KXCSGOGAME-25NOV30NIPFAZE-FAZE",
+    "description": "",
+    "start_time": "2025-11-29T22:16:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 27903.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV30NIPFAZE-FAZE"
+  },
+  {
+    "event_name": "Will Imperial win the Imperial vs. fnatic match?",
+    "event_id": "KXCSGOGAME-25NOV30IMPFNC-IMP",
+    "description": "",
+    "start_time": "2025-11-29T22:16:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 12037.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV30IMPFNC-IMP"
+  },
+  {
+    "event_name": "Will fnatic win the Imperial vs. fnatic match?",
+    "event_id": "KXCSGOGAME-25NOV30IMPFNC-FNC",
+    "description": "",
+    "start_time": "2025-11-29T22:16:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 15286.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV30IMPFNC-FNC"
+  },
+  {
+    "event_name": "Will Liquid win the Liquid vs. MIBR match?",
+    "event_id": "KXCSGOGAME-25NOV30TLMIBR-TL",
+    "description": "",
+    "start_time": "2025-11-29T22:16:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 15671.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV30TLMIBR-TL"
+  },
+  {
+    "event_name": "Will MIBR win the Liquid vs. MIBR match?",
+    "event_id": "KXCSGOGAME-25NOV30TLMIBR-MIBR",
+    "description": "",
+    "start_time": "2025-11-29T22:16:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 11446.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV30TLMIBR-MIBR"
+  },
+  {
+    "event_name": "Will TYLOO win the TYLOO vs. M80 match?",
+    "event_id": "KXCSGOGAME-25NOV30TYLOOM80-TYLOO",
+    "description": "",
+    "start_time": "2025-11-29T22:16:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 14189.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV30TYLOOM80-TYLOO"
+  },
+  {
+    "event_name": "Will M80 win the TYLOO vs. M80 match?",
+    "event_id": "KXCSGOGAME-25NOV30TYLOOM80-M80",
+    "description": "",
+    "start_time": "2025-11-29T22:16:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 17728.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV30TYLOOM80-M80"
+  },
+  {
+    "event_name": "Will Passion UA win the 3DMAX vs. Passion UA match?",
+    "event_id": "KXCSGOGAME-25NOV303DMAXPSSNUA-PSSNUA",
+    "description": "",
+    "start_time": "2025-11-29T22:16:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 2218.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV303DMAXPSSNUA-PSSNUA"
+  },
+  {
+    "event_name": "Will 3DMAX win the 3DMAX vs. Passion UA match?",
+    "event_id": "KXCSGOGAME-25NOV303DMAXPSSNUA-3DMAX",
+    "description": "",
+    "start_time": "2025-11-29T22:16:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 6059.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV303DMAXPSSNUA-3DMAX"
+  },
+  {
+    "event_name": "Will FaZe win the FaZe vs. Aurora Gaming match?",
+    "event_id": "KXCSGOGAME-25NOV29FAZEAUR-FAZE",
+    "description": "",
+    "start_time": "2025-11-29T16:55:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 12053.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV29FAZEAUR-FAZE"
+  },
+  {
+    "event_name": "Will Aurora Gaming win the FaZe vs. Aurora Gaming match?",
+    "event_id": "KXCSGOGAME-25NOV29FAZEAUR-AUR",
+    "description": "",
+    "start_time": "2025-11-29T16:55:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 9243.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV29FAZEAUR-AUR"
+  },
+  {
+    "event_name": "Will M80 win the Astralis vs. M80 match?",
+    "event_id": "KXCSGOGAME-25NOV29ASTM80-M80",
+    "description": "",
+    "start_time": "2025-11-29T16:55:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 4498.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV29ASTM80-M80"
+  },
+  {
+    "event_name": "Will Astralis win the Astralis vs. M80 match?",
+    "event_id": "KXCSGOGAME-25NOV29ASTM80-AST",
+    "description": "",
+    "start_time": "2025-11-29T16:55:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 4697.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV29ASTM80-AST"
+  },
+  {
+    "event_name": "Will Liquid win the Liquid vs. PARIVISION match?",
+    "event_id": "KXCSGOGAME-25NOV29TLPRV-TL",
+    "description": "",
+    "start_time": "2025-11-29T16:55:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 8663.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV29TLPRV-TL"
+  },
+  {
+    "event_name": "Will PARIVISION win the Liquid vs. PARIVISION match?",
+    "event_id": "KXCSGOGAME-25NOV29TLPRV-PRV",
+    "description": "",
+    "start_time": "2025-11-29T16:55:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 5870.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV29TLPRV-PRV"
+  },
+  {
+    "event_name": "Will fnatic win the B8 vs. fnatic match?",
+    "event_id": "KXCSGOGAME-25NOV29B8FNC-FNC",
+    "description": "",
+    "start_time": "2025-11-29T16:55:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 11674.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV29B8FNC-FNC"
+  },
+  {
+    "event_name": "Will B8 win the B8 vs. fnatic match?",
+    "event_id": "KXCSGOGAME-25NOV29B8FNC-B8",
+    "description": "",
+    "start_time": "2025-11-29T16:55:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 7206.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV29B8FNC-B8"
+  },
+  {
+    "event_name": "Will Passion UA win the MIBR vs. Passion UA match?",
+    "event_id": "KXCSGOGAME-25NOV29MIBRPSSNUA-PSSNUA",
+    "description": "",
+    "start_time": "2025-11-29T16:55:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 3234.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV29MIBRPSSNUA-PSSNUA"
+  },
+  {
+    "event_name": "Will MIBR win the MIBR vs. Passion UA match?",
+    "event_id": "KXCSGOGAME-25NOV29MIBRPSSNUA-MIBR",
+    "description": "",
+    "start_time": "2025-11-29T16:55:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 3052.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV29MIBRPSSNUA-MIBR"
+  },
+  {
+    "event_name": "Will TYLOO win the TYLOO vs. NIP match?",
+    "event_id": "KXCSGOGAME-25NOV29TYLOONIP-TYLOO",
+    "description": "",
+    "start_time": "2025-11-29T16:55:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 10991.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV29TYLOONIP-TYLOO"
+  },
+  {
+    "event_name": "Will NIP win the TYLOO vs. NIP match?",
+    "event_id": "KXCSGOGAME-25NOV29TYLOONIP-NIP",
+    "description": "",
+    "start_time": "2025-11-29T16:55:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 3809.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV29TYLOONIP-NIP"
+  },
+  {
+    "event_name": "Will Natus Vincere win the Imperial vs. Natus Vincere match?",
+    "event_id": "KXCSGOGAME-25NOV29IMPNAVI-NAVI",
+    "description": "",
+    "start_time": "2025-11-29T16:55:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 10596.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV29IMPNAVI-NAVI"
+  },
+  {
+    "event_name": "Will Imperial win the Imperial vs. Natus Vincere match?",
+    "event_id": "KXCSGOGAME-25NOV29IMPNAVI-IMP",
+    "description": "",
+    "start_time": "2025-11-29T16:55:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 3576.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV29IMPNAVI-IMP"
+  },
+  {
+    "event_name": "Will FlyQuest win the 3DMAX vs. FlyQuest match?",
+    "event_id": "KXCSGOGAME-25NOV293DMAXFLY-FLY",
+    "description": "",
+    "start_time": "2025-11-29T16:55:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 3479.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV293DMAXFLY-FLY"
+  },
+  {
+    "event_name": "Will 3DMAX win the 3DMAX vs. FlyQuest match?",
+    "event_id": "KXCSGOGAME-25NOV293DMAXFLY-3DMAX",
+    "description": "",
+    "start_time": "2025-11-29T16:55:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 1462.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV293DMAXFLY-3DMAX"
+  },
+  {
+    "event_name": "Will M80 win the M80 vs. Aurora Gaming match?",
+    "event_id": "KXCSGOGAME-25NOV29M80AUR-M80",
+    "description": "",
+    "start_time": "2025-11-28T16:15:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 4905.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV29M80AUR-M80"
+  },
+  {
+    "event_name": "Will Aurora Gaming win the M80 vs. Aurora Gaming match?",
+    "event_id": "KXCSGOGAME-25NOV29M80AUR-AUR",
+    "description": "",
+    "start_time": "2025-11-28T16:15:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 9904.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV29M80AUR-AUR"
+  },
+  {
+    "event_name": "Will MIBR win the Imperial vs. MIBR match?",
+    "event_id": "KXCSGOGAME-25NOV29IMPMIBR-MIBR",
+    "description": "",
+    "start_time": "2025-11-28T16:15:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 13178.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV29IMPMIBR-MIBR"
+  },
+  {
+    "event_name": "Will Imperial win the Imperial vs. MIBR match?",
+    "event_id": "KXCSGOGAME-25NOV29IMPMIBR-IMP",
+    "description": "",
+    "start_time": "2025-11-28T16:15:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 17662.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV29IMPMIBR-IMP"
+  },
+  {
+    "event_name": "Will Liquid win the B8 vs. Liquid match?",
+    "event_id": "KXCSGOGAME-25NOV29B8TL-TL",
+    "description": "",
+    "start_time": "2025-11-28T16:15:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 21429.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV29B8TL-TL"
+  },
+  {
+    "event_name": "Will B8 win the B8 vs. Liquid match?",
+    "event_id": "KXCSGOGAME-25NOV29B8TL-B8",
+    "description": "",
+    "start_time": "2025-11-28T16:15:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 7241.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV29B8TL-B8"
+  },
+  {
+    "event_name": "Will NIP win the NIP vs. Astralis match?",
+    "event_id": "KXCSGOGAME-25NOV29NIPAST-NIP",
+    "description": "",
+    "start_time": "2025-11-28T16:15:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 13871.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV29NIPAST-NIP"
+  },
+  {
+    "event_name": "Will Astralis win the NIP vs. Astralis match?",
+    "event_id": "KXCSGOGAME-25NOV29NIPAST-AST",
+    "description": "",
+    "start_time": "2025-11-28T16:15:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 32723.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV29NIPAST-AST"
+  },
+  {
+    "event_name": "Will TYLOO win the TYLOO vs. PARIVISION match?",
+    "event_id": "KXCSGOGAME-25NOV29TYLOOPRV-TYLOO",
+    "description": "",
+    "start_time": "2025-11-28T16:15:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 10924.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV29TYLOOPRV-TYLOO"
+  },
+  {
+    "event_name": "Will PARIVISION win the TYLOO vs. PARIVISION match?",
+    "event_id": "KXCSGOGAME-25NOV29TYLOOPRV-PRV",
+    "description": "",
+    "start_time": "2025-11-28T16:15:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 18976.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV29TYLOOPRV-PRV"
+  },
+  {
+    "event_name": "Will fnatic win the fnatic vs. 3DMAX match?",
+    "event_id": "KXCSGOGAME-25NOV29FNC3DMAX-FNC",
+    "description": "",
+    "start_time": "2025-11-28T16:15:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 15581.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV29FNC3DMAX-FNC"
+  },
+  {
+    "event_name": "Will 3DMAX win the fnatic vs. 3DMAX match?",
+    "event_id": "KXCSGOGAME-25NOV29FNC3DMAX-3DMAX",
+    "description": "",
+    "start_time": "2025-11-28T16:15:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 39569.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV29FNC3DMAX-3DMAX"
+  },
+  {
+    "event_name": "Will Natus Vincere win the FlyQuest vs. Natus Vincere match?",
+    "event_id": "KXCSGOGAME-25NOV29FLYNAVI-NAVI",
+    "description": "",
+    "start_time": "2025-11-28T16:15:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 10067.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV29FLYNAVI-NAVI"
+  },
+  {
+    "event_name": "Will FlyQuest win the FlyQuest vs. Natus Vincere match?",
+    "event_id": "KXCSGOGAME-25NOV29FLYNAVI-FLY",
+    "description": "",
+    "start_time": "2025-11-28T16:15:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 11435.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV29FLYNAVI-FLY"
+  },
+  {
+    "event_name": "Will Passion UA win the FaZe vs. Passion UA match?",
+    "event_id": "KXCSGOGAME-25NOV29FAZEPSSNUA-PSSNUA",
+    "description": "",
+    "start_time": "2025-11-28T16:15:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 22867.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV29FAZEPSSNUA-PSSNUA"
+  },
+  {
+    "event_name": "Will FaZe win the FaZe vs. Passion UA match?",
+    "event_id": "KXCSGOGAME-25NOV29FAZEPSSNUA-FAZE",
+    "description": "",
+    "start_time": "2025-11-28T16:15:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 34408.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV29FAZEPSSNUA-FAZE"
+  },
+  {
+    "event_name": "Will NRG win the fnatic vs. NRG match?",
+    "event_id": "KXCSGOGAME-25NOV26FNCNRG-NRG",
+    "description": "",
+    "start_time": "2025-11-26T01:07:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 88138.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV26FNCNRG-NRG"
+  },
+  {
+    "event_name": "Will fnatic win the fnatic vs. NRG match?",
+    "event_id": "KXCSGOGAME-25NOV26FNCNRG-FNC",
+    "description": "",
+    "start_time": "2025-11-26T01:07:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 42964.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV26FNCNRG-FNC"
+  },
+  {
+    "event_name": "Will The Huns Esports win the The Huns Esports vs. Imperial match?",
+    "event_id": "KXCSGOGAME-25NOV26THEIMP-THE",
+    "description": "",
+    "start_time": "2025-11-26T01:07:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 9263.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV26THEIMP-THE"
+  },
+  {
+    "event_name": "Will Imperial win the The Huns Esports vs. Imperial match?",
+    "event_id": "KXCSGOGAME-25NOV26THEIMP-IMP",
+    "description": "",
+    "start_time": "2025-11-26T01:07:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 13828.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV26THEIMP-IMP"
+  },
+  {
+    "event_name": "Will RED Canids win the FaZe vs. RED Canids match?",
+    "event_id": "KXCSGOGAME-25NOV26FAZERED-RED",
+    "description": "",
+    "start_time": "2025-11-26T01:07:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 71077.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV26FAZERED-RED"
+  },
+  {
+    "event_name": "Will FaZe win the FaZe vs. RED Canids match?",
+    "event_id": "KXCSGOGAME-25NOV26FAZERED-FAZE",
+    "description": "",
+    "start_time": "2025-11-26T01:07:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 46317.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV26FAZERED-FAZE"
+  },
+  {
+    "event_name": "Will PARIVISION win the GamerLegion vs. PARIVISION match?",
+    "event_id": "KXCSGOGAME-25NOV26GLPRV-PRV",
+    "description": "",
+    "start_time": "2025-11-26T01:07:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 28066.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV26GLPRV-PRV"
+  },
+  {
+    "event_name": "Will GamerLegion win the GamerLegion vs. PARIVISION match?",
+    "event_id": "KXCSGOGAME-25NOV26GLPRV-GL",
+    "description": "",
+    "start_time": "2025-11-26T01:07:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 25112.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV26GLPRV-GL"
+  },
+  {
+    "event_name": "Will NIP win the NIP vs. Fluxo match?",
+    "event_id": "KXCSGOGAME-25NOV26NIPFX-NIP",
+    "description": "",
+    "start_time": "2025-11-26T01:07:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 70786.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV26NIPFX-NIP"
+  },
+  {
+    "event_name": "Will Fluxo win the NIP vs. Fluxo match?",
+    "event_id": "KXCSGOGAME-25NOV26NIPFX-FX",
+    "description": "",
+    "start_time": "2025-11-26T01:07:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 14219.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV26NIPFX-FX"
+  },
+  {
+    "event_name": "Will Legacy win the Legacy vs. B8 match?",
+    "event_id": "KXCSGOGAME-25NOV26LGCB8-LGC",
+    "description": "",
+    "start_time": "2025-11-26T01:07:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 28458.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV26LGCB8-LGC"
+  },
+  {
+    "event_name": "Will B8 win the Legacy vs. B8 match?",
+    "event_id": "KXCSGOGAME-25NOV26LGCB8-B8",
+    "description": "",
+    "start_time": "2025-11-26T01:07:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 31847.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV26LGCB8-B8"
+  },
+  {
+    "event_name": "Will The Huns Esports win the The Huns Esports vs. Lynn Vision match?",
+    "event_id": "KXCSGOGAME-25NOV25THELVG-THE",
+    "description": "",
+    "start_time": "2025-11-25T08:09:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 27656.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV25THELVG-THE"
+  },
+  {
+    "event_name": "Will Lynn Vision win the The Huns Esports vs. Lynn Vision match?",
+    "event_id": "KXCSGOGAME-25NOV25THELVG-LVG",
+    "description": "",
+    "start_time": "2025-11-25T08:09:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 12561.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV25THELVG-LVG"
+  },
+  {
+    "event_name": "Will NRG win the M80 vs. NRG match?",
+    "event_id": "KXCSGOGAME-25NOV25M80NRG-NRG",
+    "description": "",
+    "start_time": "2025-11-25T08:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 14001.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV25M80NRG-NRG"
+  },
+  {
+    "event_name": "Will M80 win the M80 vs. NRG match?",
+    "event_id": "KXCSGOGAME-25NOV25M80NRG-M80",
+    "description": "",
+    "start_time": "2025-11-25T08:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 19314.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV25M80NRG-M80"
+  },
+  {
+    "event_name": "Will Rare Atom win the GamerLegion vs. Rare Atom match?",
+    "event_id": "KXCSGOGAME-25NOV25GLRA-RA",
+    "description": "",
+    "start_time": "2025-11-25T07:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 14517.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV25GLRA-RA"
+  },
+  {
+    "event_name": "Will GamerLegion win the GamerLegion vs. Rare Atom match?",
+    "event_id": "KXCSGOGAME-25NOV25GLRA-GL",
+    "description": "",
+    "start_time": "2025-11-25T07:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 26125.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV25GLRA-GL"
+  },
+  {
+    "event_name": "Will Fluxo win the FlyQuest vs. Fluxo match?",
+    "event_id": "KXCSGOGAME-25NOV25FLYFX-FX",
+    "description": "",
+    "start_time": "2025-11-25T07:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 11197.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV25FLYFX-FX"
+  },
+  {
+    "event_name": "Will FlyQuest win the FlyQuest vs. Fluxo match?",
+    "event_id": "KXCSGOGAME-25NOV25FLYFX-FLY",
+    "description": "",
+    "start_time": "2025-11-25T07:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 19099.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV25FLYFX-FLY"
+  },
+  {
+    "event_name": "Will Imperial win the fnatic vs. Imperial match?",
+    "event_id": "KXCSGOGAME-25NOV25FNCIMP-IMP",
+    "description": "",
+    "start_time": "2025-11-25T05:30:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 6204.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV25FNCIMP-IMP"
+  },
+  {
+    "event_name": "Will fnatic win the fnatic vs. Imperial match?",
+    "event_id": "KXCSGOGAME-25NOV25FNCIMP-FNC",
+    "description": "",
+    "start_time": "2025-11-25T05:30:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 9401.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV25FNCIMP-FNC"
+  },
+  {
+    "event_name": "Will NIP win the FaZe vs. NIP match?",
+    "event_id": "KXCSGOGAME-25NOV25FAZENIP-NIP",
+    "description": "",
+    "start_time": "2025-11-25T05:30:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 36316.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV25FAZENIP-NIP"
+  },
+  {
+    "event_name": "Will FaZe win the FaZe vs. NIP match?",
+    "event_id": "KXCSGOGAME-25NOV25FAZENIP-FAZE",
+    "description": "",
+    "start_time": "2025-11-25T05:30:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 51865.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV25FAZENIP-FAZE"
+  },
+  {
+    "event_name": "Will PARIVISION win the B8 vs. PARIVISION match?",
+    "event_id": "KXCSGOGAME-25NOV25B8PRV-PRV",
+    "description": "",
+    "start_time": "2025-11-25T05:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 32364.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV25B8PRV-PRV"
+  },
+  {
+    "event_name": "Will B8 win the B8 vs. PARIVISION match?",
+    "event_id": "KXCSGOGAME-25NOV25B8PRV-B8",
+    "description": "",
+    "start_time": "2025-11-25T05:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 21901.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV25B8PRV-B8"
+  },
+  {
+    "event_name": "Will RED Canids win the Legacy vs. RED Canids match?",
+    "event_id": "KXCSGOGAME-25NOV25LGCRED-RED",
+    "description": "",
+    "start_time": "2025-11-25T05:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 16774.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV25LGCRED-RED"
+  },
+  {
+    "event_name": "Will Legacy win the Legacy vs. RED Canids match?",
+    "event_id": "KXCSGOGAME-25NOV25LGCRED-LGC",
+    "description": "",
+    "start_time": "2025-11-25T05:00:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 25555.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV25LGCRED-LGC"
+  },
+  {
+    "event_name": "Will Lynn Vision win the Lynn Vision vs. FaZe match?",
+    "event_id": "KXCSGOGAME-25NOV24LVGFAZE-LVG",
+    "description": "",
+    "start_time": "2025-11-18T19:50:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 15687.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV24LVGFAZE-LVG"
+  },
+  {
+    "event_name": "Will FaZe win the Lynn Vision vs. FaZe match?",
+    "event_id": "KXCSGOGAME-25NOV24LVGFAZE-FAZE",
+    "description": "",
+    "start_time": "2025-11-18T19:50:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 26498.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV24LVGFAZE-FAZE"
+  },
+  {
+    "event_name": "Will NRG win the NRG vs. NIP match?",
+    "event_id": "KXCSGOGAME-25NOV24NRGNIP-NRG",
+    "description": "",
+    "start_time": "2025-11-18T19:50:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 29403.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV24NRGNIP-NRG"
+  },
+  {
+    "event_name": "Will NIP win the NRG vs. NIP match?",
+    "event_id": "KXCSGOGAME-25NOV24NRGNIP-NIP",
+    "description": "",
+    "start_time": "2025-11-18T19:50:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 18770.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV24NRGNIP-NIP"
+  },
+  {
+    "event_name": "Will RED Canids win the RED Canids vs. fnatic match?",
+    "event_id": "KXCSGOGAME-25NOV24REDFNC-RED",
+    "description": "",
+    "start_time": "2025-11-18T19:50:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 17535.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV24REDFNC-RED"
+  },
+  {
+    "event_name": "Will fnatic win the RED Canids vs. fnatic match?",
+    "event_id": "KXCSGOGAME-25NOV24REDFNC-FNC",
+    "description": "",
+    "start_time": "2025-11-18T19:50:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 31038.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV24REDFNC-FNC"
+  },
+  {
+    "event_name": "Will Rare Atom win the Rare Atom vs. Imperial match?",
+    "event_id": "KXCSGOGAME-25NOV24RAIMP-RA",
+    "description": "",
+    "start_time": "2025-11-18T19:50:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 26347.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV24RAIMP-RA"
+  },
+  {
+    "event_name": "Will Imperial win the Rare Atom vs. Imperial match?",
+    "event_id": "KXCSGOGAME-25NOV24RAIMP-IMP",
+    "description": "",
+    "start_time": "2025-11-18T19:50:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 32630.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV24RAIMP-IMP"
+  },
+  {
+    "event_name": "Will GamerLegion win the Fluxo vs. GamerLegion match?",
+    "event_id": "KXCSGOGAME-25NOV24FXGL-GL",
+    "description": "",
+    "start_time": "2025-11-18T19:50:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 20441.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV24FXGL-GL"
+  },
+  {
+    "event_name": "Will Fluxo win the Fluxo vs. GamerLegion match?",
+    "event_id": "KXCSGOGAME-25NOV24FXGL-FX",
+    "description": "",
+    "start_time": "2025-11-18T19:50:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 14144.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV24FXGL-FX"
+  },
+  {
+    "event_name": "Will Legacy win the FlyQuest vs. Legacy match?",
+    "event_id": "KXCSGOGAME-25NOV24FLYLGC-LGC",
+    "description": "",
+    "start_time": "2025-11-18T19:50:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 15982.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV24FLYLGC-LGC"
+  },
+  {
+    "event_name": "Will FlyQuest win the FlyQuest vs. Legacy match?",
+    "event_id": "KXCSGOGAME-25NOV24FLYLGC-FLY",
+    "description": "",
+    "start_time": "2025-11-18T19:50:00+00:00",
+    "outcomes": [
+      "Yes",
+      "No"
+    ],
+    "prices": [
+      0.0,
+      0.0
+    ],
+    "volume": 16185.0,
+    "liquidity": 0.0,
+    "platform": "kalshi",
+    "url": "https://kalshi.com/markets/KXCSGOGAME-25NOV24FLYLGC-FLY"
+  }
+]
