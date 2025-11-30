@@ -9,6 +9,10 @@ Welcome to the documentation for the Prediction Markets Analysis project. This p
     *   Arbitrage conditions and formulas.
     *   Fuzzy matching algorithms.
 
+*   **[Metrics and Plot Interpretation](metrics_and_plots.md)**
+    *   Understanding Market Tightness (Spread).
+    *   Interpreting Volume and Liquidity histograms.
+
 *   **[System Architecture](architecture.md)**
     *   High-level ETL design.
     *   Collector pattern and extensibility.
