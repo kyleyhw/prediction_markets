@@ -11,6 +11,24 @@ class PolymarketCollector(BaseCollector):
     
     BASE_URL = "https://gamma-api.polymarket.com"
 
+    def fetch_event_by_slug(self, slug: str) -> Dict[str, Any]:
+        """
+        Fetch a single event by its slug.
+        """
+        endpoint = f"{self.BASE_URL}/events"
+        params = {"slug": slug}
+        
+        try:
+            response = requests.get(endpoint, params=params)
+            response.raise_for_status()
+            data = response.json()
+            if not data:
+                return None
+            return data[0] # API returns a list
+        except requests.exceptions.RequestException as e:
+            print(f"Error fetching event {slug}: {e}")
+            return None
+
     def fetch_markets(self, tag_id: str = None, limit: int = 100, closed: bool = False) -> List[MarketEvent]:
         """
         Fetch markets from Polymarket.
@@ -84,12 +102,49 @@ class PolymarketCollector(BaseCollector):
             url=f"https://polymarket.com/event/{event.get('slug')}"
         )
 
+    def _get_auth_headers(self, method: str, path: str, body: str = "") -> Dict[str, str]:
+        """
+        Generate L2 API Key authentication headers.
+        """
+        import time
+        import hmac
+        import hashlib
+        import base64
+        from src.config import POLYMARKET_API_KEY, POLYMARKET_SECRET, POLYMARKET_PASSPHRASE
+
+        if not all([POLYMARKET_API_KEY, POLYMARKET_SECRET, POLYMARKET_PASSPHRASE]):
+            print("Warning: Missing Polymarket API credentials. Authentication will fail.")
+            return {}
+
+        timestamp = str(int(time.time()))
+        # Signature payload: timestamp + method + path + body
+        message = f"{timestamp}{method}{path}{body}"
+        
+        # HMAC-SHA256
+        secret_bytes = base64.b64decode(POLYMARKET_SECRET) # Secret is usually base64 encoded
+        signature = hmac.new(
+            secret_bytes,
+            message.encode('utf-8'),
+            hashlib.sha256
+        ).digest()
+        signature_b64 = base64.b64encode(signature).decode('utf-8')
+
+        return {
+            "POLY-API-KEY": POLYMARKET_API_KEY,
+            "POLY-API-SIGNATURE": signature_b64,
+            "POLY-TIMESTAMP": timestamp,
+            "POLY-PASSPHRASE": POLYMARKET_PASSPHRASE
+        }
+
     def fetch_price_history(self, market_id: str, start_ts: int = None, end_ts: int = None, interval: str = "1h") -> List[Dict]:
         """
         Fetch historical prices for a specific market using the CLOB API.
         """
         # Endpoint: https://clob.polymarket.com/prices-history
-        endpoint = "https://clob.polymarket.com/prices-history"
+        base_clob_url = "https://clob.polymarket.com"
+        path = "/prices-history"
+        endpoint = f"{base_clob_url}{path}"
+        
         params = {
             "market": market_id,
             "interval": interval
@@ -99,9 +154,24 @@ class PolymarketCollector(BaseCollector):
         if end_ts:
             params["endTs"] = end_ts
             
+        # Construct query string for signature (if needed, usually path includes query for signing)
+        # But standard practice varies. Let's assume path only for now, or check docs.
+        # Most exchanges sign the path + query.
+        # Let's construct the full path with query for signing.
+        from urllib.parse import urlencode
+        query_string = urlencode(params)
+        full_path = f"{path}?{query_string}"
+
         try:
+            # Get Auth Headers
+            headers = self._get_auth_headers("GET", full_path)
+            
             print(f"Requesting CLOB: {endpoint} with params {params}")
-            response = requests.get(endpoint, params=params)
+            response = requests.get(endpoint, params=params, headers=headers)
+            
+            if response.status_code == 401:
+                 print(f"Auth Failed: {response.text}")
+            
             response.raise_for_status()
             data = response.json()
             history = data.get('history', [])

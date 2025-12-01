@@ -1,4 +1,16 @@
-# Configuration for Prediction Markets
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Polymarket Credentials
+POLYMARKET_API_KEY = os.getenv("POLYMARKET_API_KEY")
+POLYMARKET_SECRET = os.getenv("POLYMARKET_SECRET")
+POLYMARKET_PASSPHRASE = os.getenv("POLYMARKET_PASSPHRASE")
+
+# Kalshi Credentials
+KALSHI_API_KEY_ID = os.getenv("KALSHI_API_KEY_ID")
+KALSHI_PRIVATE_KEY_PATH = os.getenv("KALSHI_PRIVATE_KEY_PATH")
 
 # Polymarket Tag IDs
 # Discovered via API:
