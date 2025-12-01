@@ -64,9 +64,15 @@ class PolymarketCollector(BaseCollector):
         except (ValueError, TypeError):
             prices = []
 
+        # Extract CLOB Token ID (preferred for history/trading)
+        # Gamma API markets usually have 'clobTokenIds'
+        clob_token_ids = json.loads(market.get('clobTokenIds', '[]')) if isinstance(market.get('clobTokenIds'), str) else market.get('clobTokenIds', [])
+        # Use the first token ID (usually 'Yes' or the main outcome) as the event_id for history fetching
+        market_id = clob_token_ids[0] if clob_token_ids else str(market.get('id'))
+
         return MarketEvent(
             event_name=event.get('title', 'Unknown Event'),
-            event_id=str(event.get('id')),
+            event_id=market_id,
             description=event.get('description', ''),
             start_time=self._parse_date(event.get('startDate')),
             outcomes=outcomes,
@@ -76,6 +82,30 @@ class PolymarketCollector(BaseCollector):
             platform='polymarket',
             url=f"https://polymarket.com/event/{event.get('slug')}"
         )
+
+    def fetch_price_history(self, market_id: str, start_ts: int = None, end_ts: int = None, interval: str = "1h") -> List[Dict]:
+        """
+        Fetch historical prices for a specific market using the CLOB API.
+        """
+        # Endpoint: https://clob.polymarket.com/prices-history
+        endpoint = "https://clob.polymarket.com/prices-history"
+        params = {
+            "market": market_id,
+            "interval": interval
+        }
+        if start_ts:
+            params["startTs"] = start_ts
+        if end_ts:
+            params["endTs"] = end_ts
+            
+        try:
+            response = requests.get(endpoint, params=params)
+            response.raise_for_status()
+            data = response.json()
+            return data.get('history', [])
+        except Exception as e:
+            print(f"Error fetching history for {market_id}: {e}")
+            return []
 
     def _parse_date(self, date_str: str) -> datetime:
         if not date_str:
