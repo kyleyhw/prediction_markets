@@ -11,13 +11,14 @@ class PolymarketCollector(BaseCollector):
     
     BASE_URL = "https://gamma-api.polymarket.com"
 
-    def fetch_markets(self, tag_id: str = None, limit: int = 100) -> List[MarketEvent]:
+    def fetch_markets(self, tag_id: str = None, limit: int = 100, closed: bool = False) -> List[MarketEvent]:
         """
         Fetch markets from Polymarket.
         
         Args:
-            tag_id (str): The tag ID to filter by (e.g. for 'Esports' or 'Counter-Strike').
+            tag_id (str): The tag ID to filter by.
             limit (int): Number of markets to fetch.
+            closed (bool): Whether to fetch closed markets (default: False).
             
         Returns:
             List[MarketEvent]: Standardized market events.
@@ -25,7 +26,7 @@ class PolymarketCollector(BaseCollector):
         endpoint = f"{self.BASE_URL}/events"
         params = {
             "limit": limit,
-            "closed": "false"
+            "closed": str(closed).lower()
         }
         if tag_id:
             params["tag_id"] = tag_id
@@ -99,14 +100,31 @@ class PolymarketCollector(BaseCollector):
             params["endTs"] = end_ts
             
         try:
-            print(f"Requesting: {endpoint} with params {params}")
+            print(f"Requesting CLOB: {endpoint} with params {params}")
             response = requests.get(endpoint, params=params)
             response.raise_for_status()
             data = response.json()
-            return data.get('history', [])
+            history = data.get('history', [])
+            
+            if not history:
+                raise ValueError("Empty history from CLOB")
+                
+            return history
+            
         except Exception as e:
-            print(f"Error fetching history for {market_id}: {e}")
-            return []
+            print(f"CLOB History failed: {e}. Trying Gamma API...")
+            # Fallback to Gamma API
+            gamma_endpoint = f"{self.BASE_URL}/prices-history"
+            # Gamma API params might be slightly different or same
+            try:
+                print(f"Requesting Gamma: {gamma_endpoint} with params {params}")
+                response = requests.get(gamma_endpoint, params=params)
+                response.raise_for_status()
+                data = response.json()
+                return data.get('history', [])
+            except Exception as e2:
+                print(f"Gamma History failed: {e2}")
+                return []
 
     def _parse_date(self, date_str: str) -> datetime:
         if not date_str:

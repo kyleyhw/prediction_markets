@@ -2,21 +2,21 @@ import requests
 import json
 
 def find_polymarket_tag():
-    print("--- Polymarket Tag Discovery (By Query) ---")
-    # Search for events with "Blast"
+    print("--- Polymarket Tag Discovery (Active Markets) ---")
+    # Search for active events
     url = "https://gamma-api.polymarket.com/events"
-    params = {"limit": 500, "closed": "true"} # Increase limit
+    params = {"limit": 100, "closed": "false"} 
     
     try:
         response = requests.get(url, params=params)
         response.raise_for_status()
         data = response.json()
         
-        print(f"Scanning {len(data)} events for Bitcoin...")
+        print(f"Scanning {len(data)} active events for 'Major'...")
         found = False
         for event in data:
             title = event.get('title', '').lower()
-            if "bitcoin" in title:
+            if "major" in title:
                 print(f"Found Event: {event.get('title')} (ID: {event.get('id')})")
                 print(f"  Slug: {event.get('slug')}")
                 for m in event.get('markets', []):
@@ -27,7 +27,7 @@ def find_polymarket_tag():
                 found = True
         
         if not found:
-            print("No CS2/Blast events found in the last 500.")
+            print("No active Starladder/CS2 events found.")
 
     except Exception as e:
         print(f"Polymarket Error: {e}")
@@ -48,12 +48,12 @@ def find_kalshi_ticker():
         for m in markets:
             title = m.get('title', '').lower()
             st = m.get('series_ticker')
-            if "starladder" in title or "budapest" in title:
+            if "soccer" in title or "premier" in title or "english" in title or "football" in title:
                 print(f"Found Candidate: {m.get('title')} | Series: {st} | Ticker: {m.get('ticker')}")
                 found = True
         
         if not found:
-            print("No 'Blast' or 'Rivals' markets found in the last 500.")
+            print("No Soccer/Premier/English markets found in the last 500.")
 
     except Exception as e:
         print(f"Kalshi Error: {e}")
