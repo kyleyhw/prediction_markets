@@ -81,3 +81,30 @@ class KalshiCollector(BaseCollector):
             return datetime.fromisoformat(date_str.replace('Z', '+00:00'))
         except ValueError:
             return None
+    def fetch_candlesticks(self, series_ticker: str, market_ticker: str, start_ts: int, end_ts: int = None, period_interval: int = 60) -> List[Dict]:
+        """
+        Fetch candlesticks for a specific market.
+        """
+        import time
+        if end_ts is None:
+            end_ts = int(time.time())
+            
+        # Endpoint: /series/{series_ticker}/markets/{market_ticker}/candlesticks
+        endpoint = f"{self.BASE_URL}/series/{series_ticker}/markets/{market_ticker}/candlesticks"
+        params = {
+            "start_ts": start_ts,
+            "end_ts": end_ts,
+            "period_interval": period_interval,
+            "limit": 5000 # Max limit
+        }
+        
+        try:
+            response = requests.get(endpoint, params=params)
+            if response.status_code != 200:
+                print(f"Kalshi Error ({response.status_code}): {response.text}")
+            response.raise_for_status()
+            data = response.json()
+            return data.get('candlesticks', [])
+        except requests.exceptions.RequestException as e:
+            print(f"Error fetching candlesticks for {market_ticker}: {e}")
+            return []

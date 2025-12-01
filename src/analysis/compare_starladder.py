@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import os
 import json
+from datetime import datetime
 from src.collectors.polymarket import PolymarketCollector
 from src.collectors.kalshi import KalshiCollector
 
@@ -124,9 +125,16 @@ def compare_starladder_odds():
     ax2.set_xticklabels(names, rotation=45, ha='right')
     ax2.grid(True, alpha=0.2, axis='y')
 
+    # Add timestamp to plot
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    plt.figtext(0.99, 0.01, f"Generated at: {current_time}", horizontalalignment='right', fontsize=8, color='gray')
+
     plt.tight_layout()
     os.makedirs("plots/cs2_starladder_budapest_major", exist_ok=True)
-    filename = "plots/cs2_starladder_budapest_major/comparison.png"
+    
+    # Timestamped filename
+    ts_filename = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"plots/cs2_starladder_budapest_major/starladder_odds_comparison_{ts_filename}.png"
     plt.savefig(filename)
     print(f"Saved plot to {filename}")
 
