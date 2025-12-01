@@ -99,6 +99,7 @@ class PolymarketCollector(BaseCollector):
             params["endTs"] = end_ts
             
         try:
+            print(f"Requesting: {endpoint} with params {params}")
             response = requests.get(endpoint, params=params)
             response.raise_for_status()
             data = response.json()

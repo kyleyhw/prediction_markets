@@ -43,9 +43,24 @@ def plot_market_history(market_id: str, event_name: str = "Market History"):
     print(f"Saved plot to {filename}")
 
 if __name__ == "__main__":
-    # Example: NBA Mavericks vs Grizzlies
-    market_id = "28182404005967940652495463228537840901055649726248190462854914416579180110833"
-    event_name = "NBA: Mavericks vs Grizzlies (Dec 4)"
+    # Dynamic discovery of a valid ID for demo:
+    print("Fetching an active market to test history...")
+    collector = PolymarketCollector()
+    markets = collector.fetch_markets(limit=5)
     
-    print(f"Plotting history for: {event_name} (ID: {market_id})")
-    plot_market_history(market_id, event_name)
+    found = False
+    for m in markets:
+        # Try to find one with volume
+        if m.volume > 1000:
+            print(f"Testing with active market: {m.event_name} (ID: {m.event_id})")
+            plot_market_history(m.event_id, m.event_name)
+            found = True
+            break
+            
+    if not found and markets:
+        # Fallback to first one
+        m = markets[0]
+        print(f"Testing with market: {m.event_name} (ID: {m.event_id})")
+        plot_market_history(m.event_id, m.event_name)
+    elif not markets:
+        print("No markets found to test.")

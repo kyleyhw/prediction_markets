@@ -12,17 +12,19 @@ def find_polymarket_tag():
         response.raise_for_status()
         data = response.json()
         
-        print(f"Scanning {len(data)} events... Printing first 5:")
-        count = 0
+        print(f"Scanning {len(data)} events for Bitcoin...")
+        found = False
         for event in data:
-            if count >= 5: break
-            print(f"Found Event: {event.get('title')} (ID: {event.get('id')})")
-            for m in event.get('markets', []):
-                # Try to get CLOB Token ID for history
-                clob_ids = json.loads(m.get('clobTokenIds', '[]')) if isinstance(m.get('clobTokenIds'), str) else m.get('clobTokenIds', [])
-                mid = clob_ids[0] if clob_ids else m.get('id')
-                print(f"    Market: {m.get('question')} (ID: {mid})")
-            count += 1
+            title = event.get('title', '').lower()
+            if "bitcoin" in title:
+                print(f"Found Event: {event.get('title')} (ID: {event.get('id')})")
+                print(f"  Slug: {event.get('slug')}")
+                for m in event.get('markets', []):
+                    # Try to get CLOB Token ID for history
+                    clob_ids = json.loads(m.get('clobTokenIds', '[]')) if isinstance(m.get('clobTokenIds'), str) else m.get('clobTokenIds', [])
+                    mid = clob_ids[0] if clob_ids else m.get('id')
+                    print(f"    Market: {m.get('question')} (ID: {mid})")
+                found = True
         
         if not found:
             print("No CS2/Blast events found in the last 500.")
