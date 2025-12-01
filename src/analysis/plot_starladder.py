@@ -61,14 +61,17 @@ def plot_starladder_odds():
         if current_price < 0.01: # Skip < 1% chance
             continue
             
-        plt.plot(df['timestamp'], df['price'], label=f"{team_name} ({current_price:.2f})")
+        # Get volume
+        volume = float(m.get('volume', 0))
+        
+        plt.plot(df['timestamp'], df['price'], label=f"{team_name} ({current_price:.2f}) - Vol: ${int(volume):,}")
         plotted_count += 1
         
     if plotted_count == 0:
         print("No significant data to plot.")
         return
 
-    plt.title(f"Odds History: {event.get('title')}")
+    plt.title(f"Polymarket Odds History: {event.get('title')}")
     plt.xlabel("Date")
     plt.ylabel("Implied Probability")
     plt.ylim(0, 1)
@@ -76,7 +79,12 @@ def plot_starladder_odds():
     plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.tight_layout()
     
-    filename = "plots/cs2_starladder_budapest_major/winner_odds.png"
+    # Remove old file if exists
+    old_filename = "plots/cs2_starladder_budapest_major/winner_odds.png"
+    if os.path.exists(old_filename):
+        os.remove(old_filename)
+        
+    filename = "plots/cs2_starladder_budapest_major/polymarket_winner_odds.png"
     plt.savefig(filename)
     print(f"Saved plot to {filename}")
 
