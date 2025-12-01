@@ -43,22 +43,9 @@ def plot_market_history(market_id: str, event_name: str = "Market History"):
     print(f"Saved plot to {filename}")
 
 if __name__ == "__main__":
-    # Example ID. Since we couldn't find Blast Rivals, we'll use a placeholder or ask the user.
-    # For demonstration, I'll try to fetch a known active market if possible, or just fail gracefully.
-    # Let's try a generic ID or one found in previous logs if available.
-    # I'll use a placeholder and expect the user to provide one or I'll find one dynamically.
+    # Example: NBA Mavericks vs Grizzlies
+    market_id = "28182404005967940652495463228537840901055649726248190462854914416579180110833"
+    event_name = "NBA: Mavericks vs Grizzlies (Dec 4)"
     
-    # Dynamic discovery of a valid ID for demo:
-    collector = PolymarketCollector()
-    markets = collector.fetch_markets(limit=1)
-    if markets:
-        m = markets[0]
-        # The market ID in MarketEvent is the event ID, we need the specific market/question ID.
-        # My collector stores event_id as the main ID. Let's see if that works for history.
-        # Actually, fetch_markets returns MarketEvent where event_id is often the slug or event ID.
-        # We need the CLOB Token ID or Condition ID.
-        # Let's assume for now we can pass the ID we have.
-        print(f"Testing with market: {m.event_name} (ID: {m.event_id})")
-        plot_market_history(m.event_id, m.event_name)
-    else:
-        print("No markets found to test.")
+    print(f"Plotting history for: {event_name} (ID: {market_id})")
+    plot_market_history(market_id, event_name)

@@ -12,16 +12,17 @@ def find_polymarket_tag():
         response.raise_for_status()
         data = response.json()
         
-        print(f"Scanning {len(data)} events for CS2/Blast...")
-        found = False
+        print(f"Scanning {len(data)} events... Printing first 5:")
+        count = 0
         for event in data:
-            title = event.get('title', '').lower()
-            if "blast" in title or "rivals" in title or "cs2" in title or "counter-strike" in title:
-                print(f"Found Event: {event.get('title')} (ID: {event.get('id')})")
-                print(f"  Slug: {event.get('slug')}")
-                for m in event.get('markets', []):
-                    print(f"    Market: {m.get('question')} (ID: {m.get('id')})")
-                found = True
+            if count >= 5: break
+            print(f"Found Event: {event.get('title')} (ID: {event.get('id')})")
+            for m in event.get('markets', []):
+                # Try to get CLOB Token ID for history
+                clob_ids = json.loads(m.get('clobTokenIds', '[]')) if isinstance(m.get('clobTokenIds'), str) else m.get('clobTokenIds', [])
+                mid = clob_ids[0] if clob_ids else m.get('id')
+                print(f"    Market: {m.get('question')} (ID: {mid})")
+            count += 1
         
         if not found:
             print("No CS2/Blast events found in the last 500.")
@@ -45,7 +46,7 @@ def find_kalshi_ticker():
         for m in markets:
             title = m.get('title', '').lower()
             st = m.get('series_ticker')
-            if "blast" in title or "rivals" in title or "cs2" in title or "counter-strike" in title:
+            if "starladder" in title or "budapest" in title:
                 print(f"Found Candidate: {m.get('title')} | Series: {st} | Ticker: {m.get('ticker')}")
                 found = True
         
