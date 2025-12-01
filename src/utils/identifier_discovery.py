@@ -5,29 +5,31 @@ def find_polymarket_tag():
     print("--- Polymarket Tag Discovery (Active Markets) ---")
     # Search for active events
     url = "https://gamma-api.polymarket.com/events"
-    params = {"limit": 100, "closed": "false"} 
+    params = {"limit": 500, "closed": "false"} 
     
     try:
         response = requests.get(url, params=params)
         response.raise_for_status()
         data = response.json()
         
-        print(f"Scanning {len(data)} active events for 'Major'...")
+        print(f"Scanning {len(data)} active events for 'vs'...")
         found = False
+        count = 0
         for event in data:
             title = event.get('title', '').lower()
-            if "major" in title:
+            if "vs" in title or " - " in title:
                 print(f"Found Event: {event.get('title')} (ID: {event.get('id')})")
-                print(f"  Slug: {event.get('slug')}")
                 for m in event.get('markets', []):
                     # Try to get CLOB Token ID for history
                     clob_ids = json.loads(m.get('clobTokenIds', '[]')) if isinstance(m.get('clobTokenIds'), str) else m.get('clobTokenIds', [])
                     mid = clob_ids[0] if clob_ids else m.get('id')
                     print(f"    Market: {m.get('question')} (ID: {mid})")
                 found = True
+                count += 1
+                if count >= 20: break # Limit to 20
         
         if not found:
-            print("No active Starladder/CS2 events found.")
+            print("No active 'vs' events found.")
 
     except Exception as e:
         print(f"Polymarket Error: {e}")
@@ -45,15 +47,16 @@ def find_kalshi_ticker():
         print(f"Fetched {len(markets)} markets.")
         
         found = False
+        keywords = ["cs2", "counter-strike", "parivision", "nip", "starladder", "budapest"]
         for m in markets:
             title = m.get('title', '').lower()
             st = m.get('series_ticker')
-            if "soccer" in title or "premier" in title or "english" in title or "football" in title:
+            if any(k in title for k in keywords):
                 print(f"Found Candidate: {m.get('title')} | Series: {st} | Ticker: {m.get('ticker')}")
                 found = True
         
         if not found:
-            print("No Soccer/Premier/English markets found in the last 500.")
+            print("No CS2/Starladder markets found on Kalshi.")
 
     except Exception as e:
         print(f"Kalshi Error: {e}")

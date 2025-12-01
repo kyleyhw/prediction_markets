@@ -46,6 +46,8 @@ Detailed documentation is available in the `docs/` directory:
 *   **[Documentation Index](docs/index.md)**
 *   **[Mathematical Principles](docs/math_and_logic.md)**: Explains odds calculation, arbitrage formulas, and matching logic.
 *   **[System Architecture](docs/architecture.md)**: Details the design patterns and ETL pipeline structure.
+*   **[Metrics and Plots](docs/metrics_and_plots.md)**: Guide to interpreting plots.
+*   **[Current State](CURRENT_STATE.md)**: Summary of current capabilities and limitations.
 
 ## Getting Started
 
