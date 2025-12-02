@@ -57,9 +57,13 @@ Detailed documentation is available in the `docs/` directory:
 
 ### Installation
 1.  Clone the repository.
-2.  Install dependencies:
+2.  Install `uv` (if not already installed):
     ```bash
-    pip install -r requirements.txt
+    pip install uv
+    ```
+3.  Install dependencies:
+    ```bash
+    uv sync
     ```
 
 ### Usage
