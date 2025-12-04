@@ -1,0 +1,2 @@
+[console_scripts]
+pm = cli:main
