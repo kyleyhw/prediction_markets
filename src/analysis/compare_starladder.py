@@ -57,14 +57,10 @@ def compare_starladder_odds():
         title = m.event_name
         team = title.replace("Will ", "").replace(" win the StarLadder Budapest Major 2025?", "").strip()
         
-        # Kalshi collector already parses bids/asks
-        best_bid = m.bids[0] if m.bids else 0.0
-        best_ask = m.asks[0] if m.asks else 0.0
-        
         kalshi_data[team.lower()] = {
-            'price': m.prices[0], 
-            'bid': best_bid, 
-            'ask': best_ask,
+            'price': m.last_price, 
+            'bid': m.best_bid, 
+            'ask': m.best_ask,
             'volume': m.volume, 
             'name': team
         }

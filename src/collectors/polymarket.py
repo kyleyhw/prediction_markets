@@ -83,25 +83,70 @@ class PolymarketCollector(BaseCollector):
         except (ValueError, TypeError):
             prices = []
 
-        # Extract CLOB Token ID (preferred for history/trading)
-        # Gamma API markets usually have 'clobTokenIds'
-        clob_token_ids = json.loads(market.get('clobTokenIds', '[]')) if isinstance(market.get('clobTokenIds'), str) else market.get('clobTokenIds', [])
-        # Use the first token ID (usually 'Yes' or the main outcome) as the event_id for history fetching
-        market_id = clob_token_ids[0] if clob_token_ids else str(market.get('id'))
+        # Fetch Orderbook if CLOB ID exists
+        orderbook_data = {'bids': [], 'asks': []}
+        best_bid = 0.0
+        best_ask = 0.0
+        
+        clob_ids = json.loads(market.get('clobTokenIds', '[]')) if isinstance(market.get('clobTokenIds'), str) else market.get('clobTokenIds', [])
+        if clob_ids:
+            try:
+                raw_book = self.fetch_orderbook(clob_ids[0])
+                # Parse Bids
+                for b in raw_book.get('bids', []):
+                    orderbook_data['bids'].append({
+                        'price': float(b['price']),
+                        'size': float(b['size'])
+                    })
+                # Parse Asks
+                for a in raw_book.get('asks', []):
+                    orderbook_data['asks'].append({
+                        'price': float(a['price']),
+                        'size': float(a['size'])
+                    })
+                
+                # Determine Best Bid/Ask
+                if orderbook_data['bids']:
+                    best_bid = float(orderbook_data['bids'][0]['price'])
+                if orderbook_data['asks']:
+                    best_ask = float(orderbook_data['asks'][0]['price'])
+                    
+            except Exception as e:
+                print(f"Error fetching orderbook for {clob_ids[0]}: {e}")
+
+        # Calculate Derived Metrics
+        mid_price = (best_bid + best_ask) / 2 if (best_bid and best_ask) else 0.0
+        spread = best_ask - best_bid if (best_bid and best_ask) else 0.0
+        last_price = float(market.get('outcomePrices', ['0', '0'])[0]) if market.get('outcomePrices') else 0.0
+
+        # The original `event` object passed to `_parse_market` contains `title`, `description`, `startDate`, `slug`.
+        # The new `MarketEvent` constructor uses `market.get('question')` for `event_name` and `market.get('slug')` for URL.
+        # This implies a change in how `event` and `market` are used.
+        # Assuming the user wants to use `market` for these fields as per the new `MarketEvent` construction.
+        
+        # Also, the new MarketEvent constructor expects `id` and `start_time` directly.
+        # Let's extract `start_time` from the `event` object as it was before.
+        start_time = self._parse_date(event.get('startDate'))
 
         return MarketEvent(
-            event_name=event.get('title', 'Unknown Event'),
-            event_id=market_id,
-            description=event.get('description', ''),
-            start_time=self._parse_date(event.get('startDate')),
-            outcomes=outcomes,
-            prices=prices,
-            bids=market.get('bids'),
-            asks=market.get('asks'),
+            id=market.get('id'),
+            event_name=market.get('question'),
+            description=market.get('description', ''),
+            start_time=start_time,
+            outcomes=json.loads(market.get('outcomes', '[]')) if isinstance(market.get('outcomes'), str) else market.get('outcomes', []),
+            prices=[last_price, 1.0 - last_price], # Use last price as proxy
             volume=float(market.get('volume', 0)),
             liquidity=float(market.get('liquidity', 0)),
             platform='polymarket',
-            url=f"https://polymarket.com/event/{event.get('slug')}"
+            url=f"https://polymarket.com/event/{market.get('slug')}",
+            bids=[best_bid], # Legacy support
+            asks=[best_ask], # Legacy support
+            best_bid=best_bid,
+            best_ask=best_ask,
+            mid_price=mid_price,
+            spread=spread,
+            last_price=last_price,
+            orderbook=orderbook_data
         )
 
     def _get_auth_headers(self, method: str, path: str, body: str = "") -> Dict[str, str]:
