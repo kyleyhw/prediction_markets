@@ -96,6 +96,8 @@ class PolymarketCollector(BaseCollector):
             start_time=self._parse_date(event.get('startDate')),
             outcomes=outcomes,
             prices=prices,
+            bids=market.get('bids'),
+            asks=market.get('asks'),
             volume=float(market.get('volume', 0)),
             liquidity=float(market.get('liquidity', 0)),
             platform='polymarket',
@@ -203,3 +205,17 @@ class PolymarketCollector(BaseCollector):
             return datetime.fromisoformat(date_str.replace('Z', '+00:00'))
         except ValueError:
             return None
+    def fetch_orderbook(self, token_id: str) -> Dict[str, Any]:
+        """
+        Fetch the orderbook for a specific token ID from the CLOB API.
+        """
+        url = "https://clob.polymarket.com/book"
+        params = {"token_id": token_id}
+        
+        try:
+            response = requests.get(url, params=params)
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            print(f"Error fetching orderbook for {token_id}: {e}")
+            return {}
