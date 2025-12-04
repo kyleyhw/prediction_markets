@@ -61,21 +61,43 @@ Detailed documentation is available in the `docs/` directory:
     ```bash
     pip install uv
     ```
-3.  Install dependencies:
+3.  Sync dependencies and install the project:
     ```bash
     uv sync
     ```
 
 ### Usage
-*   **Fetch Data**:
-    ```bash
-    python -m src.main
-    ```
-    This will fetch data for all configured categories (CS2, EPL) and save it to `data/processed/`.
+The project exposes a Command Line Interface (CLI) tool named `pm` (Prediction Markets).
 
-*   **Run Analysis**:
+**Run commands using `uv run`:**
+
+*   **Visualize Bid/Ask Spread (Candles)**:
     ```bash
-    python -m src.analysis.arbitrage
+    uv run pm spread
+    ```
+    Generates a plot showing the bid-ask range for each team on both platforms, highlighting arbitrage opportunities.
+
+*   **Compare Odds**:
+    ```bash
+    uv run pm compare
+    ```
+    Generates a bar chart comparing the implied probabilities and volume for Starladder Major.
+
+*   **Plot Arbitrage History**:
+    ```bash
+    uv run pm arbitrage
+    ```
+    Plots the historical arbitrage spread over time.
+
+*   **Plot Individual Platform Odds**:
+    ```bash
+    uv run pm plot-poly   # Polymarket
+    uv run pm plot-kalshi # Kalshi
+    ```
+
+*   **View Help**:
+    ```bash
+    uv run pm --help
     ```
 
 ## Methodological Approach

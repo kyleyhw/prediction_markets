@@ -34,9 +34,9 @@ This document summarizes the current capabilities, limitations, and verified evi
 *   **Functionality**: Can align historical data from both platforms to visualize price differences (arbitrage opportunities) over time.
 *   **Evidence**: `plots/cs2_starladder_budapest_major/arbitrage_history.png`.
 
-### 5. Identifier Discovery
-*   **Utility**: `src/utils/identifier_discovery.py` successfully scans and lists events.
-*   **Specific Events**: Successfully located "Starladder Budapest Major" markets on both platforms using direct URL/Ticker lookup when keyword search failed.
+### 6. CLI Tool
+*   **Functionality**: Centralized entry point (`pm`) for all analysis tools.
+*   **Evidence**: `src/cli.py` and `pyproject.toml` configuration.
 
 ---
 
@@ -60,12 +60,13 @@ This document summarizes the current capabilities, limitations, and verified evi
 
 | Component | Status | File Path |
 | :--- | :--- | :--- |
+| **CLI Entry Point** | 🟢 Working | `src/cli.py` |
 | **Polymarket Collector** | 🟢 Working | `src/collectors/polymarket.py` |
 | **Kalshi Collector** | 🟢 Working | `src/collectors/kalshi.py` |
-| **Starladder Analysis** | 🟢 Working | `src/analysis/plot_starladder.py`, `plot_kalshi_starladder.py` |
-| **Arbitrage Plotter** | 🟢 Working | `src/analysis/plot_arbitrage_history.py` |
+| **Spread Visualization** | 🟢 Working | `src/analysis/plot_spread_candles.py` |
 | **Comparison Plot** | 🟢 Working | `src/analysis/compare_starladder.py` |
+| **Arbitrage Plotter** | 🟢 Working | `src/analysis/plot_arbitrage_history.py` |
 
 ## Next Recommended Steps
 1.  **Authentication**: User to provide API keys to unlock closed market history.
-2.  **Automated Monitoring**: Set up a cron job to run the arbitrage plotter periodically.
+2.  **Automated Monitoring**: Set up a cron job to run `uv run pm arbitrage` periodically.
