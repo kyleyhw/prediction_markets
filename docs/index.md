@@ -4,7 +4,8 @@ Welcome to the documentation for the Prediction Markets Analysis project. This p
 
 ## Documentation Index
 
-*   **[Mathematical Principles and Logic](math_and_logic.md)**
+*   **[Definitions and Glossary](definitions.md)**: Comprehensive guide to terminology, schema fields, and metric calculations.
+*   **[Mathematical Principles](math_and_logic.md)**: Explains odds calculation, arbitrage formulas, and matching logic.
 ## Project Overview
 
 For a quick start guide and installation instructions, please refer to the main **[README](../README.md)** in the root directory.

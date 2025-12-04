@@ -43,10 +43,12 @@ prediction_markets/
 
 Detailed documentation is available in the `docs/` directory:
 
-*   **[Documentation Index](docs/index.md)**
+*   **[Documentation Index](docs/index.md)**: The main entry point for all documentation.
+*   **[Definitions & Glossary](docs/definitions.md)**: **(New)** Comprehensive guide to terminology, schema fields, and metric calculations.
 *   **[Mathematical Principles](docs/math_and_logic.md)**: Explains odds calculation, arbitrage formulas, and matching logic.
 *   **[System Architecture](docs/architecture.md)**: Details the design patterns and ETL pipeline structure.
 *   **[Metrics and Plots](docs/metrics_and_plots.md)**: Guide to interpreting plots.
+*   **[API Data Models](docs/api_specs/data_models.md)**: Details the `MarketEvent` schema and cross-platform normalization.
 *   **[Current State](CURRENT_STATE.md)**: Summary of current capabilities and limitations.
 
 ## Getting Started
