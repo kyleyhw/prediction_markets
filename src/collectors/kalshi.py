@@ -52,40 +52,40 @@ class KalshiCollector(BaseCollector):
         
         outcomes = ["Yes", "No"]
         
-        # Price is usually in cents (1-99), we convert to 0.0-1.0
-        yes_bid = float(market.get('yes_bid', 0)) / 100.0
-        yes_ask = float(market.get('yes_ask', 0)) / 100.0
-        no_bid = float(market.get('no_bid', 0)) / 100.0
-        no_ask = float(market.get('no_ask', 0)) / 100.0
-        
-        # Prices list (using best bid as current price proxy, or mid)
-        # User wants bid/ask, so let's store them explicitly
-        prices = [yes_bid, no_bid]
-        bids = [yes_bid, no_bid]
-        asks = [yes_ask, no_ask]
+        # Standardize Prices
+        best_bid = float(market.get('yes_bid', 0)) / 100.0
+        best_ask = float(market.get('yes_ask', 0)) / 100.0
+        mid_price = (best_bid + best_ask) / 2 if (best_bid and best_ask) else 0.0
+        spread = best_ask - best_bid if (best_bid and best_ask) else 0.0
+        last_price = float(market.get('price', 0)) / 100.0 # Assuming price is also in cents
+
+        # Construct Orderbook (Simulated from top of book as Kalshi API summary doesn't give full depth)
+        orderbook_data = {
+            'bids': [{'price': best_bid, 'size': 0.0}] if best_bid else [],
+            'asks': [{'price': best_ask, 'size': 0.0}] if best_ask else []
+        }
 
         return MarketEvent(
+            id=market.get('ticker'),
             event_name=market.get('title', 'Unknown Event'),
-            event_id=market.get('ticker'),
             description=market.get('subtitle', ''),
             start_time=self._parse_date(market.get('open_time')),
             outcomes=outcomes,
-            prices=prices,
-            bids=bids,
-            asks=asks,
+            prices=[last_price, 1.0 - last_price],
             volume=float(market.get('volume', 0)),
-            liquidity=float(market.get('liquidity', 0)), # Kalshi might not expose liquidity directly in this endpoint
+            liquidity=float(market.get('liquidity', 0)),
             platform='kalshi',
-            url=f"https://kalshi.com/markets/{market.get('ticker')}"
+            url=f"https://kalshi.com/markets/{market.get('ticker')}",
+            bids=[best_bid], # Legacy
+            asks=[best_ask], # Legacy
+            best_bid=best_bid,
+            best_ask=best_ask,
+            mid_price=mid_price,
+            spread=spread,
+            last_price=last_price,
+            orderbook=orderbook_data
         )
-
-    def _parse_date(self, date_str: str) -> datetime:
-        if not date_str:
-            return None
-        try:
-            return datetime.fromisoformat(date_str.replace('Z', '+00:00'))
-        except ValueError:
-            return None
+        
     def fetch_candlesticks(self, series_ticker: str, market_ticker: str, start_ts: int, end_ts: int = None, period_interval: int = 60) -> List[Dict]:
         """
         Fetch candlesticks for a specific market.

@@ -31,6 +31,11 @@ def main():
     p_arb = subparsers.add_parser("arbitrage", help="Plot Arbitrage History Over Time")
     p_arb.set_defaults(func=plot_arbitrage_history)
 
+    # 6. Slippage Analysis
+    from src.analysis.analyze_slippage import analyze_slippage
+    p_slip = subparsers.add_parser("slippage", help="Analyze Market Slippage and Depth")
+    p_slip.set_defaults(func=analyze_slippage)
+
     # Parse and Execute
     if len(sys.argv) == 1:
         parser.print_help()
