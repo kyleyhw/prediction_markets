@@ -83,11 +83,16 @@ The project exposes a Command Line Interface (CLI) tool named `pm` (Prediction M
     ```
     Generates a bar chart comparing the implied probabilities and volume for Starladder Major.
 
-*   **Plot Arbitrage History**:
     ```bash
     uv run pm arbitrage
     ```
     Plots the historical arbitrage spread over time.
+
+*   **Analyze Market Slippage**:
+    ```bash
+    uv run pm slippage
+    ```
+    Analyzes the cost of entry and slippage for various bet sizes ($100 - $10k) based on current market depth.
 
 *   **Plot Individual Platform Odds**:
     ```bash
