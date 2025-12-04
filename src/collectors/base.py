@@ -15,6 +15,8 @@ class MarketEvent:
     liquidity: float
     platform: str  # 'polymarket' or 'kalshi'
     url: str
+    bids: List[float] = None
+    asks: List[float] = None
 
     def to_dict(self):
         return {

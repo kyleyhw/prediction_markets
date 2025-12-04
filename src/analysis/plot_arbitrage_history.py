@@ -112,10 +112,18 @@ def plot_arbitrage_history():
     plt.ylabel("Price Difference (Probability)")
     plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.grid(True, alpha=0.3)
+    
+    # Add timestamp to plot
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    plt.figtext(0.99, 0.01, f"Generated at: {current_time}", horizontalalignment='right', fontsize=8, color='gray')
+    
     plt.tight_layout()
     
     os.makedirs("plots/cs2_starladder_budapest_major", exist_ok=True)
-    filename = "plots/cs2_starladder_budapest_major/arbitrage_history.png"
+    
+    # Timestamped filename
+    ts_filename = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"plots/cs2_starladder_budapest_major/arbitrage_history_{ts_filename}.png"
     plt.savefig(filename)
     print(f"Saved plot to {filename}")
 

@@ -53,13 +53,16 @@ class KalshiCollector(BaseCollector):
         outcomes = ["Yes", "No"]
         
         # Price is usually in cents (1-99), we convert to 0.0-1.0
-        yes_price = float(market.get('yes_bid', 0)) / 100.0
-        no_price = float(market.get('no_bid', 0)) / 100.0 # Or derived from yes_ask?
+        yes_bid = float(market.get('yes_bid', 0)) / 100.0
+        yes_ask = float(market.get('yes_ask', 0)) / 100.0
+        no_bid = float(market.get('no_bid', 0)) / 100.0
+        no_ask = float(market.get('no_ask', 0)) / 100.0
         
-        # Let's use the 'last_price' or mid-market if available, but for now bid is safe.
-        # Actually, let's store the Yes price.
-        
-        prices = [yes_price, no_price]
+        # Prices list (using best bid as current price proxy, or mid)
+        # User wants bid/ask, so let's store them explicitly
+        prices = [yes_bid, no_bid]
+        bids = [yes_bid, no_bid]
+        asks = [yes_ask, no_ask]
 
         return MarketEvent(
             event_name=market.get('title', 'Unknown Event'),
@@ -68,6 +71,8 @@ class KalshiCollector(BaseCollector):
             start_time=self._parse_date(market.get('open_time')),
             outcomes=outcomes,
             prices=prices,
+            bids=bids,
+            asks=asks,
             volume=float(market.get('volume', 0)),
             liquidity=float(market.get('liquidity', 0)), # Kalshi might not expose liquidity directly in this endpoint
             platform='kalshi',
