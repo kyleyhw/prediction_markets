@@ -54,8 +54,8 @@ Detailed documentation is available in the `docs/` directory:
 ## Getting Started
 
 ### Prerequisites
-*   Python 3.10+
-*   `pip` or `poetry`
+*   Python 3.12+
+*   `uv` (Universal Python Package Manager)
 
 ### Installation
 1.  Clone the repository.
@@ -66,6 +66,13 @@ Detailed documentation is available in the `docs/` directory:
 3.  Sync dependencies and install the project:
     ```bash
     uv sync
+    ```
+4.  Install pre-commit hooks:
+    ```bash
+    uv run pre-commit install
+    ```
+
+    uv run pre-commit run --all-files
     ```
 
 ### Usage
@@ -106,6 +113,29 @@ The project exposes a Command Line Interface (CLI) tool named `pm` (Prediction M
     ```bash
     uv run pm --help
     ```
+
+### Development Workflow
+
+This project adheres to strict code quality standards enforced by `ruff` and `ty`.
+
+*   **Linting & Formatting**:
+    ```bash
+    uv run ruff check .      # Lint
+    uv run ruff format .     # Format
+    ```
+
+*   **Type Checking**:
+    ```bash
+    uv run ty check          # Static Type Analysis
+    ```
+
+*   **Pre-commit Hooks**:
+    Commits are automatically checked. To run manually:
+    ```bash
+    uv run pre-commit run --all-files
+    ```
+
+
 
 ## Methodological Approach
 The project employs a modular **Extract-Transform-Load (ETL)** architecture designed for extensibility:

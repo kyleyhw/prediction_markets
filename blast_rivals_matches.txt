@@ -1,0 +1,12 @@
+MATCH_KALSHI: Will Spirit win the Spirit vs. FaZe match? | Ticker: KXCSGOGAME-25DEC04TSFAZE-TS
+MATCH_KALSHI: Will FaZe win the Spirit vs. FaZe match? | Ticker: KXCSGOGAME-25DEC04TSFAZE-FAZE
+MATCH_KALSHI: Will Vitality win the BLAST Rivals 2025 Season 2: Vitality vs. TYLOO? | Ticker: KXCSGOGAME-VITTYL25-VIT
+MATCH_KALSHI: Will TYLOO win the BLAST Rivals 2025 Season 2: Vitality vs. TYLOO? | Ticker: KXCSGOGAME-VITTYL25-TYL
+MATCH_KALSHI: Will paiN win the BLAST Rivals 2025 Season 2: FURIA vs. paiN? | Ticker: KXCSGOGAME-FURPAI25-PAI
+MATCH_KALSHI: Will FURIA win the BLAST Rivals 2025 Season 2: FURIA vs. paiN? | Ticker: KXCSGOGAME-FURPAI25-FUR
+MATCH_KALSHI: Will Spirit win the BLAST Rivals 2025 Season 2: Spirit vs. Falcons? | Ticker: KXCSGOGAME-SPIFAL25-SPI
+MATCH_KALSHI: Will Falcons win the BLAST Rivals 2025 Season 2: Spirit vs. Falcons? | Ticker: KXCSGOGAME-SPIFAL25-FAL
+MATCH_KALSHI: Will The MongolZ win the BLAST Rivals 2025 Season 2: The MongolZ vs. Passion UA? | Ticker: KXCSGOGAME-THEPAS25-THE
+MATCH_KALSHI: Will Passion UA win the BLAST Rivals 2025 Season 2: The MongolZ vs. Passion UA? | Ticker: KXCSGOGAME-THEPAS25-PAS
+MATCH_KALSHI: Will Spirit win the Spirit vs. FaZe match? | Ticker: KXCSGOGAME-25DEC04TSFAZE-TS
+MATCH_KALSHI: Will FaZe win the Spirit vs. FaZe match? | Ticker: KXCSGOGAME-25DEC04TSFAZE-FAZE

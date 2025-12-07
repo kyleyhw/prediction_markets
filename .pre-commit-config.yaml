@@ -1,0 +1,17 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    # Run 'pre-commit autoupdate' to update this version
+    rev: v0.4.4
+    hooks:
+      - id: ruff
+        args: [ --fix ]
+      - id: ruff-format
+  - repo: local
+    hooks:
+      - id: ty
+        name: ty
+        # Uses the version pinned in the project's uv.lock
+        entry: uv run ty check
+        language: system
+        types: [python]
+        pass_filenames: false

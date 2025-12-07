@@ -1,12 +1,20 @@
 import argparse
 import sys
-from src.analysis.plot_starladder import plot_starladder_odds
-from src.analysis.plot_kalshi_starladder import plot_kalshi_starladder
-from src.analysis.compare_starladder import compare_starladder_odds
-from src.analysis.plot_spread_candles import plot_spread_candles
-from src.analysis.plot_arbitrage_history import plot_arbitrage_history
 
-def main():
+from src.analysis.analyze_slippage import analyze_slippage
+from src.analysis.compare_starladder import compare_starladder_odds
+from src.analysis.plot_arbitrage_history import plot_arbitrage_history
+from src.analysis.plot_kalshi_starladder import plot_kalshi_starladder
+from src.analysis.plot_spread_candles import plot_spread_candles
+
+# Import functions with loose typing for now (they will be typed in subsequent steps)
+from src.analysis.plot_starladder import plot_starladder_odds
+
+
+def main() -> None:
+    """
+    Main entry point for the Prediction Markets Analysis CLI.
+    """
     parser = argparse.ArgumentParser(description="Prediction Markets Analysis CLI")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
     subparsers.required = True
@@ -20,7 +28,9 @@ def main():
     p_kalshi.set_defaults(func=plot_kalshi_starladder)
 
     # 3. Compare Odds
-    p_compare = subparsers.add_parser("compare", help="Compare Polymarket vs Kalshi Odds")
+    p_compare = subparsers.add_parser(
+        "compare", help="Compare Polymarket vs Kalshi Odds"
+    )
     p_compare.set_defaults(func=compare_starladder_odds)
 
     # 4. Spread Candles
@@ -32,7 +42,6 @@ def main():
     p_arb.set_defaults(func=plot_arbitrage_history)
 
     # 6. Slippage Analysis
-    from src.analysis.analyze_slippage import analyze_slippage
     p_slip = subparsers.add_parser("slippage", help="Analyze Market Slippage and Depth")
     p_slip.set_defaults(func=analyze_slippage)
 
@@ -42,10 +51,12 @@ def main():
         sys.exit(1)
 
     args = parser.parse_args()
-    if hasattr(args, 'func'):
+    if hasattr(args, "func"):
+        # In a more complex CLI, we might check signature, but for now assuming all are void/void
         args.func()
     else:
         parser.print_help()
+
 
 if __name__ == "__main__":
     main()

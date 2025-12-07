@@ -1,3 +1,10 @@
 from .base import BaseCollector, MarketEvent
-from .polymarket import PolymarketCollector
 from .kalshi import KalshiCollector
+from .polymarket import PolymarketCollector
+
+__all__ = [
+    "BaseCollector",
+    "MarketEvent",
+    "KalshiCollector",
+    "PolymarketCollector",
+]

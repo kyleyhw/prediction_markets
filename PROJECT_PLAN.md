@@ -15,7 +15,16 @@
 2.  [completed] Refactor `main.py` and collectors to iterate through configured categories and handle dynamic tagging.
 3.  [pending] Finalize English Premier League (EPL) support by discovering the correct Kalshi series ticker and verifying event overlap.
 
-## Phase 4: Documentation
+## Phase 4: Historical Analysis (Current Focus)
+1.  [completed] Verification of historical data access for closed markets (Polymarket Gamma/CLOB).
+    *   Result: Closed/Settled markets (e.g., 2024 Election) return 400/404 errors via API, confirming archival/cold storage.
+2.  [completed] CS2 Starladder Analysis.
+    *   Fetches live/active history for Polymarket and Kalshi.
+    *   Generates Arbitrage and Candlestick plots.
+3.  [shelved] Authenticated Data Fetching for Kalshi.
+    *   Pending user need for specific closed market data that requires auth.
+
+## Phase 5: Documentation
 1.  [completed] Document mathematical principles (odds derivation, arbitrage formulas) in `docs/math_and_logic.md`.
 2.  [completed] Document system architecture (ETL pipeline, design patterns) in `docs/architecture.md`.
 3.  [completed] Update `README.md` with ASCII directory tree, installation instructions, and documentation links.
