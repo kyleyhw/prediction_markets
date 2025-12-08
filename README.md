@@ -50,6 +50,7 @@ Detailed documentation is available in the `docs/` directory:
 *   **[Metrics and Plots](docs/metrics_and_plots.md)**: Guide to interpreting plots.
 *   **[API Data Models](docs/api_specs/data_models.md)**: Details the `MarketEvent` schema and cross-platform normalization.
 *   **[Market Search Guide](docs/market_search.md)**: Documentation for the `find_markets_by_category.py` script.
+*   **[Liquid Market Search Guide](docs/liquid_market_search.md)**: Documentation for the `find_liquid_markets.py` script.
 *   **[Current State](CURRENT_STATE.md)**: Summary of current capabilities and limitations.
 
 ## Getting Started

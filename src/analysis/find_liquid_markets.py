@@ -1,8 +1,50 @@
 import argparse
 from datetime import datetime, timezone
-from typing import Optional
+from pathlib import Path
+from typing import List, Optional
 
-from src.collectors.polymarket import PolymarketCollector
+from src.collectors.polymarket import MarketEvent, PolymarketCollector
+
+
+def save_report_to_file(markets: List[MarketEvent], filters: dict):
+    """Save the results to a markdown report."""
+    timestamp = datetime.now()
+    ts_str = timestamp.strftime("%Y-%m-%d %H:%M:%S UTC")
+    ts_file_str = timestamp.strftime("%Y%m%d_%H%M")
+
+    reports_dir = Path("reports")
+    reports_dir.mkdir(exist_ok=True)
+    filename = reports_dir / f"liquid_markets_report_{ts_file_str}.md"
+
+    try:
+        with open(filename, "w", encoding="utf-8") as f:
+            f.write("# Liquid Markets Report\n\n")
+            f.write(f"> **Generated at**: {ts_str}\n\n")
+
+            f.write("## Filters Applied\n")
+            for k, v in filters.items():
+                f.write(f"- **{k}**: `{v}`\n")
+            f.write("\n")
+
+            f.write(f"**Total Found:** {len(markets)}\n\n")
+
+            f.write(
+                "| Event | Price | Spread | Vol 24h | Liquidity | End Date | Tags |\n"
+            )
+            f.write("| :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n")
+
+            for m in markets:
+                tags_str = ", ".join(m.tags[:2])
+                date_str = m.end_date.strftime("%Y-%m-%d") if m.end_date else "?"
+                safe_name = m.event_name.replace("|", "-")
+
+                f.write(
+                    f"| {safe_name} | {m.mid_price:.2f} | {m.spread:.2f} | "
+                    f"${m.volume_24h:,.0f} | ${m.liquidity:,.0f} | {date_str} | {tags_str} |\n"
+                )
+        print(f"\nReport saved to: {filename}")
+    except Exception as e:
+        print(f"Error saving report: {e}")
 
 
 def find_markets(
@@ -13,6 +55,7 @@ def find_markets(
     max_spread: Optional[float] = None,
     limit: int = 100,
     fetch_all: bool = False,
+    generate_report: bool = False,
 ):
     print("Fetching markets...")
     collector = PolymarketCollector()
@@ -44,13 +87,6 @@ def find_markets(
             if not tag_match:
                 continue
 
-        # Filter by Volume (Total or 24h?)
-        # API returns `volume` (total) and we added `volume_24h`.
-        # Let's check against `volume_24h` if available, else total.
-        # But for 'interesting' maybe 24h is better proxy for current activity.
-        # Let's use volume_24h for the filter if it's > 0, else maybe ignore?
-        # Actually proper implementation: use the parsed volume_24h.
-
         if m.volume_24h < min_volume:
             continue
 
@@ -63,7 +99,6 @@ def find_markets(
 
         # Check if closed
         if m.end_date and m.end_date < datetime.now(timezone.utc):
-            # Already filtered by `closed=False` in fetch_markets but good to be safe
             continue
 
         filtered_markets.append(m)
@@ -92,6 +127,16 @@ def find_markets(
             f"${m.volume_24h:,.0f}    | ${m.liquidity:,.0f}    | "
             f"{date_str:<12} | {tags_str}"
         )
+
+    if generate_report:
+        filters = {
+            "Tag Filter": tag,
+            "Slug Filter": slug,
+            "Min Volume (24h)": min_volume,
+            "Min Liquidity": min_liquidity,
+            "Max Spread": max_spread,
+        }
+        save_report_to_file(filtered_markets, filters)
 
 
 if __name__ == "__main__":
@@ -128,6 +173,11 @@ if __name__ == "__main__":
         default=100,
         help="Number of markets to fetch (if --all not set) (default: 100)",
     )
+    parser.add_argument(
+        "--report",
+        action="store_true",
+        help="Generate a markdown report of the results.",
+    )
 
     args = parser.parse_args()
 
@@ -139,4 +189,5 @@ if __name__ == "__main__":
         max_spread=args.max_spread,
         limit=args.limit,
         fetch_all=args.all,
+        generate_report=args.report,
     )
