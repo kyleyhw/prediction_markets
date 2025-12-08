@@ -30,6 +30,12 @@ Use the `--book` flag to fetch full orderbook depth (slower, but useful for liqu
 uv run python src/analysis/find_markets_by_category.py cs2 --book
 ```
 
+## Batching and Ordering
+Refers to how the script retrieves data from the Polymarket API:
+- **Pagination**: The script uses **offset-based pagination** (e.g., fetching 100 markets at a time).
+- **Ordering**: The fetch order depends on the API's default behavior and is **not guaranteed** to be sorted by volume or liquidity during the request.
+- **Sorting**: The script sorts the results **client-side** (in memory) by Volume (descending) *after* all matches are found.
+
 ## Configuration
 The search logic is driven by `src/analysis/market_config.json`.
 

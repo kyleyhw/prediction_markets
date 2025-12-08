@@ -30,6 +30,11 @@ uv run python src/analysis/find_liquid_markets.py --tag "Sports" --min-vol 5000
 ```
 *Note: `--tag` checks for substring matches in the market's tags.*
 
+## Batching and Ordering
+- **Pagination**: The script fetches markets in batches (default: 100) using API offsets.
+- **Ordering**: The strict fetch order is determined by the API defaults.
+- **Sorting**: Final results are sorted **client-side** by 24h Volume (descending) before display/reporting. Thus, if you only fetch a limited number (e.g., `--limit 100`), you might miss high-volume markets that appear later in the API's pagination order unless you use `--all`.
+
 ### Server-Side Filtering
 Use `--slug` to filter by Polymarket's internal tag slug (more efficient than `--tag` for large datasets):
 ```bash
