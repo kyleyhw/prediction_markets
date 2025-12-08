@@ -49,6 +49,7 @@ Detailed documentation is available in the `docs/` directory:
 *   **[System Architecture](docs/architecture.md)**: Details the design patterns and ETL pipeline structure.
 *   **[Metrics and Plots](docs/metrics_and_plots.md)**: Guide to interpreting plots.
 *   **[API Data Models](docs/api_specs/data_models.md)**: Details the `MarketEvent` schema and cross-platform normalization.
+*   **[Market Search Guide](docs/market_search.md)**: Documentation for the `find_markets.py` script.
 *   **[Current State](CURRENT_STATE.md)**: Summary of current capabilities and limitations.
 
 ## Getting Started

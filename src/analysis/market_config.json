@@ -52,12 +52,9 @@
     "temperature": {
         "keywords": [
             "Temperature",
-            "Degree",
-            "Fahrenheit",
-            "Celsius",
-            "Hottest",
-            "Coldest",
-            "Record"
+            "Highest temperature",
+            "Lowest temperature",
+            "Degree"
         ],
         "tags": [
             "Weather",
