@@ -32,63 +32,20 @@ class PolymarketCollector(BaseCollector):
             data = response.json()
             if not data:
                 return None
-            return data[0]  # API returns a list
+            return data[0]
         except requests.exceptions.RequestException as e:
             print(f"Error fetching event {slug}: {e}")
             return None
 
-    def fetch_markets(
-        self,
-        tag_id: Optional[str] = None,
-        limit: int = 100,
-        closed: bool = False,
-        **kwargs: Any,
-    ) -> List[MarketEvent]:
-        """
-        Fetch markets from Polymarket.
-
-        Args:
-            tag_id (Optional[str]): The tag ID to filter by.
-            limit (int): Number of markets to fetch.
-            closed (bool): Whether to fetch closed markets (default: False).
-
-        Returns:
-            List[MarketEvent]: Standardized market events.
-        """
-        endpoint = f"{self.BASE_URL}/events"
-        params = {"limit": limit, "closed": str(closed).lower()}
-        if tag_id:
-            params["tag_id"] = tag_id
-
-        # Merge additional kwargs into params (e.g. tag_slug)
-        params.update(kwargs)
-
-        try:
-            response = requests.get(endpoint, params=params)
-            response.raise_for_status()
-            data = response.json()
-
-            markets: List[MarketEvent] = []
-            for event in data:
-                # Polymarket events can have multiple markets.
-                for market in event.get("markets", []):
-                    parsed_market = self._parse_market(event, market)
-                    if parsed_market:
-                        markets.append(parsed_market)
-            return markets
-
-        except requests.exceptions.RequestException as e:
-            print(f"Error fetching data from Polymarket: {e}")
-            return []
-
     def fetch_all_active_markets(
-        self, batch_size: int = 500, **kwargs: Any
+        self, batch_size: int = 500, fetch_book: bool = False, **kwargs: Any
     ) -> List[MarketEvent]:
         """
         Fetch ALL active markets by paginating through the API.
 
         Args:
             batch_size (int): items per request (default 500).
+            fetch_book (bool): Whether to fetch orderbook for each market (slow).
             **kwargs: Additional filters passed to fetch_markets.
 
         Returns:
@@ -97,12 +54,16 @@ class PolymarketCollector(BaseCollector):
         all_markets: List[MarketEvent] = []
         offset = 0
 
-        print("Fetching all active markets. This may take a moment...")
+        print(f"Fetching all active markets (Book: {fetch_book})...")
 
         while True:
             # We must force closed=False for "active" markets
             batch = self.fetch_markets(
-                limit=batch_size, closed=False, offset=offset, **kwargs
+                limit=batch_size,
+                closed=False,
+                offset=offset,
+                fetch_book=fetch_book,
+                **kwargs,
             )
 
             if not batch:
@@ -120,10 +81,61 @@ class PolymarketCollector(BaseCollector):
 
             offset += batch_size
 
+        print(f"Total active markets fetched: {len(all_markets)}")
         return all_markets
 
+    def fetch_markets(
+        self,
+        tag_id: Optional[str] = None,
+        limit: int = 100,
+        closed: bool = False,
+        offset: int = 0,
+        fetch_book: bool = True,
+        **kwargs: Any,
+    ) -> List[MarketEvent]:
+        """
+        Fetch markets from Polymarket.
+
+        Args:
+            tag_id (Optional[str]): The tag ID to filter by.
+            limit (int): Number of markets to fetch.
+            closed (bool): Whether to fetch closed markets (default: False).
+            offset (int): Pagination offset.
+            fetch_book (bool): Whether to fetch detailed orderbook (CLOB).
+
+        Returns:
+            List[MarketEvent]: Standardized market events.
+        """
+        endpoint = f"{self.BASE_URL}/events"
+        params = {"limit": limit, "closed": str(closed).lower(), "offset": offset}
+        if tag_id:
+            params["tag_id"] = tag_id
+
+        # Merge additional kwargs into params (e.g. tag_slug)
+        params.update(kwargs)
+
+        try:
+            response = requests.get(endpoint, params=params)
+            response.raise_for_status()
+            data = response.json()
+
+            markets: List[MarketEvent] = []
+            for event in data:
+                # Polymarket events can have multiple markets.
+                for market in event.get("markets", []):
+                    parsed_market = self._parse_market(
+                        event, market, fetch_book=fetch_book
+                    )
+                    if parsed_market:
+                        markets.append(parsed_market)
+            return markets
+
+        except requests.exceptions.RequestException as e:
+            print(f"Error fetching data from Polymarket: {e}")
+            return []
+
     def _parse_market(
-        self, event: Dict[str, Any], market: Dict[str, Any]
+        self, event: Dict[str, Any], market: Dict[str, Any], fetch_book: bool = True
     ) -> MarketEvent:
         """
         Parse a single market dictionary into a MarketEvent object.
@@ -131,6 +143,7 @@ class PolymarketCollector(BaseCollector):
         Args:
             event (Dict[str, Any]): The parent event data.
             market (Dict[str, Any]): The specific market data.
+            fetch_book (bool): Whether to fetch orderbook.
 
         Returns:
             MarketEvent: The standardized market event.
@@ -173,7 +186,7 @@ class PolymarketCollector(BaseCollector):
         elif isinstance(clob_ids_raw, list):
             clob_ids = clob_ids_raw
 
-        if clob_ids:
+        if clob_ids and fetch_book:
             try:
                 # Type safe fetch
                 raw_book = self.fetch_orderbook(str(clob_ids[0]))

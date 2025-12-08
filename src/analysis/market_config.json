@@ -1,0 +1,52 @@
+{
+    "cs2": {
+        "keywords": [
+            "CS2",
+            "Counter Stike",
+            "Counter-Strike",
+            "Major",
+            "IEM",
+            "ESL"
+        ],
+        "tags": [
+            "CS2",
+            "Esports",
+            "Counter Strike"
+        ],
+        "exclude": [
+            "Simulator",
+            "Skin",
+            "Case",
+            "vs."
+        ]
+    },
+    "weather": {
+        "keywords": [
+            "Weather",
+            "Climate",
+            "Temperature",
+            "Hurricane",
+            "Rain",
+            "Snow",
+            "Degree"
+        ],
+        "tags": [
+            "Weather",
+            "Climate",
+            "Science"
+        ],
+        "exclude": [
+            "vs.",
+            "Miami",
+            "Carolina",
+            "Golden",
+            "Rainbow Warriors",
+            "Hockey",
+            "Football",
+            "Tulsa",
+            "NCAA",
+            "Spread",
+            "Over/Under"
+        ]
+    }
+}

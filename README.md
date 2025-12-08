@@ -24,6 +24,7 @@ prediction_markets/
 │   ├── math_and_logic.md     # Mathematical principles and formulas
 │   └── metrics_and_plots.md  # Guide to interpreting plots
 ├── plots/                    # Generated visualizations
+├── reports/                  # Generated market search reports
 ├── src/
 │   ├── analysis/             # Analysis logic (Arbitrage, Visualization)
 │   ├── collectors/           # Data fetching scripts (Poly, Kalshi)
@@ -32,7 +33,6 @@ prediction_markets/
 │   └── main.py               # Main pipeline entry point
 ├── tests/                    # Unit and integration tests
 ├── .gitignore
-├── find_identifiers.py       # Utility to discover API tags/tickers
 ├── investigate_kalshi.py     # Investigation script
 ├── PROJECT_PLAN.md           # Implementation roadmap
 ├── README.md                 # This file

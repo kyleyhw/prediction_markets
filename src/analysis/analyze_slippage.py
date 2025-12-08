@@ -31,7 +31,8 @@ def calculate_average_entry(
     filled_size: float = 0.0
     total_cost: float = 0.0
 
-    # Sort by price (best price first). For Bids (selling), high to low. For Asks (buying), low to high.
+    # Sort by price (best price first).
+    # For Bids (selling), high to low. For Asks (buying), low to high.
     # We assume usage sends pre-sorted, or we iterate blindly.
     # But usually this helper is called with sorted list.
 
