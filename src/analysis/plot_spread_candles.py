@@ -43,7 +43,8 @@ def plot_spread_candles() -> None:
                 if asks and isinstance(asks, list):
                     best_ask = float(asks[0].get("price", 0))
 
-            # If no book, fallback to 0/1 or outcomePrices if needed, but for spread viz we need real book
+            # If no book, fallback to 0/1 or outcomePrices if needed, but for
+            # spread viz we need real book
             if best_ask == 0.0:
                 # Fallback to mid if we have a price but no book (unlikely for active)
                 try:
@@ -54,7 +55,7 @@ def plot_spread_candles() -> None:
                         best_ask = p + 0.01
                     else:
                         pass
-                except:
+                except Exception:
                     pass
 
             poly_data[team.lower()] = {"bid": best_bid, "ask": best_ask, "name": team}
@@ -196,7 +197,8 @@ def plot_spread_candles() -> None:
 
     # Legend
     handles, labels = ax.get_legend_handles_labels()
-    # arb_patch = patches.Patch(facecolor='gold', alpha=0.3, hatch='///', label='Arbitrage Gap')
+    # arb_patch = patches.Patch(facecolor='gold', alpha=0.3, hatch='///',
+    #                           label='Arbitrage Gap')
     # handles.append(arb_patch)
     ax.legend(handles=handles, loc="upper right")
 

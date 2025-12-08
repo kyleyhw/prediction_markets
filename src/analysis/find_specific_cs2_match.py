@@ -16,7 +16,7 @@ def find_specific_match():
 
         for event in data:
             title = event.get("title", "").lower()
-            desc = event.get("description", "").lower()
+            # desc = event.get("description", "").lower()
 
             # Check Event Title
             match_found = False

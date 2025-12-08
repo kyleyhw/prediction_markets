@@ -10,7 +10,10 @@ def inspect_page() -> None:
     print(f"Fetching {url}...")
 
     headers: Dict[str, str] = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+            "(KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        )
     }
 
     try:
@@ -91,11 +94,13 @@ def inspect_page() -> None:
                             print(f"  Sample: {state[:2]}")
                             found_history = True
                         elif isinstance(state, dict) and "history" in state:
-                            # Cast list to list to satisfy typing if needed (though Python runtime is dynamic)
+                            # Cast list to list to satisfy typing if needed (though
+                            # Python runtime is dynamic)
                             hist_list = state["history"]
                             if isinstance(hist_list, list):
                                 print(
-                                    f"  Data has 'history' key with length {len(hist_list)}"
+                                    f"  Data has 'history' key with length "
+                                    f"{len(hist_list)}"
                                 )
                             found_history = True
 

@@ -88,7 +88,9 @@ def find_markets(
         )
 
         print(
-            f"{short_name:<50} | {m.mid_price:.2f}   | {m.spread:.2f}   | ${m.volume_24h:,.0f}    | ${m.liquidity:,.0f}    | {date_str:<12} | {tags_str}"
+            f"{short_name:<50} | {m.mid_price:.2f}   | {m.spread:.2f}   | "
+            f"${m.volume_24h:,.0f}    | ${m.liquidity:,.0f}    | "
+            f"{date_str:<12} | {tags_str}"
         )
 
 

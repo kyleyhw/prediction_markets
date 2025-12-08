@@ -6,12 +6,12 @@ import pandas as pd
 
 from src.collectors.base import MarketEvent
 from src.collectors.kalshi import KalshiCollector
-from src.collectors.polymarket import PolymarketCollector
 
 
 def analyze_blast_rivals() -> None:
     print("Initializing Collectors...")
-    poly = PolymarketCollector()
+    print("Initializing Collectors...")
+    # poly = PolymarketCollector()
     kalshi = KalshiCollector()
 
     # 1. Define Event Identifiers

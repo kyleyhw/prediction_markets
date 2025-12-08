@@ -36,7 +36,8 @@ def fetch_election_history() -> None:
     while current_start < end_ts:
         chunk_end: int = min(current_start + chunk_size_sec, end_ts)
         print(
-            f"  Fetching from {datetime.fromtimestamp(current_start)} to {datetime.fromtimestamp(chunk_end)}...",
+            f"  Fetching from {datetime.fromtimestamp(current_start)} to "
+            f"{datetime.fromtimestamp(chunk_end)}...",
             flush=True,
         )
         try:

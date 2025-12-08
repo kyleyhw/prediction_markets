@@ -110,7 +110,8 @@ class PolymarketCollector(BaseCollector):
 
             all_markets.extend(batch)
             print(
-                f"  Fetched batch at offset {offset}, count: {len(batch)} (Total: {len(all_markets)})"
+                f"  Fetched batch at offset {offset}, count: {len(batch)} "
+                f"(Total: {len(all_markets)})"
             )
 
             if len(batch) < batch_size:

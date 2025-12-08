@@ -52,7 +52,8 @@ def main() -> None:
 
     args = parser.parse_args()
     if hasattr(args, "func"):
-        # In a more complex CLI, we might check signature, but for now assuming all are void/void
+        # In a more complex CLI, we might check signature, but for now assuming
+        # all are void/void
         args.func()
     else:
         parser.print_help()

@@ -9,7 +9,8 @@ def find_kalshi_blast() -> None:
     kalshi = KalshiCollector()
     try:
         # Fetch ALL markets (limit 1000)
-        # We can't easily fetch ALL without pagination or series, but let's try a few common series or just 'closed' if possible.
+        # We can't easily fetch ALL without pagination or series, but let's try a
+        # few common series or just 'closed' if possible.
         # The collector fetch_markets uses series_ticker.
         # Let's try 'KXCSGOGAME' again but print ALL titles to see what's there.
         markets: List[MarketEvent] = kalshi.fetch_markets(

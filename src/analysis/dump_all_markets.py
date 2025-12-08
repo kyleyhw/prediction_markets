@@ -22,7 +22,10 @@ def dump_markets() -> None:
 
             for e in events:
                 try:
-                    line = f"POLY | {e.event_name} | {e.description} | ID: {e.event_id} | Slug: {e.url}\n"
+                    line = (
+                        f"POLY | {e.event_name} | {e.description} | "
+                        f"ID: {e.event_id} | Slug: {e.url}\n"
+                    )
                     f.write(line)
                     f.flush()
                 except Exception as inner_e:
@@ -44,7 +47,10 @@ def dump_markets() -> None:
 
             for m in markets:
                 try:
-                    line = f"KALSHI | {m.event_name} | {m.description} | Ticker: {m.event_id}\n"
+                    line = (
+                        f"KALSHI | {m.event_name} | {m.description} | "
+                        f"Ticker: {m.event_id}\n"
+                    )
                     f.write(line)
                     f.flush()
                 except Exception as inner_e:

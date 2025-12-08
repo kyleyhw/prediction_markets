@@ -37,8 +37,10 @@ def investigate_kalshi_history() -> None:
     kalshi = KalshiCollector()
 
     # 1. Try to find a market that is likely closed or old
-    # The public API might not let us filter by 'closed' easily in the search endpoint we use.
-    # Let's try to fetch candlesticks for a known old series or just the one we were looking at.
+    # The public API might not let us filter by 'closed' easily in the search
+    # endpoint we use.
+    # Let's try to fetch candlesticks for a known old series or just the one
+    # we were looking at.
 
     series = "KXSTARLADDERBUDAPESTMAJOR"
     market_ticker = "KXSTARLADDERBUDAPESTMAJOR-STAR25-B8"  # From previous logs

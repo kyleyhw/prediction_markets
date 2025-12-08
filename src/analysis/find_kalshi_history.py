@@ -12,9 +12,11 @@ def find_all_trump_markets() -> None:
     kalshi = KalshiCollector()
 
     # Fetch a large number of markets to scan history
-    # We can't easily filter by date in the fetch, so we fetch all in the series or search text if possible.
+    # We can't easily filter by date in the fetch, so we fetch all in the series
+    # or search text if possible.
     # The current collector `fetch_markets` takes a series_ticker.
-    # Let's try "PRES" series first, then maybe just a broad limit if possible (though limit is usually per request).
+    # Let's try "PRES" series first, then maybe just a broad limit if possible
+    # (though limit is usually per request).
 
     all_markets: List[MarketEvent] = []
 
@@ -24,10 +26,12 @@ def find_all_trump_markets() -> None:
     for status in statuses:
         print(f"  Status: {status}")
         try:
-            # We need to modify fetch_markets to accept status or pass it in kwargs if supported
+            # We need to modify fetch_markets to accept status or pass it in kwargs
+            # if supported.
             # The current fetch_markets implementation hardcodes params.
             # We should probably use the requests directly here or modify the collector.
-            # Let's use the collector's session/base_url but manually call to be flexible.
+            # Let's use the collector's session/base_url but manually call to be
+            # flexible.
             endpoint = f"{kalshi.BASE_URL}/markets"
             params = {"limit": 1000, "series_ticker": "PRES", "status": status}
             session = getattr(kalshi, "session", requests)

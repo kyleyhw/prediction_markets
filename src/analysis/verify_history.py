@@ -72,7 +72,8 @@ def verify_history() -> None:
                     )
                     if clob_ids:
                         print(
-                            f"Fetching history for ACTIVE market {a_market.event_name} (ID: {clob_ids[0]})..."
+                            f"Fetching history for ACTIVE market "
+                            f"{a_market.event_name} (ID: {clob_ids[0]})..."
                         )
                         h: List[Dict[str, Any]] = poly.fetch_price_history(clob_ids[0])
                         print(f"Active Market History: {len(h)} points found.")
@@ -198,7 +199,8 @@ def verify_history() -> None:
                                 plt.figure(figsize=(10, 5))
                                 plt.plot(df["timestamp"], df["price"], label="Price")
                                 plt.title(
-                                    f"Polymarket History (Re-Verified): {p_market.event_name}"
+                                    f"Polymarket History (Re-Verified): "
+                                    f"{p_market.event_name}"
                                 )
                                 plt.xlabel("Date")
                                 plt.ylabel("Price")

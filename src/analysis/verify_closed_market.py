@@ -41,7 +41,8 @@ def verify_closed() -> None:
     # Fetch History
     print("\nFetching History...")
     try:
-        # We'll use the public method first (Gamma) as that's what we want to prove works for "normal" closed markets.
+        # We'll use the public method first (Gamma) as that's what we want to prove
+        # works for "normal" closed markets.
         # The collector tries CLOB first then Gamma.
 
         history: List[Dict[str, Any]] = poly.fetch_price_history(

@@ -7,7 +7,8 @@ from typing import Any, Dict, List, Optional
 @dataclass
 class MarketEvent:
     """
-    Standardized data model representing a market event from any prediction market platform.
+    Standardized data model representing a market event from any prediction market
+    platform.
     """
 
     event_name: str

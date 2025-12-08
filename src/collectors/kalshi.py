@@ -10,7 +10,8 @@ class KalshiCollector(BaseCollector):
     Collector for Kalshi data using the V2 API.
     """
 
-    BASE_URL = "https://api.elections.kalshi.com/trade-api/v2"  # Using public endpoint if available, or standard
+    BASE_URL = "https://api.elections.kalshi.com/trade-api/v2"
+    # Using public endpoint if available, or standard
 
     def fetch_markets(
         self, series_ticker: str = "KXCSGOGAME", limit: int = 100, **kwargs: Any
@@ -105,7 +106,8 @@ class KalshiCollector(BaseCollector):
             market_ticker (str): Market ticker.
             start_ts (int): Start timestamp.
             end_ts (Optional[int]): End timestamp (defaults to now).
-            period_interval (int): Candle size in minutes/seconds? Usually minutes in v2.
+            period_interval (int): Candle size in minutes/seconds? Usually minutes
+                                   in v2.
 
         Returns:
             List[Dict[str, Any]]: List of candlesticks.
@@ -115,7 +117,10 @@ class KalshiCollector(BaseCollector):
         if end_ts is None:
             end_ts = int(time.time())
 
-        endpoint = f"{self.BASE_URL}/series/{series_ticker}/markets/{market_ticker}/candlesticks"
+        endpoint = (
+            f"{self.BASE_URL}/series/{series_ticker}/markets/{market_ticker}/"
+            f"candlesticks"
+        )
         params = {
             "start_ts": start_ts,
             "end_ts": end_ts,

@@ -24,7 +24,10 @@ def find_blast_rivals() -> None:
         for e in events:
             text = (e.event_name + " " + e.description).lower()
             if "spirit" in text and "faze" in text:
-                msg = f"MATCH_POLY: {e.event_name} | ID: {e.event_id} | Slug: {e.url.split('/')[-1]}"
+                msg = (
+                    f"MATCH_POLY: {e.event_name} | ID: {e.event_id} | "
+                    f"Slug: {e.url.split('/')[-1]}"
+                )
                 print(msg)
                 with open("blast_rivals_matches.txt", "a") as f:
                     f.write(msg + "\n")

@@ -6,9 +6,10 @@ def test_polymarket():
     print("Testing Polymarket Collector...")
     collector = PolymarketCollector()
     # Using a known tag for Esports or just fetching recent events
-    # Tag ID for 'Esports' might need to be looked up, but let's try fetching general events first or search logic.
-    # For now, let's try without tag to see if it works, or use a known one if we had it.
-    # The search result mentioned we need a tag ID.
+    # Tag ID for 'Esports' might need to be looked up, but let's try fetching
+    # general events first or search logic.
+    # For now, let's try without tag to see if it works, or use a known one
+    # if we had it. The search result mentioned we need a tag ID.
     # Let's try fetching a few events and printing them.
     markets = collector.fetch_markets(limit=5)
     print(f"Fetched {len(markets)} markets from Polymarket.")

@@ -59,10 +59,12 @@ def derive_creds() -> None:
         print("--------------------------------------------------")
         print("\nPlease update your .env file with these values.")
         print(
-            "Replace the existing POLYMARKET_API_KEY (which is your private key) with the new API Key above,"
+            "Replace the existing POLYMARKET_API_KEY (which is your private key) "
+            "with the new API Key above,"
         )
         print(
-            "OR keep your private key in a separate variable (e.g. POLYMARKET_PRIVATE_KEY) if you wish,"
+            "OR keep your private key in a separate variable "
+            "(e.g. POLYMARKET_PRIVATE_KEY) if you wish,"
         )
         print("but the collector expects these exact variable names.")
 

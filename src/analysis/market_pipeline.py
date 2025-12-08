@@ -5,7 +5,6 @@ import pandas as pd
 
 from src.collectors.base import MarketEvent
 from src.collectors.kalshi import KalshiCollector
-from src.collectors.polymarket import PolymarketCollector
 
 
 def normalize_text(text: str) -> str:
@@ -42,12 +41,14 @@ def run_pipeline(category: str, poly_query: str, kalshi_ticker: str) -> None:
 
     # 2. Fetch Polymarket Events
     print(f"Fetching Polymarket events for query: '{poly_query}'...")
-    poly = PolymarketCollector()
+    # poly = PolymarketCollector()
     p_events: List[Dict[str, Any]] = []
     try:
         # Fetch Open
-        # Since collector doesn't support q param yet in fetch_markets, we use the raw request logic here or update collector.
-        # For now, let's use the raw request logic to be efficient, similar to find_poly_tag.py
+        # Since collector doesn't support q param yet in fetch_markets, we use the
+        # raw request logic here or update collector.
+        # For now, let's use the raw request logic to be efficient, similar to
+        # find_poly_tag.py
         import requests
 
         url = "https://gamma-api.polymarket.com/events"

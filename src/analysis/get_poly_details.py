@@ -14,7 +14,8 @@ def get_poly_details() -> None:
         print(f"Markets: {len(event.get('markets', []))}")
         for m in event.get("markets", []):
             print(
-                f"  Market: {m.get('groupItemTitle', m.get('question'))} (ID: {m.get('id')})"
+                f"  Market: {m.get('groupItemTitle', m.get('question'))} "
+                f"(ID: {m.get('id')})"
             )
             # Also print CLOB Token ID
             clobs = m.get("clobTokenIds", [""])

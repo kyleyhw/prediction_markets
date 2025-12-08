@@ -31,7 +31,8 @@ def find_election_markets() -> None:
                 found = True
         if not found:
             print(
-                "No exact match found for 'Presidential Election Winner 2024' in PRES series."
+                "No exact match found for 'Presidential Election Winner 2024' "
+                "in PRES series."
             )
             # Try broader search
             for m in markets:
