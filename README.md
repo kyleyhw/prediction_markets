@@ -70,8 +70,6 @@ Detailed documentation is available in the `docs/` directory:
 4.  Install pre-commit hooks:
     ```bash
     uv run pre-commit install
-    ```
-
     uv run pre-commit run --all-files
     ```
 
@@ -92,6 +90,7 @@ The project exposes a Command Line Interface (CLI) tool named `pm` (Prediction M
     ```
     Generates a bar chart comparing the implied probabilities and volume for Starladder Major.
 
+*   **Analyze Arbitrage History**:
     ```bash
     uv run pm arbitrage
     ```
