@@ -1,91 +1,49 @@
-# Polymarket API Metadata & Tags
+# Polymarket API Metadata & Structures
 
-This document outlines the metadata structure returned by the Polymarket Gamma API and provides a detailed guide to interpreting market categories (tags).
+This document outlines the **metadata structure** returned by the Polymarket Gamma API. It provides detailed origins, interpretations, and calculations for the core fields found in `Event` and `Market` objects.
 
-## Event Object Structure
-The top-level object returned by `/events` contains high-level metadata about a group of markets (e.g. "Will Trump do X?").
+## 1. Event Object
+The top-level object returned by `/events`. Represents a grouping of markets (e.g., a specific game or election).
 
-| Key | Type | Description |
-| :--- | :--- | :--- |
-| `id` | string | Unique event ID |
-| `title` | string | Display title of the event |
-| `slug` | string | URL slug for the event page |
-| `description` | string | Detailed resolution criteria and description |
-| `startDate` | string (ISO) | Event creation/start date |
-| `endDate` | string (ISO) | Expected resolution date |
-| `creationDate` | string (ISO) | Date the event was created in the system |
-| `image` | string (URL) | URL to event image/thumbnail |
-| `volume` | string (float) | Total volume across all markets in this event |
-| `volume24hr` | float | Volume in the last 24 hours |
-| `liquidity` | string (float) | Total liquidity |
-| `tags` | list[dict] | List of category tags (see below) |
-| `markets` | list[dict] | List of individual markets within this event |
-
-## Market Object Structure
-The `markets` list contained within an event object.
-
-| Key | Type | Description |
-| :--- | :--- | :--- |
-| `id` | string | Unique market ID |
-| `question` | string | Specific question (often same as event title for single-market events) |
-| `slug` | string | URL slug for this specific market |
-| `outcomes` | list[string] | Resolution outcomes (e.g. `["Yes", "No"]`) |
-| `outcomePrices` | list[string] | Current price of each outcome (str representation of float) |
-| `clobTokenIds` | list[string] | Token IDs for the Orderbook (CLOB) |
-| `active` | boolean | Whether the market is currently active |
-| `closed` | boolean | Whether the market has ended/settled |
-| `volume` | string | Total volume for this specific market |
-| `volume24hr` | float | 24h volume for this market |
-| `liquidity` | string | Liquidity metric for this market |
-| `acceptingOrders` | boolean | If the market handles new orders |
-| `ready` | boolean | If the market is fully deployed and ready |
-
-## Tag Categories & Interpretation
-
-Polymarket organizing events using "Tags". These are not strictly hierarchical but tend to cluster into major domains. Below is a guide to interpreting these tags, their origins, and how their markets typically calculate value.
-
-### 1. Global Politics
-Markets related to elections, legislation, and geopolitical events.
-
-| Examples | Interpretation | Origin | Calculation / Settlement |
+| Key | Type | Interpretation & Origin | Calculation / Source |
 | :--- | :--- | :--- | :--- |
-| `US Politics`, `2024 Election`, `Trump`, `Biden`, `Democrat`, `Republican` | Relates to US federal elections or candidate prospects. | **Curated**: Major election cycles usually have dedicated pages/tags. | **Binary**: Pays $1.00 if the specific candidate wins or event happens. Often high volume, long duration. |
-| `Geopolitics`, `Ukraine`, `Israel`, `Middle East`, `China` | International relations, conflict outcomes, or major diplomatic agreements. | **Community/Curated**: Often spun up in response to breaking news. | **Binary**: Settles based on reputable news consensus (e.g. "Did X happen by Y date?"). |
-| `Government`, `Congress`, `Senate`, `Bill` | Legislative outcomes (e.g. "Will Bill X pass?"). | **Curated**: Specific to legislative sessions. | **Binary**: Verified by official government records (congress.gov). |
+| `id` | `string` | **Unique Event Identifier**. <br> *Origin*: Database Primary Key. | Generated upon event creation. Fixed. |
+| `title` | `string` | **Display Title**. High-level name of the event group. <br> *Origin*: Curation/Admin input. | Human-entered string. |
+| `slug` | `string` | **URL Identifier**. Part of the specific event URL. <br> *Origin*: Derived from title. | `polymarket.com/event/{slug}` |
+| `description` | `string` | **Resolution Rules**. The "contract" text explaining how the market resolves. <br> *Origin*: Curation/Admin input. | Critical for determining edge cases (e.g., "Includes overtime?"). |
+| `startDate` | `ISO8601` | **Open Date**. When the event started accepting trading. | Server timestamp. |
+| `endDate` | `ISO8601` | **Resolution Date**. When the event is expected to close. | Admin estimate. Markets may resolve earlier or later. |
+| `volume` | `string` (float) | **Aggregate Volume**. Total USDC volume for *all* markets in this event. | $\sum (Market\_Volume_{i})$ for all $i$ markets in event. |
+| `liquidity` | `string` (float) | **Aggregate Liquidity**. Total depth for *all* markets. | $\sum (Market\_Liquidity_{i})$. |
+| `markets` | `list[dict]` | **Individual Markets**. The binary contracts belonging to this event. | See **Market Object** below. |
 
-### 2. Economics & Macro
-Markets tracking financial indicators and central bank policies.
+## 2. Market Object
+The specific tradeable contract (e.g., "Yes" or "No").
 
-| Examples | Interpretation | Origin | Calculation / Settlement |
+| Key | Type | Interpretation & Origin | Calculation / Notes |
 | :--- | :--- | :--- | :--- |
-| `Fed Rates`, `Jerome Powell`, `Interest Rates` | Predictions on Federal Reserve actions (hikes, cuts, pauses). | **Curated**: Aligned with FOMC meeting schedules. | **Binary**: Settles based on the target rate range announced by the Fed. |
-| `Inflation`, `CPI`, `Recession`, `GDP` | Macroeconomic data releases. | **Curated**: Aligned with BLS/BEA release calendars. | **Range/Binary**: Often "Will CPI be > X%?". Verified against official gov data. |
-| `Stocks`, `S&P 500`, `NVIDIA`, `GameStop` | Price targets for specific assets or indices by a certain date. | **Community/Curated**: Often appear around earnings calls. | **Binary**: "Will stock close > $X on Date Y?". Verified via Yahoo Finance/Bloomberg. |
+| `id` | `string` | **Unique Market Identifier**. <br> *Origin*: Database PK. | Used for API lookups (e.g., `/markets/{id}`). |
+| `question` | `string` | **Specific Contract Question**. <br> *Origin*: Admin input. | Often identical to Event Title for simple Yes/No events. |
+| `slug` | `string` | **Market URL Slug**. | Unique path for this specific questions. |
+| `outcomes` | `list[str]` | **The Sides**. Usually `["Yes", "No"]`. | Defines the assets you hold. |
+| `outcomePrices` | `list[str]` | **Current Price**. The implied probability of each outcome. <br> *Origin*: **CLOB** Mid-price or Last Trade. | Typically: $\frac{BestBid + BestAsk}{2}$ or Last Traded Price. <br> *Note*: Format is stringified float (e.g., "0.65"). |
+| `clobTokenIds` | `list[str]` | **Orderbook Identifiers**. The *Asset IDs* used to place orders. <br> *Origin*: Gnosis Safe / Blockchain Token IDs. | **Critical**: These IDs are required to fetch the specific orderbook (`/book?token_id=...`). <br> Order maps to `outcomes` (Index 0 = "Yes", Index 1 = "No"). |
+| `volume` | `string` | **Contract Volume**. Total USDC traded on this specific question. | $\sum (Price \times Size)$ of all historical matches. |
+| `liquidity` | `string` | **Contract Liquidity**. A measure of slippage resistance. | Sum of resting limit orders within a tightly defined spread (usually $\pm X\%$). |
+| `active` | `bool` | **Trading Status**. `true` = Open for trading. | System flag. |
+| `closed` | `bool` | **Settlement Status**. `true` = Market has resolved. | `true` implies `active` is `false`. |
 
-### 3. Crypto & Web3
-Markets native to the blockchain ecosystem.
+## 3. Orderbook (CLOB) Structure
+Data fetched via `clobTokenIds`. This is the "Truth" for price.
 
-| Examples | Interpretation | Origin | Calculation / Settlement |
+| Key | Type | Interpretation | Calculation |
 | :--- | :--- | :--- | :--- |
-| `Bitcoin`, `Ethereum`, `Solana`, `ETF` | Price movements ("Will BTC hit $100k?") or regulatory approvals (ETFs). | **Community (High Activity)**: Very popular sector on Polymarket. | **Binary**: Price data usually verified via Oracle (Chainlink) or major exchange composite (Coinbase/Binance). |
-| `NFT`, `Airdrop`, `Blur`, `OpenSea` | Ecosystem events: floor prices, token launches, or hack recoveries. | **Community**: Niche markets for specific communities. | **Binary**: Verified on-chain or via specific platform metrics. |
-
-### 4. Sports
-Major sporting events and league outcomes.
-
-| Examples | Interpretation | Origin | Calculation / Settlement |
-| :--- | :--- | :--- | :--- |
-| `NFL`, `NBA`, `Super Bowl`, `Premier League`, `Soccer` | Game winners, championship futures, or player awards (MVP). | **Curated**: Structured around league seasons. | **Binary**: Classic sports betting rules. Pays $1 if team wins. |
-| `F1`, `Tennis`, `UFC`, `Cricket` | Individual match or race outcomes. | **Curated**: Event specific. | **Binary**: Official league results. |
-
-### 5. Pop Culture & Other
-Entertainment, viral trends, and miscellaneous events.
-
-| Examples | Interpretation | Origin | Calculation / Settlement |
-| :--- | :--- | :--- | :--- |
-| `Movies`, `Oscars`, `Grammys`, `Taylor Swift` | Awards shows, box office performance, or celebrity news. | **Community**: Highly seasonal (award season). | **Binary**: Verified by official award announcements or Box Office Mojo. |
-| `Science`, `SpaceX`, `AI`, `Climate` | Technological milestones (rocket launches) or climate records (hottest year). | **Community**: Interest based. | **Binary**: Verified by NASA, NOAA, or specific scientific bodies. |
+| `bids` | `list[dict]` | **Buy Orders**. People wanting to buy "Yes" (or "No"). | `{price: "0.60", size: "100"}` -> "I will buy 100 shares at 60c". |
+| `asks` | `list[dict]` | **Sell Orders**. People wanting to sell. | `{price: "0.62", size: "50"}` -> "I will sell 50 shares at 62c". |
+| `mid_price` | `float` | **Fair Value**. The midpoint between best buyer and best seller. | $Mid = \frac{Max(Bid) + Min(Ask)}{2}$ |
+| `spread` | `float` | **Cost of Trading**. The gap between buy and sell. | $Spread = Min(Ask) - Max(Bid)$ |
 
 ---
-
-*Note: The "Calculation" for almost all Polymarket contracts is a binary option structure. A "Yes" share pays out $1.00 (USDC) if the event occurs, and $0.00 otherwise. The price (e.g. $0.60) reflects the market's implied probability (60%).*
+**Note on Origins**:
+- **Gamma API** (`gamma-api.polymarket.com`): The "Frontend" API. Provides metadata, descriptions, and cached prices (`outcomePrices`). Faster but slightly stale.
+- **CLOB API** (`clob.polymarket.com`): The "Exchange" API. Provides raw orderbooks (`bids`/`asks`) and trade history. The source of truth for execution.
