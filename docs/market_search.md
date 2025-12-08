@@ -1,33 +1,33 @@
 # Market Search Pipeline Documentation
 
 ## Overview
-The `find_markets.py` script provides a unified interface for discovering prediction markets on Polymarket. It supports keyword searching, tag filtering, and exclusion logic to reduce false positives.
+The `find_markets_by_category.py` script provides a unified interface for discovering prediction markets on Polymarket. It supports keyword searching, tag filtering, and exclusion logic to reduce false positives.
 
 ## Usage
 
 ### Basic Search
 Run the script with a category key defined in `market_config.json`:
 ```bash
-uv run python src/analysis/find_markets.py [category]
+uv run python src/analysis/find_markets_by_category.py [category]
 ```
 
 **Example:**
 ```bash
-uv run python src/analysis/find_markets.py cs2
-uv run python src/analysis/find_markets.py temperature
+uv run python src/analysis/find_markets_by_category.py cs2
+uv run python src/analysis/find_markets_by_category.py temperature
 ```
 
 ### Generating Reports
 Use the `--report` flag to save the results to a Markdown file in the `reports/` directory.
 ```bash
-uv run python src/analysis/find_markets.py weather --report
+uv run python src/analysis/find_markets_by_category.py weather --report
 ```
 *Output:* `reports/market_report_weather_YYYYMMDD_HHMMSS.md`
 
 ### Fetching Orderbooks
 Use the `--book` flag to fetch full orderbook depth (slower, but useful for liquidity analysis).
 ```bash
-uv run python src/analysis/find_markets.py cs2 --book
+uv run python src/analysis/find_markets_by_category.py cs2 --book
 ```
 
 ## Configuration

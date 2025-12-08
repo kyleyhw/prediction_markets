@@ -3,7 +3,7 @@ import json
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 from src.collectors.polymarket import MarketEvent, PolymarketCollector
 
@@ -20,7 +20,9 @@ def load_config() -> Dict[str, Dict[str, List[str]]]:
         return json.load(f)
 
 
-def find_markets(category: str, fetch_book: bool = False) -> List[MarketEvent]:
+def find_markets(
+    category: str, fetch_book: bool = False
+) -> Tuple[List[MarketEvent], Dict]:
     """
     Find markets based on a configured category.
     """
@@ -70,17 +72,23 @@ def find_markets(category: str, fetch_book: bool = False) -> List[MarketEvent]:
             matches.append(m)
 
     matches.sort(key=lambda x: x.volume, reverse=True)
-    return matches
+    return matches, config
 
 
 def print_results(
-    markets: List[MarketEvent], category: str = "", save_report: bool = False
+    markets: List[MarketEvent],
+    config: Dict,
+    category: str = "",
+    save_report: bool = False,
 ):
     """Print results and optionally save to a timestamped file."""
     timestamp = datetime.now()
     ts_str = timestamp.strftime("%Y-%m-%d %H:%M:%S UTC")
-    # File friendly timestamp
     ts_file_str = timestamp.strftime("%Y%m%d_%H%M%S")
+
+    keywords = config.get("keywords", [])
+    tags = config.get("tags", [])
+    excludes = config.get("exclude", [])
 
     header = f"{'Event':<60} | {'Volume':<12} | {'Liquidity':<12} | {'End Date':<12}"
     separator = "-" * 120
@@ -88,6 +96,10 @@ def print_results(
     output_lines = []
     output_lines.append(f"\nSearch Report: {category.upper()}")
     output_lines.append(f"Generated at: {ts_str}")
+    output_lines.append("Configuration:")
+    output_lines.append(f"  Keywords: {keywords}")
+    output_lines.append(f"  Tags:     {tags}")
+    output_lines.append(f"  Excludes: {excludes}")
     output_lines.append(f"Found {len(markets)} matching markets.")
     output_lines.append(separator)
     output_lines.append(header)
@@ -111,6 +123,13 @@ def print_results(
             with open(filename, "w", encoding="utf-8") as f:
                 f.write(f"# Market Report: {category.upper()}\n\n")
                 f.write(f"> **Generated at**: {ts_str}\n\n")
+
+                f.write("## Configuration\n")
+                f.write(f"- **Keywords**: `{', '.join(keywords)}`\n")
+                f.write(f"- **Tags**: `{', '.join(tags)}`\n")
+                f.write(f"- **Excludes**: `{', '.join(excludes)}`\n\n")
+
+                f.write("## Results\n")
                 f.write(f"**Total Found:** {len(markets)}\n\n")
                 f.write("| Event | Volume | Liquidity | End Date |\n")
                 f.write("| :--- | :--- | :--- | :--- |\n")
@@ -163,8 +182,8 @@ def main():
         sys.exit(1)
 
     try:
-        results = find_markets(args.category, fetch_book=args.book)
-        print_results(results, category=args.category, save_report=args.report)
+        results, config = find_markets(args.category, fetch_book=args.book)
+        print_results(results, config, category=args.category, save_report=args.report)
 
     except Exception as e:
         print(f"Error: {e}")
