@@ -20,6 +20,9 @@ class MarketEvent:
     liquidity: float
     platform: str  # 'polymarket' or 'kalshi'
     url: str
+    tags: List[str] = field(default_factory=list)
+    volume_24h: float = 0.0
+    end_date: Optional[datetime] = None
     bids: Optional[List[float]] = None
     asks: Optional[List[float]] = None
 
@@ -54,6 +57,9 @@ class MarketEvent:
             "liquidity": self.liquidity,
             "platform": self.platform,
             "url": self.url,
+            "tags": self.tags,
+            "volume_24h": self.volume_24h,
+            "end_date": self.end_date.isoformat() if self.end_date else None,
             "best_bid": self.best_bid,
             "best_ask": self.best_ask,
             "last_price": self.last_price,

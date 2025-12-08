@@ -8,3 +8,8 @@ __pycache__/
 dist/
 build/
 *.egg-info/
+
+# Data Dumps
+*.html
+*.csv
+*_dump.txt

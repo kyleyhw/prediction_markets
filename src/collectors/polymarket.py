@@ -60,6 +60,9 @@ class PolymarketCollector(BaseCollector):
         if tag_id:
             params["tag_id"] = tag_id
 
+        # Merge additional kwargs into params (e.g. tag_slug)
+        params.update(kwargs)
+
         try:
             response = requests.get(endpoint, params=params)
             response.raise_for_status()
@@ -77,6 +80,46 @@ class PolymarketCollector(BaseCollector):
         except requests.exceptions.RequestException as e:
             print(f"Error fetching data from Polymarket: {e}")
             return []
+
+    def fetch_all_active_markets(
+        self, batch_size: int = 500, **kwargs: Any
+    ) -> List[MarketEvent]:
+        """
+        Fetch ALL active markets by paginating through the API.
+
+        Args:
+            batch_size (int): items per request (default 500).
+            **kwargs: Additional filters passed to fetch_markets.
+
+        Returns:
+            List[MarketEvent]: Complete list of all active markets.
+        """
+        all_markets: List[MarketEvent] = []
+        offset = 0
+
+        print("Fetching all active markets. This may take a moment...")
+
+        while True:
+            # We must force closed=False for "active" markets
+            batch = self.fetch_markets(
+                limit=batch_size, closed=False, offset=offset, **kwargs
+            )
+
+            if not batch:
+                break
+
+            all_markets.extend(batch)
+            print(
+                f"  Fetched batch at offset {offset}, count: {len(batch)} (Total: {len(all_markets)})"
+            )
+
+            if len(batch) < batch_size:
+                # End of list
+                break
+
+            offset += batch_size
+
+        return all_markets
 
     def _parse_market(
         self, event: Dict[str, Any], market: Dict[str, Any]
@@ -175,6 +218,12 @@ class PolymarketCollector(BaseCollector):
         if len(safe_prices) < 2:
             safe_prices = [last_price, 1.0 - last_price]
 
+        # Extract Metadata
+        tags_raw = event.get("tags", [])
+        tags = [t.get("label", t.get("slug")) for t in tags_raw if isinstance(t, dict)]
+
+        end_date = self._parse_date(market.get("endDate"))
+
         return MarketEvent(
             event_id=str(market.get("id", "")),
             event_name=str(market.get("question", "")),
@@ -186,6 +235,9 @@ class PolymarketCollector(BaseCollector):
             liquidity=float(market.get("liquidity", 0)),
             platform="polymarket",
             url=f"https://polymarket.com/event/{market.get('slug', '')}",
+            tags=tags,
+            volume_24h=float(market.get("volume24hr", 0)),
+            end_date=end_date,
             bids=[best_bid],  # Legacy support
             asks=[best_ask],  # Legacy support
             best_bid=best_bid,
