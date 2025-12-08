@@ -48,5 +48,36 @@
             "Spread",
             "Over/Under"
         ]
+    },
+    "temperature": {
+        "keywords": [
+            "Temperature",
+            "Degree",
+            "Fahrenheit",
+            "Celsius",
+            "Hottest",
+            "Coldest",
+            "Record"
+        ],
+        "tags": [
+            "Weather",
+            "Temperature",
+            "Climate"
+        ],
+        "exclude": [
+            "vs.",
+            "Miami",
+            "Carolina",
+            "Golden",
+            "Rainbow Warriors",
+            "Hockey",
+            "Football",
+            "Tulsa",
+            "NCAA",
+            "Spread",
+            "Over/Under",
+            "Game",
+            "Match"
+        ]
     }
 }
