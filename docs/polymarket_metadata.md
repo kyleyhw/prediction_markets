@@ -145,6 +145,51 @@ Below is the complete raw JSON response for an active Event and its primary Mark
 ```
 </details>
 
+### Orderbook (CLOB) Object
+<details>
+<summary>Click to expand full Orderbook JSON</summary>
+
+```json
+{
+  "market": "81104637750588840860328515305303028259865221573278091453716127842023614249200",
+  "asset_id": "81104637750588840860328515305303028259865221573278091453716127842023614249200",
+  "hash": "0x53e50c76899723cf2867ef08c26ab89632870191590e80a71beafc3c77d61fa1",
+  "timestamp": "1733823439003",
+  "bids": [
+    {
+      "price": "0.52",
+      "size": "569.15"
+    },
+    {
+      "price": "0.51",
+      "size": "3000"
+    },
+    {
+      "price": "0.5",
+      "size": "4476.99"
+    }
+  ],
+  "asks": [
+    {
+      "price": "0.59",
+      "size": "5000"
+    },
+    {
+      "price": "0.6",
+      "size": "100"
+    },
+    {
+      "price": "0.601",
+      "size": "5000"
+    }
+  ],
+  "min_order_size": "5",
+  "tick_size": "0.001",
+  "neg_risk": false
+}
+```
+</details>
+
 ## 4. References
 - **Official Documentation**: [Polymarket API Docs](https://docs.polymarket.com/)
 - **Gamma API**: [Gamma API Reference](https://docs.polymarket.com/#gamma-api)
