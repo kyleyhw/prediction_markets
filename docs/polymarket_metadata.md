@@ -5,16 +5,17 @@ This document outlines the **metadata structure** returned by the Polymarket Gam
 ## 1. Event Object
 The top-level object returned by `/events`. Represents a grouping of markets (e.g., a specific game or election).
 
-| Key | Type | Interpretation & Origin | Calculation / Source | Example |
-| :--- | :--- | :--- | :--- | :--- |
-| `id` | `string` | Unique identifier for the market/event. | System generated. | `12345...` |
-| `slug` | `string` | URL-friendly identifier. | Derived from the question/title. | `will-btc-hit-100k-in-2024` |
-| `question` | `string` | The main title/question of the market. | User/System defined. | `Will Bitcoin hit $100k in 2024?` |
-| `volume` | `string` (float) | Total lifetime trading volume in USD. | Aggregated trades. | `1050000.50` |
-| `liquidity` | `string` (float) | Current depth of the orderbook in USD. | Sum of resting limit orders within range. | `50000.00` |
-| `startDate` | `string` (ISO) | When the event started. | System timestamp. | `2024-01-01T00:00:00Z` |
-| `endDate` | `string` (ISO) | When the market closes/expires. | User defined. | `2024-12-31T23:59:59Z` |
-| `tags` | `array` | List of categories/topics. | User defined or auto-tagged. | `["Crypto", "Bitcoin"]` |
+### Field Definitions
+| Key | Type | Interpretation & Origin | Calculation / Source |
+| :--- | :--- | :--- | :--- |
+| `id` | `string` | Unique identifier for the market/event. | System generated. |
+| `slug` | `string` | URL-friendly identifier. | Derived from the question/title. |
+| `question` | `string` | The main title/question of the market. | User/System defined. |
+| `volume` | `string` (float) | Total lifetime trading volume in USD. | Aggregated trades. |
+| `liquidity` | `string` (float) | Current depth of the orderbook in USD. | Sum of resting limit orders within range. |
+| `startDate` | `string` (ISO) | When the event started. | System timestamp. |
+| `endDate` | `string` (ISO) | When the market closes/expires. | User defined. |
+| `tags` | `array` | List of categories/topics. | User defined or auto-tagged. |
 
 ## 2. Real-World Example
 *Fetched: 2025-12-10*
