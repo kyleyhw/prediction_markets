@@ -44,7 +44,7 @@ Below is the complete raw JSON response for an active Event and its primary Mark
   "ticker": "FED-RATE-HIKE-2025",
   "slug": "fed-rate-hike-in-2025",
   "title": "Fed rate hike in 2025?",
-  "description": "This market will resolve to “Yes” if the upper bound of the target federal funds rate is increased at any point between January 1, 2025 and the Fed's December 2025 meeting...",
+  "description": "This market will resolve to “Yes” if the upper bound of the target federal funds rate is increased at any point between January 1, 2025 and the Fed's December 2025 meeting, currently scheduled for December 9-10. Otherwise, this market will resolve to “No”.\n\nThis market may not resolve to \"No\" until the Fed has released its rate changes information following its December meeting.\n\nThe primary resolution source for this market will be the official website of the Federal Reserve (https://www.federalreserve.gov/monetarypolicy/openmarket.htm), however a consensus of credible reporting may also be used.",
   "startDate": "2024-12-29T22:50:33.584839Z",
   "endDate": "2025-12-10T12:00:00Z",
   "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/will-the-fed-raise-interest-rates-in-2025-PQTEYZMvmAGr.jpg",
