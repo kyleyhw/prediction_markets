@@ -16,11 +16,139 @@ The top-level object returned by `/events`. Represents a grouping of markets (e.
 | `endDate` | `string` (ISO) | When the market closes/expires. | User defined. | `2024-12-31T23:59:59Z` |
 | `tags` | `array` | List of categories/topics. | User defined or auto-tagged. | `["Crypto", "Bitcoin"]` |
 
-## 2. References
+## 2. Real-World Example
+*Fetched: 2025-12-10*
+
+| Field | Value | Notes |
+| :--- | :--- | :--- |
+| `question` | **Will Mistral AI have the top AI model on December 31, 2025?** | Detailed event title. |
+| `slug` | `will-mistral-ai-have-the-top-ai-model-on-december-31-2025` | Used in URLs. |
+| `volume` | `$4,710` | Low volume example. |
+| `liquidity` | `$110,659` | High liquidity relative to volume. |
+| `endDate` | `2025-12-31` | Long-term prediction market. |
+| `tags` | `["DeepSeek", "2025 Predictions"]` | Specific and broad categorization. |
+
+## 3. Full API Response Example
+*Fetched: 2025-12-10*
+
+Below is the complete raw JSON response for an active Event and its primary Market.
+
+### Event Object
+<details>
+<summary>Click to expand full Event JSON</summary>
+
+```json
+{
+  "id": "100205",
+  "ticker": "FED-RATE-HIKE-2025",
+  "slug": "fed-rate-hike-in-2025",
+  "title": "Fed rate hike in 2025?",
+  "description": "This market will resolve to “Yes” if the upper bound of the target federal funds rate is increased at any point between January 1, 2025 and the Fed's December 2025 meeting...",
+  "startDate": "2024-12-29T22:50:33.584839Z",
+  "endDate": "2025-12-10T12:00:00Z",
+  "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/will-the-fed-raise-interest-rates-in-2025-PQTEYZMvmAGr.jpg",
+  "icon": "https://polymarket-upload.s3.us-east-2.amazonaws.com/will-the-fed-raise-interest-rates-in-2025-PQTEYZMvmAGr.jpg",
+  "active": true,
+  "closed": false,
+  "archived": false,
+  "new": false,
+  "featured": false,
+  "restricted": true,
+  "liquidity": "51025.13654",
+  "volume": "1089143.410872",
+  "openInterest": "0",
+  "sortBy": "volume",
+  "creationDate": "2024-12-29T17:38:00.916304Z",
+  "updatedAt": "2025-12-10T09:19:59.824472Z",
+  "featuredImg": null,
+  "tags": [
+    {
+      "id": "100196",
+      "label": "Fed Rates",
+      "slug": "fed-rates"
+    },
+    {
+      "id": "107",
+      "label": "Business",
+      "slug": "business"
+    },
+    {
+      "id": "101588",
+      "label": "2025 Predictions",
+      "slug": "2025-predictions"
+    }
+  ]
+}
+```
+</details>
+
+### Market Object
+<details>
+<summary>Click to expand full Market JSON</summary>
+
+```json
+{
+  "id": "516706",
+  "question": "Fed rate hike in 2025?",
+  "conditionId": "0x4319532e181605cb15b1bd677759a3bc7f7394b2fdf145195b700eeaedfd5221",
+  "slug": "fed-rate-hike-in-2025",
+  "resolutionSource": "",
+  "endDate": "2025-12-10T12:00:00Z",
+  "liquidity": "51025.13654",
+  "startDate": "2024-12-29T22:50:33.584839Z",
+  "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/...",
+  "description": "This market will resolve to “Yes” if...",
+  "outcomes": "[\"Yes\", \"No\"]",
+  "outcomePrices": "[\"0.0025\", \"0.9975\"]",
+  "volume": "1089143.410872",
+  "active": true,
+  "closed": false,
+  "marketMakerAddress": "",
+  "createdAt": "2024-12-29T17:38:00.916304Z",
+  "updatedAt": "2025-12-10T09:19:59.824472Z",
+  "submitted_by": "0x91430CaD2d3975766499717fA0D66A78D814E5c5",
+  "archived": false,
+  "resolvedBy": "0x6A9D222616C90FcA5754cd1333cFD9b7fb6a4F74",
+  "restricted": true,
+  "questionID": "0x8428884817cbc26422ec451101fcedfc5995907a8df6e5905bc29cd30d2867e7",
+  "enableOrderBook": true,
+  "orderPriceMinTickSize": 0.001,
+  "orderMinSize": 5,
+  "volumeNum": 1089143.410872,
+  "liquidityNum": 51025.13654,
+  "endDateIso": "2025-12-10",
+  "startDateIso": "2024-12-29",
+  "hasReviewedDates": true,
+  "volume24hr": 82453.682256,
+  "clobTokenIds": "[\"60487116984468020978247225474488676749601001829886755968952521846780452448915\", \"81104637750588840860328515305303028259865221573278091453716127842023614249200\"]",
+  "umaBond": "500",
+  "umaReward": "5",
+  "volume24hrClob": 82453.682256,
+  "volumeClob": 1089143.410872,
+  "liquidityClob": 51025.13654,
+  "acceptingOrders": true,
+  "negRisk": false,
+  "ready": false,
+  "funded": false,
+  "acceptingOrdersTimestamp": "2024-12-29T22:49:15Z",
+  "competitive": 0.8015991903848178,
+  "approved": true,
+  "rewardsMinSize": 100,
+  "rewardsMaxSpread": 3.5,
+  "spread": 0.001,
+  "oneDayPriceChange": -0.001,
+  "lastTradePrice": 0.004,
+  "bestBid": 0.002,
+  "bestAsk": 0.003
+}
+```
+</details>
+
+## 4. References
 - **Official Documentation**: [Polymarket API Docs](https://docs.polymarket.com/)
 - **Gamma API**: [Gamma API Reference](https://docs.polymarket.com/#gamma-api)
 
-## 3. Active Tags (Reference)
+## 4. Active Tags (Reference)
 *Last Updated: 2025-12-08*
 
 Below is the list of tags discovered from active markets. These can be used with `find_liquid_markets.py`.
