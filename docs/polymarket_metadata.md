@@ -12,7 +12,7 @@ The top-level object returned by `/events`. Represents a grouping of markets (e.
 | `slug` | `string` | URL-friendly identifier. | Derived from the question/title. |
 | `question` | `string` | The main title/question of the market. | User/System defined. |
 | `volume` | `string` (float) | Total lifetime trading volume in USD. | Aggregated trades. |
-| `liquidity` | `string` (float) | Current depth of the orderbook in USD. | Sum of resting limit orders within range. |
+| `liquidity` | `string` (float) | Current depth of the orderbook in USD. | This is a weighted metric. Active orders (0.02-0.98) count 100%, while edge orders count ~8%. See [Liquidity Analysis](liquidity_analysis.md) for details. |
 | `startDate` | `string` (ISO) | When the event started. | System timestamp. |
 | `endDate` | `string` (ISO) | When the market closes/expires. | User defined. |
 | `tags` | `array` | List of categories/topics. | User defined or auto-tagged. |

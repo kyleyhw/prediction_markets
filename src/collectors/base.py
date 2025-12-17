@@ -26,6 +26,7 @@ class MarketEvent:
     end_date: Optional[datetime] = None
     bids: Optional[List[float]] = None
     asks: Optional[List[float]] = None
+    clob_token_ids: List[str] = field(default_factory=list)
 
     # Standardized Fields
     best_bid: float = 0.0

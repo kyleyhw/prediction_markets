@@ -23,27 +23,33 @@ Notice the massive Multipliers when the spread is minimal.
 ## The Unified Formula (Valid Domain: Active Markets)
 Our regression analysis confirms that for **Active Markets** (Spread < 0.01), the Polymarket API metric follows a **Power Law** that projects "Virtual Depth":
 
-$$ \text{Liquidity} \approx 0.35 \times \text{Sum}_{2\%} \times \left( \frac{1}{\text{Spread}} \right)^{0.85} $$
+$$
+\text{Liquidity} \approx 0.35 \times \text{Sum}_{0.02} \times \left( \frac{1}{\text{Spread}} \right)^{0.85}
+$$
 
 **Accuracy:** ~5% Error for active markets.
-**Invalid Domain:** Markets with Spread > 0.05 often report "Stale" liquidity values (e.g., ~$300k) despite having empty orderbooks (Bid 0.001 / Ask 0.999). These values are legacy artifacts and should be ignored.
+**Invalid Domain:** Markets with Spread > 0.05 often report "Stale" liquidity values (e.g., ~$300k) despite having empty orderbooks. These values are legacy artifacts and should be ignored.
 
 ### Regression Derived Function
-$$ \text{Liquidity} \approx 0.35 \times \text{Sum}_{2\%} \times \left( \frac{1}{\text{Spread}} \right)^{0.85} $$
+$$
+\text{Liquidity} \approx 0.35 \times \text{Sum}_{0.02} \times \left( \frac{1}{\text{Spread}} \right)^{0.85}
+$$
 
 Where:
-*   **$\text{Sum}_{2\%}$**: The sum of `Price * Size` for all orders within $\pm 2\%$ of the mid-price.
+*   **$\text{Sum}_{0.02}$**: The sum of `Price * Size` for all orders within $\pm 2\%$ of the mid-price.
 *   **$\text{Spread}$**: The difference between the best bid and best ask.
 
 ### Implications
-*   **Tight Markets (Spread $0.001)**: The formula yields a multiplier of **~125x - 300x**.
+*   **Tight Markets (Spread \$0.001)**: The formula yields a multiplier of **~125x - 300x**.
     *   *Example:* Spread $0.001 \rightarrow (1/0.001)^{0.85} \approx 354$. $354 \times 0.35 \approx 124x$.
-*   **Wide Markets (Spread $0.010)**: The formula yields a multiplier of **~17x** (closer to raw value).
+*   **Wide Markets (Spread \$0.010)**: The formula yields a multiplier of **~17x** (closer to raw value).
     *   *Example:* Spread $0.01 \rightarrow (1/0.01)^{0.85} \approx 50$. $50 \times 0.35 \approx 17.5x$.
 
 ## Relationship to Liquidity Rewards
 Polymarket's [Liquidity Rewards Program](https://docs.polymarket.com/developers/rewards/overview) uses a **Quadratic Scoring Rule**:
-$$Q = \text{Size} \times \left( \frac{\text{MaxSpread} - \text{Spread}}{\text{MaxSpread}} \right)^2$$
+$$
+Q = \text{Size} \times \left( \frac{\text{MaxSpread} - \text{Spread}}{\text{MaxSpread}} \right)^2
+$$
 
 **Crucial Distinction:**
 *   **Rewards ($Q$)**: Capped at multiplier ≤ 1.0. for active quoting.
@@ -55,7 +61,7 @@ To prove the formula's scope, we separated markets into **Active** (Spread $\le$
 ### Table 1: Valid Active Markets (Formula Works)
 **Observation:** The formula consistently predicts liquidity with reasonable accuracy (~5-10% error) for markets with tight spreads ($\le$ 0.015).
 
-| Market | Spread | Raw Sum | API Liq | Calc Liq | Error |
+| Market | Spread | Raw Sum (±2%) | API Liq | Calc Liq | Error |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | Tim Cook out as Apple CEO in 2... | $0.002 | $307 | $22,895 | $21,178 | 7.5% |       
 | Dan Clancy out as Twitch CEO i... | $0.001 | $26 | $3,351 | $3,274 | 2.3% |
@@ -88,10 +94,34 @@ To prove the formula's scope, we separated markets into **Active** (Spread $\le$
 | Will Bitcoin reach $170,000 by... | $0.001 | $915 | $170,674 | $113,630 | 33.4% |
 | Will Bitcoin dip to $80,000 by... | $0.010 | $20,445 | $164,100 | $358,630 | 118.5% |
 
+### Error vs. Spread Analysis
+To visualize the domain where the formula is valid, we plotted the Model Error against the Spread for 200 markets.
+
+**Key Insight:** The error remains low (< 10%) as long as the spread is below **0.015**. Beyond this threshold (the "Zombie Zone"), errors explode, confirming the need for a strict filter.
+
+![Model Error vs Spread](/c:/Users/Kyle/PycharmProjects/prediction_markets/plots/error_vs_spread.png)
+
 ### Table 2: Invalid/Zombie Markets (Formula Fails)
 **Observation:** These markets show large "Stale" liquidity values (e.g., $1k - $10k) despite having **Zero or Near-Zero Volume**. This confirms they are legacy artifacts.
 
-| Market | Spread | Raw Sum | API Liq | Calc Liq | Error |
+---
+
+## Deleted Files Rationale
+As part of the research cleanup, the following temporary analysis scripts were removed:
+
+| File | Reason for Deletion |
+| :--- | :--- |
+| `calculate_liquidity_v1.py` | Initial brute-force attempt, superseded by `derive_scaling_factor.py`. |
+| `test_amm_liquidity.py` | Tested AMM hypothesis (Cost to move price), which proved incorrect. |
+| `check_full_book_sum.py` | Verified the "Sum Only" hypothesis, which failed (API metric is much larger). |
+| `test_uniswap_model.py` | Tested Uniswap `L = sqrt(xy)` model, which did not fit the data. |
+| `test_correlations.py` | Used to find hidden variables (Volume/OI), results were inconclusive compared to Spread. |
+| `verify_stale_spread.py` | One-off script to prove the "Cached Spread" hypothesis. |
+| `generate_full_tables.py` | Utility script to generate the markdown tables above, no longer needed after generation. |
+
+*Note: `analyze_slippage.py` was restored upon request as it provides utility beyond this specific research task.*
+
+| Market | Spread | Raw Sum (±2%) | API Liq | Calc Liq | Error |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | Will Google have the top AI mo... | $0.020 | $18,992 | $79,904 | $184,828 | 131.3% |
 | Will Bitcoin reach $100,000 by... | $0.020 | $12,653 | $253,523 | $123,134 | 51.4% |
@@ -128,7 +158,12 @@ To prove the formula's scope, we separated markets into **Active** (Spread $\le$
 
 ### Multiplier Explanation
 The "Calc Liquidity" is derived by converting the raw order capital into a projected score:
-$$ \text{Scaled} = \text{RawSum} \times M $$
-$$ M = 0.35 \times \left( \frac{1}{\text{Spread}} \right)^{0.85} $$
+
+$$
+\text{Scaled} = \text{RawSum} \times M
+$$
+$$
+M = 0.35 \times \left( \frac{1}{\text{Spread}} \right)^{0.85}
+$$
 
 This multiplier accounts for the **velocity of trading**: markets with tighter spreads ($0.001$) are assumed to be able to absorb hundreds of times more volume than their static orderbook suggests (`M ≈ 150x - 300x`), while wide markets ($0.02$) are treated closer to face value (`M ≈ 10x - 20x`).

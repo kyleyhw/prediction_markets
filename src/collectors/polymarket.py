@@ -260,6 +260,7 @@ class PolymarketCollector(BaseCollector):
             spread=spread,
             last_price=last_price,
             orderbook=orderbook_data,
+        clob_token_ids=clob_ids,
         )
 
     def _get_auth_headers(

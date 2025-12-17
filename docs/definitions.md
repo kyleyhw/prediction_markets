@@ -30,8 +30,8 @@ The `MarketEvent` object standardizes data from all platforms.
 | `mid_price` | The arithmetic mean of the Best Bid and Best Ask. Used as a proxy for the "fair" market price. |
 | `last_price` | The price at which the most recent trade occurred. |
 | `spread` | The difference between the Best Ask and Best Bid. |
-| `volume` | The total value (in USD) of all trades matched in the market since inception. |
-| `liquidity` | The total value (in USD) of open orders in the book (or AMM pool size). |
+| `volume` | The total cumulative value (in USD) of all matched trades since market inception. |
+| `liquidity` | A **Projected Depth** score derived from the orderbook. It scales the raw order sum by `1/Spread` to estimate the market's capacity to absorb trades. **It is NOT the raw sum of limit orders.** |
 
 ## 3. Calculated Metrics & Formulas
 
