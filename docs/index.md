@@ -6,6 +6,7 @@ Welcome to the documentation for the Prediction Markets Analysis project. This p
 
 *   **[Definitions and Glossary](definitions.md)**: Comprehensive guide to terminology, schema fields, and metric calculations.
 *   **[Mathematical Principles](math_and_logic.md)**: Explains odds calculation, arbitrage formulas, and matching logic.
+*   **[Vibe-Backtesting Plan](vibe_backtesting_plan.md)**: Proposal for a natural-language backtesting workflow for prediction markets, and how the current code fits it.
 ## Project Overview
 
 For a quick start guide and installation instructions, please refer to the main **[README](../README.md)** in the root directory.
