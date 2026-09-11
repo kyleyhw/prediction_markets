@@ -41,9 +41,11 @@
 This section continues the plan above. Phases 1–5 describe the original
 `prediction_markets` project, whose code is retained under `archive/` and is not
 deleted. Phases 6 onward describe `vibe-predict` (distribution name
-`vibe-predict`, import package `vp`, CLI command `vp`): a forecaster for binary
-prediction-market contracts on Polymarket and Kalshi in three domains, CS2
-esports, weather, and English Premier League football. The order of work is
+`vibe-predict`, import package `vp`, CLI command `vp`): an LLM forecaster for binary
+prediction-market contracts on Polymarket in three domains, CS2 esports,
+weather, and English Premier League football. Polymarket is the only venue for
+the foreseeable future; Kalshi is deferred and appears only under
+"Deferred" at the end. The order of work is
 backtest scoring first, then paper trading, then live execution. Live execution
 is planned here but is not to be written until its security design is agreed.
 
@@ -52,8 +54,7 @@ is planned here but is not to be written until its security design is agreed.
 [HKUDS/Vibe-Trading](https://github.com/HKUDS/Vibe-Trading) (MIT) was read as a
 reference. It is an LLM agent that writes and backtests strategy code over
 continuous OHLCV price series for equities, crypto and futures. It has no
-binary-contract backtester, no probability scoring, no Kalshi client, and its
-"shadow account" is a trade-journal counterfactual rather than paper trading. Its
+binary-contract backtester, no probability scoring, and its "shadow account" is a trade-journal counterfactual rather than paper trading. Its
 system prompt forbids the LLM from producing numbers, so it contains no
 LLM-as-forecaster. What it does offer, and what this plan reuses, is:
 
@@ -120,23 +121,21 @@ tasks below, not repeated here.
 
 ## Phase 7: Data layer
 5.  [pending] Define the binary-contract record.
-    - Venue, market id, question text, outcome tokens, bid/ask/mid, order-book
-      depth, volume, timestamps, lifecycle status, resolution state, and
-      resolved outcome, as a typed dataclass in `vp/markets/schema.py`.
-6.  [pending] Venue clients.
-    - Polymarket: ported client (task 3) exposing search, market, order book,
-      price history and resolution.
-    - Kalshi: port `archive/prediction_markets/src/collectors/kalshi.py` and add
-      settlement and history endpoints, mirroring the resolution ladder.
+    - Market id, question text, outcome tokens, bid/ask/mid, order-book depth,
+      volume, timestamps, lifecycle status, resolution state, and resolved
+      outcome, as a typed dataclass in `vp/markets/schema.py`.
+6.  [pending] Polymarket client.
+    - The ported client (task 3) exposing search, market, order book, price
+      history and resolution, wrapped behind the record in task 5.
 7.  [pending] Domain adapters for `cs2`, `weather`, `epl`.
     - Discovery filters seeded from the archived `market_config.json` keywords
-      and Polymarket tag IDs, and from the archived Kalshi series tickers.
+      and Polymarket tag IDs.
     - Parse each question into structured fields (teams and date; station,
       threshold and date; fixture and date) for use by forecasters.
 8.  [pending] Historical dataset of resolved markets for backtesting.
-    - Verify that resolved markets and their price histories are retrievable
-      from each venue; the archived project found some closed Polymarket
-      endpoints returning 400/404, so this is a measurement, not an assumption.
+    - Verify that resolved markets and their price histories are retrievable;
+      the archived project found some closed-market Gamma endpoints returning
+      400/404, so this is a measurement, not an assumption.
     - Persist to `data/` as Parquet with a documented schema.
 9.  [pending] Snapshot collector for ongoing data.
     - Periodic capture of live prices and books for the three domains, feeding
@@ -149,10 +148,13 @@ tasks below, not repeated here.
       it, which is the look-ahead safeguard.
 11. [pending] Baseline forecasters.
     - Market mid-price at cutoff; constant 0.5; climatology for weather.
-12. [pending] LLM forecaster (the "vibe").
+12. [pending] LLM forecaster (the "vibe"), the central component.
     - Per-domain structured elicitation prompt with the information cutoff
       stated, returning a probability and a rationale; rationale and cost
       logged per call; optional ensemble over repeated samples.
+    - Tool access for the model (pre-cutoff match results, fixtures, station
+      observations) so that, as in Vibe-Trading, the model reasons over
+      retrieved evidence rather than from memory alone.
     - Document the prompt design and its known failure modes in
       `docs/forecasters.md`.
 13. [pending] Statistical forecasters.
@@ -169,8 +171,8 @@ tasks below, not repeated here.
       reliability diagram; Murphy decomposition into reliability, resolution
       and uncertainty. Derivations in `docs/scoring.md`.
 16. [pending] Edge, fees and sizing.
-    - Per-venue fee models; expected value of a unit position; Kelly fraction
-      and fractional Kelly. Derivations in `docs/sizing.md`.
+    - The Polymarket fee model; expected value of a unit position; Kelly
+      fraction and fractional Kelly. Derivations in `docs/sizing.md`.
 17. [pending] Event-contract fill simulator.
     - Fills against the recorded book at cutoff, settlement to 0 or 1 at
       resolution, equity curve; bankroll statistics via the ported metrics and
@@ -199,7 +201,7 @@ tasks below, not repeated here.
       per day, expiry; fail-closed order guard.
     - Filesystem kill switch independent of the running process.
     - Human approval for every write; hash-chained audit ledger.
-23. [pending] Venue execution adapters (Polymarket CLOB signing, Kalshi REST),
+23. [pending] Polymarket CLOB execution adapter (order signing and placement),
     blocked on task 22.
 24. [pending] Canary rollout at minimal stake with the mandate enforced.
 
@@ -208,3 +210,8 @@ tasks below, not repeated here.
     and the README, and a test report in `tests/reports/` with runtimes.
 26. [pending] Pre-commit hooks (`ruff`, `ty`, `detect-secrets`) passing on every
     commit.
+
+## Deferred
+- Kalshi as a second venue. Not in scope for the foreseeable future. The archived
+  `src/collectors/kalshi.py` and the `KXCSGOGAME` and `KXENGLISHPREMIERLEAGUE`
+  series tickers are the starting point if this is revisited.
