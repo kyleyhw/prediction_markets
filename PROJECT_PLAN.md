@@ -97,27 +97,32 @@ each venue, and the calibration decomposition are to live in `docs/` and are
 tasks below, not repeated here.
 
 ## Phase 6: Restructure and archive
-1.  [pending] Archive the original project without deleting it.
+1.  [completed] Archive the original project without deleting it.
     - Move `src/`, `tests/`, `plots/`, `reports/`, `data/`, `docs/`,
       `CURRENT_STATE.md` and the old `README.md` to `archive/prediction_markets/`
       with `git mv` so history is preserved.
     - Add a short `archive/prediction_markets/README.md` stating what the
       archive is and that its `pm` entry point is no longer wired up.
-2.  [pending] Rename the project to `vibe-predict` with package `vp`.
+2.  [completed] Rename the project to `vibe-predict` with package `vp`.
     - `pyproject.toml`: name, description, `vp = "vp.cli:main"` entry point,
       hatch wheel target `vp`.
     - Align tooling with the global conventions: `ruff` target matched to the
       pinned Python, `ty` configured with `error-on-warning`, pre-commit ruff
       revision updated, `detect-secrets` baseline regenerated.
-3.  [pending] Port the reusable Vibe-Trading modules into `vp/` with attribution.
+3.  [completed] Port the reusable Vibe-Trading modules into `vp/` with attribution.
     - `vp/venues/polymarket.py` from `prediction_market_tool.py`, stripped of
       its `BaseTool` dependency.
-    - `vp/venues/_http.py`, `vp/backtest/bankroll_metrics.py`,
-      `vp/backtest/validation.py`.
+    - `vp/venues/_http.py`, and `vp/backtest/bankroll.py` adapting the
+      bankroll arithmetic of `metrics.py` and `validation.py` to per-bet P&L
+      arrays (the two files proved bound to bar-based trading; see
+      `docs/provenance.md`).
     - Record provenance and licence in `docs/provenance.md` and a `NOTICE` file.
-4.  [pending] Fresh documentation skeleton.
+4.  [completed] Fresh documentation skeleton.
     - New root `README.md` (ASCII tree, documentation index, overview).
     - `docs/index.md`, `docs/architecture.md`, `tests/reports/` directory.
+    - Offline tests for the resolution ladder and bankroll arithmetic
+      (`tests/`); the live Polymarket smoke test is blocked in the development
+      container by its egress policy and is carried into task 8.
 
 ## Phase 7: Data layer
 5.  [pending] Define the binary-contract record.
