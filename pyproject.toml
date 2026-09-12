@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
     "numpy>=2.3.5",
+    "pyarrow>=25.0.1",
     "requests>=2.32.5",
 ]
 
@@ -51,3 +52,6 @@ error-on-warning = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["E501"]

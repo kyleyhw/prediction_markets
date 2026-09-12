@@ -13,3 +13,6 @@ build/
 *.html
 *.csv
 *_dump.txt
+
+# Datasets and snapshots are built locally, never committed
+data/

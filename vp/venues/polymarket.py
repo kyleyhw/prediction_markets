@@ -23,6 +23,9 @@ Data comes from two public, no-auth Polymarket services:
   - ``GET /events?slug=<exact slug>`` returns a list (empty on a partial slug;
     the match is exact, not prefix).
   - ``GET /markets/<numeric id>`` returns one market object.
+  - ``GET /events?tag_id=&closed=&limit=&offset=`` lists events by tag with
+    offset pagination, as the archived collector used it; ``closed`` takes
+    ``true``/``false``. Event objects carry ``tags: [{id, label, slug}]``.
   Event objects carry ``id, ticker, slug, title, description, startDate,
   endDate, closedTime, active, closed, archived, liquidity, volume,
   volume24hr, markets``. Market objects carry ``id, question, conditionId,
@@ -97,6 +100,7 @@ from __future__ import annotations
 import json
 import logging
 import math
+from collections.abc import Iterator
 from datetime import datetime, timezone
 from typing import Any, Literal
 
@@ -445,12 +449,28 @@ def normalize_event(raw: dict[str, Any], *, with_markets: bool) -> dict[str, Any
         "volume_usd": _to_float(raw.get("volume")),
         "volume_24h_usd": _to_float(raw.get("volume24hr")),
         "liquidity_usd": _to_float(raw.get("liquidity")),
+        "tags": _tag_labels(raw.get("tags")),
+        "tag_ids": _tag_ids(raw.get("tags")),
     }
     if isinstance(raw_markets, list):
         event["market_count"] = len(usable)
         if with_markets:
             event["markets"] = markets
     return event
+
+
+def _tag_labels(value: Any) -> list[str]:
+    """Tag labels of an event, in payload order; ``[]`` when absent."""
+    if not isinstance(value, list):
+        return []
+    return [str(t["label"]) for t in value if isinstance(t, dict) and "label" in t]
+
+
+def _tag_ids(value: Any) -> list[str]:
+    """Tag ids of an event as strings, in payload order; ``[]`` when absent."""
+    if not isinstance(value, list):
+        return []
+    return [str(t["id"]) for t in value if isinstance(t, dict) and "id" in t]
 
 
 def _clob_market_to_gamma_shape(payload: dict[str, Any]) -> dict[str, Any]:
@@ -690,7 +710,11 @@ def fetch_history(
 
 
 def search_events(
-    query: str, *, limit: int = 10, status: SearchStatus = "open"
+    query: str,
+    *,
+    limit: int = 10,
+    status: SearchStatus = "open",
+    with_markets: bool = False,
 ) -> dict[str, Any]:
     """Search the event catalogue by keyword.
 
@@ -704,7 +728,7 @@ def search_events(
 
     Returns:
         ``{"events": [...], "total_results", "has_more", "status_filter_basis"}``
-        with events normalised without their markets.
+        with events normalised, including their markets when ``with_markets``.
 
     Raises:
         requests.RequestException: Propagated from the HTTP layer.
@@ -732,7 +756,7 @@ def search_events(
 
     raw_events = payload.get("events")
     events = [
-        normalize_event(e, with_markets=False)
+        normalize_event(e, with_markets=with_markets)
         for e in (raw_events if isinstance(raw_events, list) else [])[:limit]
         if isinstance(e, dict)
     ]
@@ -744,3 +768,55 @@ def search_events(
         "has_more": bool(pagination.get("hasMore")),
         "status_filter_basis": basis,
     }
+
+
+def list_events(
+    *,
+    tag_id: str | None = None,
+    closed: bool | None = None,
+    limit: int = 100,
+    offset: int = 0,
+) -> list[dict[str, Any]]:
+    """List one page of the event catalogue, optionally by tag and trading state.
+
+    Args:
+        tag_id: Gamma tag id to filter on; ``None`` lists across all tags.
+        closed: ``True`` for events whose trading has ended, ``False`` for
+            those still trading, ``None`` for both. This is a trading-state
+            filter, not a settlement filter.
+        limit: Page size. The archived collector used up to 500 without
+            complaint; the upstream ceiling is not documented.
+        offset: Number of events to skip, for pagination.
+
+    Returns:
+        Event records with their markets, in the order the catalogue returns
+        them. An empty list means the page is past the end.
+
+    Raises:
+        ValueError: The payload is not a list.
+        requests.RequestException: Propagated from the HTTP layer.
+    """
+    params: dict[str, Any] = {"limit": limit, "offset": offset}
+    if tag_id is not None:
+        params["tag_id"] = tag_id
+    if closed is not None:
+        params["closed"] = "true" if closed else "false"
+    payload = _get_json(_GAMMA_EVENTS_URL, host_key=_GAMMA_HOST_KEY, params=params)
+    if not isinstance(payload, list):
+        raise ValueError("unexpected events payload shape")
+    return [
+        normalize_event(e, with_markets=True) for e in payload if isinstance(e, dict)
+    ]
+
+
+def iter_events(
+    *, tag_id: str | None = None, closed: bool | None = None, page_size: int = 100
+) -> Iterator[dict[str, Any]]:
+    """Walk the catalogue page by page until an empty or short page ends it."""
+    offset = 0
+    while True:
+        page = list_events(tag_id=tag_id, closed=closed, limit=page_size, offset=offset)
+        yield from page
+        if len(page) < page_size:
+            return
+        offset += page_size
