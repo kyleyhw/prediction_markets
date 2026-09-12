@@ -11,10 +11,19 @@ flow the later phases fill in. The development sequence itself is in the root
 
 ```ascii
 vp/
-├── cli.py            # `vp` entry point; subcommands are added phase by phase
+├── cli.py            # `vp build-dataset`, `vp snapshot`
 ├── venues/
 │   ├── _http.py      # per-host throttled GET with session reuse
 │   └── polymarket.py # read-only Gamma + CLOB client with resolution ladder
+├── domains/
+│   ├── base.py       # Domain: membership rules and question parser
+│   ├── cs2.py, weather.py, epl.py
+├── markets/
+│   ├── schema.py     # BinaryMarket record
+│   ├── polymarket.py # PolymarketSource: typed discovery, books, history
+│   ├── store.py      # Parquet schemas, read and write
+│   ├── dataset.py    # resolved-market dataset and retrievability report
+│   └── snapshot.py   # append-only snapshots of open markets with books
 └── backtest/
     └── bankroll.py   # equity curve, drawdown, permutation, bootstrap, walk-forward
 ```
@@ -26,9 +35,11 @@ The pipeline the plan builds, with the phase that lands each stage:
 1. **Venue client** (Phase 6, done). `vp.venues.polymarket` fetches events,
    markets, order books and price histories from Polymarket's public
    endpoints, and derives a settlement state from resolution evidence only.
-2. **Market record and domain adapters** (Phase 7). A typed record for a
-   binary contract, and filters that select CS2, weather and EPL markets and
-   parse each question into structured fields.
+2. **Market record and domain adapters** (Phase 7, done). A typed record
+   for a binary contract, domain adapters that select CS2, weather and EPL
+   markets and parse each question, a resolved-market dataset with price
+   histories, and append-only snapshots of open markets. Details in the
+   [data layer](data_layer.md) page.
 3. **Forecasters** (Phase 8). Given a market and an explicit information
    cutoff $t$, a forecaster returns $\hat p \in (0,1)$ using only information
    available before $t$. The LLM forecaster is the central one; market price
@@ -51,6 +62,10 @@ on a closed market is reported as an inference, never as the result. This
 matters because scoring a forecast against a wrongly inferred outcome corrupts
 every downstream statistic, and the upstream project measured that pinned
 prices occur on more than a quarter of *open* markets.
+
+**The first outcome is the event.** Every record fixes its first outcome as
+the event whose probability is forecast, so $\hat p$, $q$ and $y$ always
+refer to the same side. Markets without exactly two outcomes are excluded.
 
 **Explicit information cutoff.** Every forecaster receives $t$ as an argument
 and every data access is filtered to before it. This is the look-ahead

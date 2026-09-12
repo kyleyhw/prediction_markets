@@ -14,17 +14,27 @@ Kalshi prices; that code is preserved unchanged under
 ```ascii
 prediction_markets/
 ├── vp/                        # the vibe-predict package (import name `vp`)
-│   ├── cli.py                 # `vp` command-line entry point
+│   ├── cli.py                 # `vp build-dataset`, `vp snapshot`
 │   ├── venues/
 │   │   ├── _http.py           # throttled HTTP GET
 │   │   └── polymarket.py      # read-only Polymarket client
+│   ├── domains/               # cs2, weather, epl: membership and parsers
+│   ├── markets/
+│   │   ├── schema.py          # BinaryMarket record
+│   │   ├── polymarket.py      # typed source: discovery, books, history
+│   │   ├── store.py           # Parquet read and write
+│   │   ├── dataset.py         # resolved-market dataset and report
+│   │   └── snapshot.py        # snapshots of open markets
 │   └── backtest/
 │       └── bankroll.py        # bankroll statistics over per-bet P&L
 ├── docs/                      # documentation (see index below)
 ├── tests/
 │   ├── reports/               # test reports with runtimes
 │   ├── test_bankroll.py       # bankroll arithmetic on a hand-checked sequence
-│   └── test_polymarket.py     # resolution ladder on fixture payloads
+│   ├── test_polymarket.py     # resolution ladder on fixture payloads
+│   ├── test_domains.py        # membership and parsing on recorded questions
+│   ├── test_schema_store.py   # record labels and Parquet round trip
+│   └── test_dataset.py        # dataset and snapshot against a fake source
 ├── archive/
 │   └── prediction_markets/    # the original project, unchanged
 ├── NOTICE                     # attribution and licence for ported code
@@ -37,6 +47,7 @@ prediction_markets/
 
 - [Documentation index](docs/index.md)
 - [Architecture](docs/architecture.md): package layout, data flow and design decisions.
+- [Data layer](docs/data_layer.md): market record, domain adapters, dataset and snapshots.
 - [Provenance](docs/provenance.md): code adapted from Vibe-Trading and how it was changed.
 - [Project plan](PROJECT_PLAN.md): phases, tasks and their status.
 - [Archived project](archive/prediction_markets/README.md)
@@ -67,8 +78,7 @@ which is scaled down in practice. Derivations, the fee model and the
 calibration decomposition are added to `docs/` by the phases that implement
 them.
 
-The pipeline is: venue client (done) → market record and domain adapters →
-forecasters with an explicit cutoff → backtest scoring and fill simulation →
+The pipeline is: venue client and data layer (done) → forecasters with an explicit cutoff → backtest scoring and fill simulation →
 paper trading → security-gated live execution. The
 [architecture page](docs/architecture.md) explains each stage and the reasoning
 behind the main design choices, in particular why a closed market is never
@@ -91,6 +101,14 @@ uv run ruff check . && uv run ruff format --check .
 uv run ty check
 uv run detect-secrets scan --baseline .secrets.baseline
 uv run pytest
+```
+
+Building data. Neither command needs credentials; `data/` is git-ignored.
+
+```bash
+uv run vp build-dataset --domain epl --max-markets 20   # quick retrievability check
+uv run vp build-dataset --domain cs2 weather epl        # full resolved dataset
+uv run vp snapshot --domain cs2 weather epl --depth 5   # one snapshot of open markets
 ```
 
 Reading Polymarket needs no credentials. Requests to each host are spaced by

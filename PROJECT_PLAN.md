@@ -125,24 +125,31 @@ tasks below, not repeated here.
       container by its egress policy and is carried into task 8.
 
 ## Phase 7: Data layer
-5.  [pending] Define the binary-contract record.
+5.  [completed] Define the binary-contract record.
     - Market id, question text, outcome tokens, bid/ask/mid, order-book depth,
       volume, timestamps, lifecycle status, resolution state, and resolved
       outcome, as a typed dataclass in `vp/markets/schema.py`.
-6.  [pending] Polymarket client.
+6.  [completed] Polymarket client.
     - The ported client (task 3) exposing search, market, order book, price
       history and resolution, wrapped behind the record in task 5.
-7.  [pending] Domain adapters for `cs2`, `weather`, `epl`.
+7.  [completed] Domain adapters for `cs2`, `weather`, `epl`.
     - Discovery filters seeded from the archived `market_config.json` keywords
       and Polymarket tag IDs.
     - Parse each question into structured fields (teams and date; station,
       threshold and date; fixture and date) for use by forecasters.
-8.  [pending] Historical dataset of resolved markets for backtesting.
+    - Parsers are built from question strings recorded in the archived
+      reports; the EPL match forms are unverified until the first live run.
+8.  [in-progress] Historical dataset of resolved markets for backtesting.
     - Verify that resolved markets and their price histories are retrievable;
       the archived project found some closed-market Gamma endpoints returning
       400/404, so this is a measurement, not an assumption.
     - Persist to `data/` as Parquet with a documented schema.
-9.  [pending] Snapshot collector for ongoing data.
+    - [completed] `vp build-dataset` implemented, with the retrievability
+      counts printed as its report; tested against a fake source.
+    - [pending] Run it live: the development container cannot reach
+      Polymarket, so the measurement itself, and the Gamma tag ids for CS2
+      and weather, wait on a run from a machine with access.
+9.  [completed] Snapshot collector for ongoing data.
     - Periodic capture of live prices and books for the three domains, feeding
       both future backtests and paper trading.
 
