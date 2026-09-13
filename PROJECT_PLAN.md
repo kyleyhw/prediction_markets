@@ -159,13 +159,16 @@ tasks below, not repeated here.
       both future backtests and paper trading.
 
 ## Phase 8: Forecasting
-10. [pending] Forecaster interface.
+10. [completed] Forecaster interface.
     - `forecast(market, cutoff) -> Forecast(p_hat, rationale, cost)` where
       `cutoff` is passed explicitly and every data access is filtered to before
       it, which is the look-ahead safeguard.
-11. [pending] Baseline forecasters.
+11. [completed] Baseline forecasters.
     - Market mid-price at cutoff; constant 0.5; climatology for weather.
-12. [pending] LLM forecaster (the "vibe"), the central component.
+12. [completed] LLM forecaster (the "vibe"), the central component.
+    - Implemented and tested offline against a fake client; not yet run
+      against the API, which needs credentials the development container
+      does not hold (see the Phase 8 report).
     - Per-domain structured elicitation prompt with the information cutoff
       stated, returning a probability and a rationale; rationale and cost
       logged per call; optional ensemble over repeated samples.
@@ -174,11 +177,15 @@ tasks below, not repeated here.
       retrieved evidence rather than from memory alone.
     - Document the prompt design and its known failure modes in
       `docs/forecasters.md`.
-13. [pending] Statistical forecasters.
+13. [completed] Statistical forecasters.
+    - Elo for CS2 and EPL fitted on pre-cutoff resolutions from the dataset
+      itself. Climatology from realised buckets in the dataset; Open-Meteo's
+      archive and previous-runs endpoints were rate-limited from the
+      development container and are left as a documented extension.
     - Elo or Bradley-Terry ratings for CS2 and EPL fitted on pre-cutoff results.
     - Climatology and, where available, published numerical-weather-prediction
       output for weather thresholds.
-14. [pending] Forecast registry.
+14. [completed] Forecast registry.
     - Append-only JSONL of (market, forecaster, cutoff, $\hat p$, rationale
       hash), modelled on Vibe-Trading's hypothesis registry.
 
