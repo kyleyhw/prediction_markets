@@ -9,12 +9,25 @@ Polymarket, scored by backtest and paper trading before any live execution. The
   decisions behind them.
 - [Data layer](data_layer.md): the market record, domain adapters, discovery,
   the resolved dataset and snapshots.
+- [Forecasters](forecasters.md): the contract, the cutoff-bounded evidence
+  object, the baselines, Elo, and the LLM forecaster's prompt design and
+  failure modes.
+- [Scoring](scoring.md): proper scores, skill against the market, the
+  reliability diagram and Murphy decomposition, bankroll statistics.
+- [Sizing](sizing.md): edge, Polymarket's fee formula, Kelly and fractional
+  Kelly.
+- [Paper trading](paper_trading.md): the hash-chained ledger, the forward
+  cycle, settlement and the leakage check.
+- [Security design](security.md): the proposed design for live execution,
+  awaiting agreement before any execution code.
 - [Provenance](provenance.md): what was adapted from Vibe-Trading, how it was
   changed, and why.
 
-Pages for scoring, sizing and forecasters are added by the phases that
-implement them. Test reports live in [tests/reports/](../tests/reports/); the first is the
-[Phase 6 restructure report](../tests/reports/phase6_restructure.md) and
-the [Phase 7 data layer report](../tests/reports/phase7_data_layer.md).
+Test reports live in [tests/reports/](../tests/reports/), one per phase:
+[Phase 6](../tests/reports/phase6_restructure.md),
+[Phase 7](../tests/reports/phase7_data_layer.md),
+[Phase 8](../tests/reports/phase8_forecasters.md),
+[Phase 9](../tests/reports/phase9_backtest.md) and
+[Phase 10](../tests/reports/phase10_paper_trading.md).
 The original project's documentation is preserved under
 [archive/prediction_markets/docs/](../archive/prediction_markets/docs/).

@@ -207,18 +207,19 @@ tasks below, not repeated here.
       recording runtime in `tests/reports/`.
 
 ## Phase 10: Paper trading
-19. [pending] Forward loop.
+19. [completed] Forward loop.
     - Scheduled cycle of snapshot, forecast, simulated order, and ledger write;
       ledger as a hash-chained append-only JSONL.
-20. [pending] Resolution tracking and forward scoring.
+20. [completed] Resolution tracking and forward scoring.
     - Detect settlement, book P&L, and score forward forecasts with the same
       code as the backtest.
-21. [pending] Leakage check.
+21. [completed] Leakage check.
     - Compare forward scores with backtest scores per forecaster; a material gap
       indicates look-ahead in the backtest.
 
 ## Phase 11: Live execution (planned, not to be written yet)
-22. [pending] Security design, agreed before any code.
+22. [in-progress] Security design, agreed before any code.
+    - Proposed in `docs/security.md` (2026-09-13); awaiting agreement.
     - Key storage in the OS keyring, never in the repository or `.env`.
     - Separate credentials for paper and live, structurally unable to cross.
     - Mandate of hard caps: max order notional, max total exposure, max trades

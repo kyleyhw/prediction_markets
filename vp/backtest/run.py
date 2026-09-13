@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import logging
 import time
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -106,7 +107,7 @@ def run_backtest(
     root: Path,
     out_dir: Path,
     *,
-    forecasters: list[Forecaster] | None = None,
+    forecasters: Sequence[Forecaster] | None = None,
     llm_options: dict[str, object] | None = None,
 ) -> BacktestResult:
     """Run the backtest and write its outputs; returns the result."""

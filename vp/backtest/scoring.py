@@ -44,6 +44,11 @@ def brier(p: Array, y: Array) -> Array:
     return (p - y) ** 2
 
 
+def brier_one(p: float, y: int) -> float:
+    """Brier score of a single forecast."""
+    return (p - y) ** 2
+
+
 def log_score(p: Array, y: Array) -> Array:
     """Per-market negative log likelihood of the outcome."""
     return -(y * np.log(p) + (1 - y) * np.log(1 - p))

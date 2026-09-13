@@ -14,7 +14,7 @@ Kalshi prices; that code is preserved unchanged under
 ```ascii
 prediction_markets/
 ├── vp/                        # the vibe-predict package (import name `vp`)
-│   ├── cli.py                 # `vp build-dataset`, `vp snapshot`
+│   ├── cli.py                 # `vp build-dataset`, `vp snapshot`, `vp backtest`, `vp paper`
 │   ├── venues/
 │   │   ├── _http.py           # throttled HTTP GET
 │   │   └── polymarket.py      # read-only Polymarket client
@@ -25,16 +25,39 @@ prediction_markets/
 │   │   ├── store.py           # Parquet read and write
 │   │   ├── dataset.py         # resolved-market dataset and report
 │   │   └── snapshot.py        # snapshots of open markets
-│   └── backtest/
-│       └── bankroll.py        # bankroll statistics over per-bet P&L
+│   ├── forecast/
+│   │   ├── base.py            # Forecast, Forecaster protocol
+│   │   ├── evidence.py        # cutoff-bounded evidence (the look-ahead safeguard)
+│   │   ├── baselines.py       # market price, constant, climatology
+│   │   ├── stats.py           # Elo
+│   │   ├── llm.py             # the LLM forecaster (Claude, tools, structured output)
+│   │   └── registry.py        # append-only forecast registry
+│   ├── backtest/
+│   │   ├── scoring.py         # Brier, log, skill, reliability, Murphy decomposition
+│   │   ├── sizing.py          # fees, edge, Kelly
+│   │   ├── simulate.py        # fill-and-settle simulator
+│   │   ├── run.py             # the backtest runner and its report
+│   │   └── bankroll.py        # bankroll statistics over per-bet P&L
+│   └── paper/
+│       ├── ledger.py          # hash-chained append-only ledger
+│       ├── loop.py            # forward cycle and settlement
+│       └── leakage.py         # forward-versus-backtest check
 ├── docs/                      # documentation (see index below)
 ├── tests/
-│   ├── reports/               # test reports with runtimes
+│   ├── reports/               # test reports with runtimes, one per phase
 │   ├── test_bankroll.py       # bankroll arithmetic on a hand-checked sequence
-│   ├── test_polymarket.py     # resolution ladder on fixture payloads
+│   ├── test_polymarket.py     # resolution ladder and catalogue walk on fixtures
 │   ├── test_domains.py        # membership and parsing on recorded questions
 │   ├── test_schema_store.py   # record labels and Parquet round trip
-│   └── test_dataset.py        # dataset and snapshot against a fake source
+│   ├── test_dataset.py        # dataset and snapshot against a fake source
+│   ├── test_forecast.py       # evidence cutoff rule, baselines, Elo, registry
+│   ├── test_llm.py            # LLM elicitation loop against a fake client
+│   ├── test_scoring.py        # scores and the Murphy identity
+│   ├── test_sizing.py         # fees and Kelly
+│   ├── test_simulate.py       # fills and compounding
+│   ├── test_backtest.py       # the runner end to end
+│   ├── test_ledger.py         # chain integrity and tamper detection
+│   └── test_paper.py          # forward cycle, settlement, leakage
 ├── archive/
 │   └── prediction_markets/    # the original project, unchanged
 ├── NOTICE                     # attribution and licence for ported code
@@ -48,6 +71,10 @@ prediction_markets/
 - [Documentation index](docs/index.md)
 - [Architecture](docs/architecture.md): package layout, data flow and design decisions.
 - [Data layer](docs/data_layer.md): market record, domain adapters, dataset and snapshots.
+- [Forecasters](docs/forecasters.md): contract, cutoff-bounded evidence, baselines, Elo, the LLM forecaster.
+- [Scoring](docs/scoring.md) and [sizing](docs/sizing.md): proper scores, calibration, fees, Kelly.
+- [Paper trading](docs/paper_trading.md): ledger, forward loop, settlement, leakage check.
+- [Security design](docs/security.md): proposed gate for live execution.
 - [Provenance](docs/provenance.md): code adapted from Vibe-Trading and how it was changed.
 - [Project plan](PROJECT_PLAN.md): phases, tasks and their status.
 - [Archived project](archive/prediction_markets/README.md)

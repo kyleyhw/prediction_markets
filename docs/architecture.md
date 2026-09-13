@@ -3,7 +3,7 @@
 `vibe-predict` forecasts binary Polymarket contracts with a large language
 model and scores those forecasts, first against resolved markets in a backtest,
 then forward in paper trading, and only after an agreed security design in live
-execution. This page describes the package layout as of Phase 6 and the data
+execution. This page describes the package layout as of Phase 10 and the data
 flow the later phases fill in. The development sequence itself is in the root
 [PROJECT_PLAN.md](../PROJECT_PLAN.md).
 
@@ -11,7 +11,7 @@ flow the later phases fill in. The development sequence itself is in the root
 
 ```ascii
 vp/
-├── cli.py            # `vp build-dataset`, `vp snapshot`
+├── cli.py            # `vp build-dataset`, `vp snapshot`, `vp backtest`, `vp paper`
 ├── venues/
 │   ├── _http.py      # per-host throttled GET with session reuse
 │   └── polymarket.py # read-only Gamma + CLOB client with resolution ladder
@@ -24,8 +24,23 @@ vp/
 │   ├── store.py      # Parquet schemas, read and write
 │   ├── dataset.py    # resolved-market dataset and retrievability report
 │   └── snapshot.py   # append-only snapshots of open markets with books
-└── backtest/
-    └── bankroll.py   # equity curve, drawdown, permutation, bootstrap, walk-forward
+├── forecast/
+│   ├── base.py       # Forecast, Forecaster protocol, probability clip
+│   ├── evidence.py   # Evidence: cutoff-bounded reads (the look-ahead safeguard)
+│   ├── baselines.py  # market price, constant, climatology
+│   ├── stats.py      # Elo with resumable replay
+│   ├── llm.py        # LLM forecaster: Claude, evidence tools, structured output
+│   └── registry.py   # append-only JSONL registry
+├── backtest/
+│   ├── scoring.py    # Brier, log, skill, reliability, Murphy decomposition
+│   ├── sizing.py     # fee model, edge, fractional Kelly
+│   ├── simulate.py   # fill-and-settle simulator
+│   ├── run.py        # backtest runner, summary and figures
+│   └── bankroll.py   # equity curve, drawdown, permutation, bootstrap, walk-forward
+└── paper/
+    ├── ledger.py     # hash-chained append-only ledger
+    ├── loop.py       # forward cycle against the real book; settlement
+    └── leakage.py    # forward-versus-backtest score gap
 ```
 
 ## Data Flow
@@ -40,14 +55,22 @@ The pipeline the plan builds, with the phase that lands each stage:
    markets and parse each question, a resolved-market dataset with price
    histories, and append-only snapshots of open markets. Details in the
    [data layer](data_layer.md) page.
-3. **Forecasters** (Phase 8). Given a market and an explicit information
-   cutoff $t$, a forecaster returns $\hat p \in (0,1)$ using only information
-   available before $t$. The LLM forecaster is the central one; market price
-   and simple statistical models are baselines.
-4. **Scoring and backtest** (Phase 9). Proper scoring rules, calibration,
-   edge after fees, Kelly sizing, and a fill simulator that settles each bet to
-   0 or 1. `vp.backtest.bankroll` supplies the bankroll statistics.
-5. **Paper trading** (Phase 10) and **live execution** (Phase 11, gated).
+3. **Forecasters** (Phase 8, done). Given a market and an `Evidence` view at
+   an explicit cutoff $t$, a forecaster returns $\hat p \in (0,1)$; the view
+   is the only way to read the world and serves nothing at or after $t$.
+   The LLM forecaster is the central one; market price, Elo and climatology
+   are baselines. Details in the [forecasters](forecasters.md) page.
+4. **Scoring and backtest** (Phase 9, done). Proper scoring rules and
+   calibration ([scoring](scoring.md)), edge after fees and fractional Kelly
+   ([sizing](sizing.md)), a fill simulator that settles each bet to 0 or 1,
+   and `vp backtest`, which scores every forecaster on a common set of
+   resolved markets and simulates its bets.
+5. **Paper trading** (Phase 10, done). `vp paper run` forecasts open markets
+   at the present and orders against the real book into a hash-chained
+   ledger; `vp paper settle` books resolutions; `vp paper leakage` compares
+   forward with backtest scores ([paper trading](paper_trading.md)).
+6. **Live execution** (Phase 11, gated on the [security design](security.md)
+   being agreed).
 
 ## Design Decisions
 

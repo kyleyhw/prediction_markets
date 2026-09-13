@@ -51,10 +51,7 @@ class FakeMessages:
             return SimpleNamespace(stop_reason="tool_use", content=blocks, usage=usage)
         # Second turn: the tool results arrived; answer.
         results = {r["tool_use_id"]: r["content"] for r in last["content"]}
-        assert (
-            "winner arsenal" in results["t1"]
-            and "winner arsenal" in results["t2"]
-        )
+        assert "winner arsenal" in results["t1"] and "winner arsenal" in results["t2"]
         assert "2026-03-08" not in results["t1"], "round two is after the cutoff"
         p = self.answers.pop(0)
         text = json.dumps({"probability": p, "rationale": f"evidence says {p}"})

@@ -9,6 +9,9 @@ Subcommands:
   depth.
 * ``vp backtest``: forecast every resolved market of a domain at a cutoff,
   score against the market, simulate bets, and write a report directory.
+* ``vp paper run|settle|leakage``: one forward paper-trading cycle, the
+  settlement pass over open positions, and the forward-versus-backtest
+  leakage check, all recorded in a hash-chained ledger.
 """
 
 from __future__ import annotations
@@ -20,11 +23,14 @@ from pathlib import Path
 
 from vp.backtest.run import BacktestConfig, run_backtest
 from vp.domains import DOMAINS
-from vp.forecast import FORECASTER_NAMES
+from vp.forecast import FORECASTER_NAMES, make_forecaster
 from vp.markets.dataset import build_resolved_dataset
 from vp.markets.polymarket import PolymarketSource
 from vp.markets.schema import utc_now_iso
 from vp.markets.snapshot import collect_snapshot
+from vp.paper import leakage
+from vp.paper.ledger import Ledger
+from vp.paper.loop import run_cycle, settle
 
 
 def _add_common(parser: argparse.ArgumentParser) -> None:
@@ -102,11 +108,52 @@ def main() -> None:
         "--out", type=Path, default=None, help="report directory (default: under root)"
     )
 
+    paper = sub.add_parser("paper", help="paper trading")
+    paper_sub = paper.add_subparsers(dest="paper_command", required=True)
+    prun = paper_sub.add_parser("run", help="one cycle: snapshot, forecast, order")
+    _add_common(prun)
+    prun.add_argument("--forecasters", nargs="+", default=["market", "constant"])
+    prun.add_argument("--depth", type=int, default=5)
+    psettle = paper_sub.add_parser("settle", help="settle resolved open positions")
+    psettle.add_argument("--root", type=Path, default=Path("data"))
+    pleak = paper_sub.add_parser("leakage", help="forward vs backtest scores")
+    pleak.add_argument("--root", type=Path, default=Path("data"))
+    pleak.add_argument("--domain", required=True, choices=sorted(DOMAINS))
+    pleak.add_argument("--backtest", type=Path, required=True, help="backtest dir")
+
     args = parser.parse_args()
     logging.basicConfig(
         level=logging.DEBUG if args.verbose else logging.INFO,
         format="%(levelname)s %(name)s: %(message)s",
     )
+    if args.command == "paper":
+        ledger = Ledger(args.root / "paper" / "ledger.jsonl")
+        broken = ledger.verify()
+        if broken is not None:
+            raise SystemExit(f"ledger chain broken at entry {broken}; refusing to run")
+        if args.paper_command == "settle":
+            print(settle(PolymarketSource(), ledger))
+        elif args.paper_command == "leakage":
+            rows = leakage.gaps(
+                leakage.backtest_scores(args.backtest, args.root, args.domain),
+                leakage.forward_scores(ledger),
+            )
+            print(leakage.summary(rows) if rows else "no forecaster settled in both")
+        else:
+            for name in args.domain:
+                forecasters = [make_forecaster(f, name) for f in args.forecasters]
+                counts = run_cycle(
+                    DOMAINS[name],
+                    forecasters,
+                    PolymarketSource(),
+                    args.root,
+                    ledger,
+                    depth=args.depth,
+                    max_markets=args.max_markets,
+                )
+                print(f"{name}: {counts}")
+        return
+
     if args.command == "backtest":
         config = BacktestConfig(
             domain=args.domain,
