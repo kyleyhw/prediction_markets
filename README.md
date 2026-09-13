@@ -14,7 +14,7 @@ Kalshi prices; that code is preserved unchanged under
 ```ascii
 prediction_markets/
 ├── vp/                        # the vibe-predict package (import name `vp`)
-│   ├── cli.py                 # `vp build-dataset`, `vp snapshot`, `vp backtest`, `vp paper`
+│   ├── cli.py                 # `vp build-dataset`, `vp snapshot`, `vp backtest`, `vp paper`, `vp ui`
 │   ├── venues/
 │   │   ├── _http.py           # throttled HTTP GET
 │   │   └── polymarket.py      # read-only Polymarket client
@@ -42,9 +42,12 @@ prediction_markets/
 │   │   ├── ledger.py          # hash-chained append-only ledger
 │   │   ├── loop.py            # forward cycle and settlement
 │   │   └── leakage.py         # forward-versus-backtest check
-│   └── live/                  # safety layer only; no signing until the design is agreed
-│       ├── mandate.py         # fail-closed guard over hard caps
-│       └── controls.py        # kill switch, environments, approvals, keyring
+│   ├── live/                  # safety layer only; no signing until the design is agreed
+│   │   ├── mandate.py         # fail-closed guard over hard caps
+│   │   └── controls.py        # kill switch, environments, approvals, keyring
+│   └── ui/
+│       ├── server.py          # read-only JSON API over the data root
+│       └── static/index.html  # the dashboard page
 ├── docs/                      # documentation (see index below)
 ├── tests/
 │   ├── reports/               # test reports with runtimes, one per phase
@@ -61,7 +64,8 @@ prediction_markets/
 │   ├── test_backtest.py       # the runner end to end
 │   ├── test_ledger.py         # chain integrity and tamper detection
 │   ├── test_paper.py          # forward cycle, settlement, leakage
-│   └── test_live_guard.py     # every refusal path of the live safety layer
+│   ├── test_live_guard.py     # every refusal path of the live safety layer
+│   └── test_ui.py             # dashboard endpoints against the fixtures
 ├── archive/
 │   └── prediction_markets/    # the original project, unchanged
 ├── NOTICE                     # attribution and licence for ported code
@@ -78,6 +82,7 @@ prediction_markets/
 - [Forecasters](docs/forecasters.md): contract, cutoff-bounded evidence, baselines, Elo, the LLM forecaster.
 - [Scoring](docs/scoring.md) and [sizing](docs/sizing.md): proper scores, calibration, fees, Kelly.
 - [Paper trading](docs/paper_trading.md): ledger, forward loop, settlement, leakage check.
+- [Browser dashboard](docs/ui.md): `vp ui`, a read-only local page over the data root.
 - [Security design](docs/security.md): proposed gate for live execution.
 - [Provenance](docs/provenance.md): code adapted from Vibe-Trading and how it was changed.
 - [Project plan](PROJECT_PLAN.md): phases, tasks and their status.

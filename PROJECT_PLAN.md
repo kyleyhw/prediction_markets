@@ -239,6 +239,9 @@ tasks below, not repeated here.
     and the README, and a test report in `tests/reports/` with runtimes.
 26. [completed] Pre-commit hooks (`ruff`, `ty`, `detect-secrets`) passing on every
     commit.
+27. [completed] Browser dashboard (`vp ui`): a read-only local page over the
+    data root, standard library only, with datasets, backtest runs and
+    figures, the paper ledger and the latest snapshots (`docs/ui.md`).
 
 ## Deferred
 - Kalshi as a second venue. Not in scope for the foreseeable future. The archived

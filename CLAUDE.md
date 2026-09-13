@@ -26,14 +26,15 @@ The original `prediction_markets` project is archived unchanged under
 - `README.md`, `docs/index.md`: entry points. `docs/architecture.md` has the
   data flow and design decisions; then one page per phase:
   `data_layer.md`, `forecasters.md`, `scoring.md`, `sizing.md`,
-  `paper_trading.md`, `security.md`.
+  `paper_trading.md`, `security.md`, `ui.md`.
 - `vp/`: the package. `venues/polymarket.py` (read-only client with the
   closed-is-not-resolved evidence ladder), `domains/` (cs2, weather, epl),
   `markets/` (record, source, Parquet store, dataset, snapshot),
   `forecast/` (evidence, baselines, Elo, LLM, registry), `backtest/`
   (scoring, sizing, simulator, runner, bankroll), `paper/` (ledger, loop,
-  leakage), `cli.py` (`vp build-dataset`, `vp snapshot`, `vp backtest`,
-  `vp paper`).
+  leakage), `live/` (safety layer only), `ui/` (read-only dashboard),
+  `cli.py` (`vp build-dataset`, `vp snapshot`, `vp backtest`, `vp paper`,
+  `vp ui`).
 - `tests/`: offline tests only; `tests/reports/` has a report per phase with
   runtimes. `data/` is git-ignored.
 
@@ -52,7 +53,9 @@ cutoff-bounded `Evidence` object (`vp/forecast`: market price, constant,
 climatology, Elo, and the LLM forecaster on the official Anthropic SDK);
 scoring, sizing, the fill simulator and `vp backtest` (`vp/backtest`); and
 paper trading on a hash-chained ledger with settlement and the leakage
-check (`vp/paper`, `vp paper run|settle|leakage`).
+check (`vp/paper`, `vp paper run|settle|leakage`); and a read-only browser
+dashboard over all of it (`vp ui`, standard library, one hand-written
+page; it deliberately has no actions, see `docs/ui.md`).
 
 Things a future session should know:
 
@@ -78,8 +81,8 @@ Things a future session should know:
   install the pinned Python 3.14.7) and sets the git identity to the
   repository owner. Commits must carry that identity and no assistant
   attribution.
-- Work was pushed to the branch the web session was given; merging into
-  `master` is the user's call.
+- The user asked for the branch to be merged: `master` is fast-forwarded
+  to the same commits as the session branch.
 
 ## Invariants to preserve
 

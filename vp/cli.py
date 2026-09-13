@@ -12,6 +12,7 @@ Subcommands:
 * ``vp paper run|settle|leakage``: one forward paper-trading cycle, the
   settlement pass over open positions, and the forward-versus-backtest
   leakage check, all recorded in a hash-chained ledger.
+* ``vp ui``: a local, read-only browser dashboard over the data root.
 """
 
 from __future__ import annotations
@@ -125,11 +126,22 @@ def main() -> None:
     pleak.add_argument("--domain", required=True, choices=sorted(DOMAINS))
     pleak.add_argument("--backtest", type=Path, required=True, help="backtest dir")
 
+    ui = sub.add_parser("ui", help="serve the browser dashboard")
+    ui.add_argument("--root", type=Path, default=Path("data"))
+    ui.add_argument("--host", default="127.0.0.1")
+    ui.add_argument("--port", type=int, default=8765)
+
     args = parser.parse_args()
     logging.basicConfig(
         level=logging.DEBUG if args.verbose else logging.INFO,
         format="%(levelname)s %(name)s: %(message)s",
     )
+    if args.command == "ui":
+        from vp.ui.server import serve
+
+        serve(args.root, args.host, args.port)
+        return
+
     if args.command == "paper":
         ledger = Ledger(args.root / "paper" / "ledger.jsonl")
         broken = ledger.verify()
