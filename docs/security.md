@@ -1,7 +1,14 @@
 # Live Execution: Security Design (Phase 11, task 22)
 
-**Status: proposed, awaiting agreement. No execution code is to be written
-until this design is agreed; the invariant is recorded in `CLAUDE.md`.**
+**Status: proposed, awaiting agreement.** The safety layer described in
+sections 2 to 6 is implemented and tested in `vp/live/` (mandate guard,
+kill switch, environment separation, proposal-and-approval protocol,
+keyring credential access); none of it can sign or send an order. Order
+signing and placement (task 23) and the canary (task 24) are not written
+until this design is agreed; the invariant is recorded in `CLAUDE.md`.
+Agreeing may mean changing the caps, the approval expiry (15 minutes) or
+the file format (JSON, `docs/security.md` § 3), all of which are
+parameters of the code as written.
 
 Live execution means signing orders with a key that controls real funds on
 Polymarket's CLOB. Everything in this design exists to bound what a bug, a
@@ -40,9 +47,9 @@ decision is in the hash-chained ledger before it is acted on.
 
 ## 3. The Mandate
 
-A signed, versioned YAML file, read at start and checked before every
-order, with hard caps that the guard enforces and the operator cannot
-override at runtime:
+A versioned JSON file (`vp.live.mandate.Mandate`, version 1), read at
+start and again before every order, with hard caps that the guard
+enforces and the operator cannot override at runtime:
 
 | Cap | Meaning |
 | :--- | :--- |
@@ -55,12 +62,17 @@ override at runtime:
 | `expires_at` | Instant after which every order is refused |
 
 A cap the guard cannot evaluate (a missing price, a ledger that will not
-replay, an unparsable mandate) is a refusal: the guard fails closed.
+replay or verify, an unparsable mandate, a missing or non-positive cap, a
+wrong version) is a refusal: the guard fails closed. `Guard.check` returns
+a `Decision` with the reason, and the tests exercise every refusal path.
+Exposure, the daily order count and the daily realised loss are replayed
+from the ledger, so the guard reads the same record the audit does.
 
 ## 4. The Kill Switch
 
-A file path outside the repository (`~/.vibe-predict/STOP`). The adapter
-checks for it before every order and every cycle, and exits if present. It
+A file path outside the repository (`~/.vibe-predict/STOP`, or
+`VP_STOP_FILE`). The adapter checks for it before every order and every
+cycle, and exits if present. It
 is independent of the process: the operator, a cron job, or a monitoring
 script can create it without talking to the running process, and removing
 it is a deliberate act. The guard also stops if the ledger chain fails to
@@ -69,8 +81,10 @@ verify.
 ## 5. Human Approval
 
 Every write (order placement, cancellation) is proposed as a ledger entry
-of kind `proposal`, and the adapter waits for an `approval` entry with a
-matching hash before signing. In the first phase the approval is typed by
+of kind `proposal`, and the adapter waits for an `approval` entry naming
+that proposal's hash and a named approver before signing. An approval
+expires after 15 minutes and is consumed by the order that references
+it, so one approval cannot cover two orders (`vp.live.controls`). In the first phase the approval is typed by
 the operator at a prompt; an auto-approval policy, if ever adopted, is a
 later mandate version with its own caps and is not part of this design.
 

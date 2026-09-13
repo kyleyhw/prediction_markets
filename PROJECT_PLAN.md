@@ -220,6 +220,10 @@ tasks below, not repeated here.
 ## Phase 11: Live execution (planned, not to be written yet)
 22. [in-progress] Security design, agreed before any code.
     - Proposed in `docs/security.md` (2026-09-13); awaiting agreement.
+    - The safety layer it specifies (mandate guard, kill switch,
+      environment separation, approvals, keyring access) is implemented
+      and tested in `vp/live/` so the design can be judged with code in
+      hand; it cannot sign or send an order.
     - Key storage in the OS keyring, never in the repository or `.env`.
     - Separate credentials for paper and live, structurally unable to cross.
     - Mandate of hard caps: max order notional, max total exposure, max trades

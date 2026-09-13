@@ -18,8 +18,9 @@ Polymarket, scored by backtest and paper trading before any live execution. The
   Kelly.
 - [Paper trading](paper_trading.md): the hash-chained ledger, the forward
   cycle, settlement and the leakage check.
-- [Security design](security.md): the proposed design for live execution,
-  awaiting agreement before any execution code.
+- [Security design](security.md): the proposed design for live execution
+  and its implemented safety layer; agreement is required before any
+  order-signing code.
 - [Provenance](provenance.md): what was adapted from Vibe-Trading, how it was
   changed, and why.
 
@@ -27,7 +28,8 @@ Test reports live in [tests/reports/](../tests/reports/), one per phase:
 [Phase 6](../tests/reports/phase6_restructure.md),
 [Phase 7](../tests/reports/phase7_data_layer.md),
 [Phase 8](../tests/reports/phase8_forecasters.md),
-[Phase 9](../tests/reports/phase9_backtest.md) and
-[Phase 10](../tests/reports/phase10_paper_trading.md).
+[Phase 9](../tests/reports/phase9_backtest.md),
+[Phase 10](../tests/reports/phase10_paper_trading.md) and
+[Phase 11 safety layer](../tests/reports/phase11_safety_layer.md).
 The original project's documentation is preserved under
 [archive/prediction_markets/docs/](../archive/prediction_markets/docs/).

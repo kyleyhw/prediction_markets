@@ -40,8 +40,10 @@ The original `prediction_markets` project is archived unchanged under
 ## State at handoff (2026-09-13, evening)
 
 Phases 6 to 10 are complete and Phase 12's continuous items are in place;
-Phase 11 has its security design proposed in `docs/security.md` and is
-waiting for the user to agree to it before any execution code is written.
+Phase 11 has its security design proposed in `docs/security.md`, with the
+safety layer it specifies built and tested in `vp/live/` (nothing there can
+sign or send an order), and is waiting for the user to agree to the design
+before the execution adapter (task 23) is written.
 Each phase has a report in `tests/reports/` with what was measured live.
 
 What exists, in order of the data flow: the Polymarket client and data

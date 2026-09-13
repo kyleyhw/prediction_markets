@@ -38,10 +38,13 @@ prediction_markets/
 │   │   ├── simulate.py        # fill-and-settle simulator
 │   │   ├── run.py             # the backtest runner and its report
 │   │   └── bankroll.py        # bankroll statistics over per-bet P&L
-│   └── paper/
-│       ├── ledger.py          # hash-chained append-only ledger
-│       ├── loop.py            # forward cycle and settlement
-│       └── leakage.py         # forward-versus-backtest check
+│   ├── paper/
+│   │   ├── ledger.py          # hash-chained append-only ledger
+│   │   ├── loop.py            # forward cycle and settlement
+│   │   └── leakage.py         # forward-versus-backtest check
+│   └── live/                  # safety layer only; no signing until the design is agreed
+│       ├── mandate.py         # fail-closed guard over hard caps
+│       └── controls.py        # kill switch, environments, approvals, keyring
 ├── docs/                      # documentation (see index below)
 ├── tests/
 │   ├── reports/               # test reports with runtimes, one per phase
@@ -57,7 +60,8 @@ prediction_markets/
 │   ├── test_simulate.py       # fills and compounding
 │   ├── test_backtest.py       # the runner end to end
 │   ├── test_ledger.py         # chain integrity and tamper detection
-│   └── test_paper.py          # forward cycle, settlement, leakage
+│   ├── test_paper.py          # forward cycle, settlement, leakage
+│   └── test_live_guard.py     # every refusal path of the live safety layer
 ├── archive/
 │   └── prediction_markets/    # the original project, unchanged
 ├── NOTICE                     # attribution and licence for ported code
