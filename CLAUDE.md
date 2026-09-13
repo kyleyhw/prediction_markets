@@ -59,9 +59,10 @@ Things a future session should know:
   environment, so the first keyed run needs only the key, and
   `vp backtest --forecasters market llm --max-markets 50` on a domain is
   the first thing to do with it. The cost per forecast is printed.
-- Live baseline results so far (Phase 9 report): on weather buckets the
-  market beats climatology decisively; EPL and CS2 Elo results are in the
-  same report. Nothing beats the market yet, which is the honest state.
+- Live baseline results (Phase 9 report): no baseline beats the market.
+  Weather climatology has skill −0.19 against it, EPL Elo −0.02 (at par a
+  day out) and CS2 Elo −0.12; every simulated strategy loses at a 5%
+  minimum edge. That is the bar the LLM forecaster has to clear.
 - Evidence comes from the resolved dataset itself (resolutions as results
   and realised buckets). Open-Meteo's archive and previous-runs endpoints
   were rate-limited from the container; wiring them in is the obvious

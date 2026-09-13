@@ -141,3 +141,39 @@ interval includes zero, the 2-hour figure reverses it, and a strategy
 that requires the market to be biased in a fixed direction is not a
 forecast. It is recorded because it is what the data said, and as the
 kind of result the leakage check and forward loop exist to test.
+
+### CS2, Elo against the market
+
+Same command with `--domain cs2` on the 400-market sample of series
+markets (80 hourly histories). CS2 markets are listed a day or two before
+the match and most histories are daily bars, so only 124 of the 400 have
+a price 24 hours before settlement and 291 have one two hours before;
+the two rows are therefore different market sets.
+
+| Cutoff | Scored | Market Brier | Elo Brier | Skill | Elo REL / RES | Market REL / RES |
+| :--- | ---: | ---: | ---: | ---: | :--- | :--- |
+| 24 h | 107 | 0.1889 | 0.2124 | −0.12 | 0.0118 / 0.0442 | 0.0147 / 0.0684 |
+| 2 h | 253 | 0.1716 | 0.2311 | −0.35 | 0.0045 / 0.0239 | 0.0058 / 0.0838 |
+
+Elo has real resolution here (0.044 a day out, against 0.068 for the
+market) and is roughly as well calibrated, but it is clearly the weaker
+forecast, and its bets lose: −25% at 24 h ($P(\text{Sharpe} > 0) = 0.40$)
+and −95% at 2 h, where the market has moved on information (rosters,
+map picks, the first map) that a series rating cannot see. The constant
+baseline loses everything in both settings, as expected in a domain
+without a favourite-longshot bias to exploit.
+
+## Summary
+
+| Domain | Best baseline | Skill vs market (24 h) | Bets at 5% min edge | Verdict |
+| :--- | :--- | ---: | :--- | :--- |
+| weather | climatology | −0.19 | none | market far sharper |
+| epl | elo | −0.02 | −3%, $P > 0$ 0.59 | at par a day out, no edge |
+| cs2 | elo | −0.12 | −25%, $P > 0$ 0.40 | market sharper |
+
+No baseline beats the market, which is the expected state before the LLM
+forecaster and any external evidence (NWP output, rosters) are brought in,
+and it is the honest bar the LLM forecaster now has to clear. The runner
+itself is fast (1 to 13 s per 400-market run after the histories are on
+disk) and the figures (`reliability.png`, `cumulative_score.png`,
+`equity.png`) are written per run under `data/backtests/`.
