@@ -33,30 +33,27 @@ The original `prediction_markets` project is archived unchanged under
 - `tests/`: offline tests only; `tests/reports/` has a report per phase with
   runtimes. `data/` is git-ignored.
 
-## State at handoff (2026-09-12)
+## State at handoff (2026-09-13)
 
-Phases 6 and 7 are complete except one item. The previous session ran in a
-container whose network policy blocked `gamma-api.polymarket.com` and
-`clob.polymarket.com`, so nothing has been run against the live API. Task 8
-of Phase 7 is therefore `[in-progress]`: the retrievability measurement.
+Phases 6 and 7 are complete, including the live measurement (task 8), which
+ran from a container with access to Polymarket on 2026-09-13. Its results
+are in `tests/reports/phase7_data_layer.md` and `docs/data_layer.md`: the
+Gamma tag ids for all three domains are recorded in `vp/domains/`, the
+parsers were corrected to the question forms the venue actually serves, the
+catalogue pager handles Gamma's 100-row and 2000-offset caps, and price
+histories fall back from hourly to daily bars because the venue keeps
+sub-daily bars only for about a month.
 
-First actions for a network-enabled session, in order:
+Things a future session should know:
 
-1. `uv run vp build-dataset --domain epl --max-markets 20` and read its
-   report. It answers whether resolved markets and their histories are
-   served. Then the same for `cs2` and `weather`.
-2. Record the Gamma tag ids for CS2 and weather in `vp/domains/cs2.py` and
-   `vp/domains/weather.py` (`tag_ids` is empty; labels are known). Find them
-   from the `tag_ids` field of discovered events.
-3. Check the EPL match question forms against `vp/domains/epl.py`; no EPL
-   strings were ever captured, so the match parser is a guess. Fix the regex
-   if the venue phrases them differently.
-4. Run `uv run vp snapshot --domain cs2 weather epl --depth 5` once to
-   confirm the book path.
-5. Update task 8 to `[completed]` with what was measured, add the live
-   results to `tests/reports/phase7_data_layer.md`, commit, push.
-6. Then ask for the go-ahead on Phase 8 (forecasters). Do not start it
-   without it.
+- The resolved sets are large (13k EPL, 89k CS2, 134k weather labelled
+  markets) and dominated by props (over/under, handicaps, exact scores) that
+  parse to no fields. Match, season and daily-temperature markets are the
+  parsed subsets a forecaster can use; see the kind counts in the report.
+- `uv run vp build-dataset --domain <d> --no-history` takes 20 s to 2 min per
+  domain; with histories it is one request per market at 0.35 s spacing.
+- The next step is Phase 8 (forecasters). Ask for the go-ahead before
+  starting it.
 
 ## Invariants to preserve
 

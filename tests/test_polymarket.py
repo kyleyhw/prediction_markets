@@ -156,3 +156,31 @@ def test_clob_token_id_domain() -> None:
     assert not pm.is_clob_token_id(str(2**256))
     assert not pm.is_clob_token_id("12345")
     assert not pm.is_clob_token_id("²")
+
+
+def test_iter_events_walks_past_the_offset_cap(monkeypatch) -> None:
+    """A tag with 2300 events is listed exactly once by restarting the walk from
+    the last end date seen when the offset cap is reached."""
+    events = [
+        {"id": str(i), "endDate": f"2026-01-01T00:00:{i // 10:02d}Z", "markets": []}
+        for i in range(2300)
+    ]
+    calls: list[tuple[int, str | None]] = []
+
+    def fake_list(*, tag_id, closed, limit, offset, end_date_min=None):
+        calls.append((offset, end_date_min))
+        assert offset + limit <= 2000, "the cap must not be crossed"
+        window = [
+            e for e in events if end_date_min is None or e["endDate"] >= end_date_min
+        ]
+        return [
+            pm.normalize_event(e, with_markets=True)
+            for e in window[offset : offset + limit]
+        ]
+
+    monkeypatch.setattr(pm, "list_events", fake_list)
+    ids = [e["event_id"] for e in pm.iter_events(tag_id="84", closed=True)]
+    assert ids == [str(i) for i in range(2300)]
+    # 20 pages at offsets 0..1900, then a restart from the boundary date.
+    assert calls[19] == (1900, None)
+    assert calls[20] == (0, events[1999]["endDate"])

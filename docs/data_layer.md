@@ -41,29 +41,62 @@ those are exclusions or were dropped.
 
 Each domain also carries a parser that reads a question into structured
 fields. Parsing is best-effort and documented per domain in the module
-docstrings, with the exact question strings the patterns were built from:
+docstrings, with the exact question strings the patterns were built from,
+all verified against the venue on 2026-09-13 (the counts are from the full
+resolved sets built that day, see the
+[Phase 7 report](../tests/reports/phase7_data_layer.md)):
 
-- **cs2**: matches (`Spirit vs Team Falcons (BO3)`) and tournament winners
-  (`Will FURIA win the StarLadder Budapest Major 2025?`).
-- **weather**: daily temperature buckets at a named city
-  (`between 54-55°F`, `53°F or below`, `62°F or higher`), record ranks, and
-  global anomaly buckets.
-- **epl**: season winners by analogy with the Bundesliga form, and match
-  sides under an `A vs B` event.
+- **cs2**: match winners, whose question is the event title
+  (`Counter-Strike: Rare Atom vs DEPO (BO3) - Asia Championships Closed
+  Qualifier Playoffs`, with the stage before a colon in 2024 titles), per-map
+  winners (`... - Map 1 Winner`, read as a match with a `map` field), and
+  tournament winners (`Will M80 win ESL Challenger Atlanta 2024?`). The
+  props under a match event (`Games Total: O/U 2.5`, map handicaps, odd/even
+  kills) are members without fields; they are 70% of the resolved set.
+- **weather**: daily temperature buckets at a named city, in four forms
+  (`between 54-55°F`, `53°F or below`, `62°F or higher`, and the one-degree
+  `17°C`), which are 98% of the resolved set and parse in all but 23
+  malformed cases; record ranks and global anomaly buckets. Tornado, rain,
+  earthquake and drought questions are members without fields.
+- **epl**: season winners (`Will Arsenal win the 2026-27 English Premier
+  League (EPL) Championship?`, and the 2024 form without a season) and match
+  sides under an `A vs. B` event (`Will Arsenal FC win on 2026-09-19?`,
+  `Will A vs. B end in a draw?`, plus the 2024 `win against` and `beat`
+  forms). Over/under, exact score, anytime scorer and spread markets are
+  members without fields; they are 80% of the resolved set.
 
-The EPL match forms are unverified: no EPL question strings were captured by
-the archived project. The parser returns `None` on anything it does not
-recognise, and an unparsed market is still a member of its domain.
+The parser returns `None` on anything it does not recognise, and an unparsed
+market is still a member of its domain. A parser reads the question only,
+never the event title alone, so a prop under a match event is not mistaken
+for the match.
 
 ## Discovery
 
 `PolymarketSource.discover` combines two routes and de-duplicates by market id.
-Paging the catalogue by tag id is exhaustive for that tag; the only recorded id
-is 306 for the Premier League. Keyword search per domain keyword catches
-untagged markets but is relevance-ranked and capped by the venue. The tag ids
-for CS2 and weather were not recorded and are to be measured on the first live
-run; the tag *labels* (`cs2`, `counter strike 2`, `Esports`, `Weather`,
-`climate & weather`) are known and are used for membership.
+Paging the catalogue by tag id is exhaustive for that tag; keyword search per
+domain keyword catches untagged markets but is relevance-ranked and capped by
+the venue. The tag ids, measured on 2026-09-13 from the `tags` field of
+discovered events:
+
+| Domain | Listed by | Also seen (not listed by) |
+| :--- | :--- | :--- |
+| cs2 | 100677 CS2, 100780 counter strike 2, 100602 counter-strike | 64 Esports (all games), 104507 "Counter stike 2", 100635 csgo |
+| weather | 84 Weather | 103040 Daily Temperature, 104596 Highest temperature, 832 Global Temp, 87 climate |
+| epl | 306 EPL, 82 Premier League | 100350 Soccer, 100639 Games |
+
+Tag 306 was applied in 2024 to Champions League and Europa League ties
+involving English clubs, and tag 82 carries "qualify for the Champions
+League" markets, so the EPL domain excludes those competitions and the
+domestic cups by name. The Esports label is not used for membership because
+it is shared with every other game.
+
+The catalogue endpoint caps `limit` at 100 and rejects an `offset` above
+2000 with HTTP 422, which the weather tag's closed events exceed. `iter_events` therefore walks in end-date order and, when the
+next page would cross the cap, restarts from the last end date seen with
+`end_date_min`, skipping by id the events on the boundary date it has
+already yielded. The venue's error message points to an `/events/keyset`
+endpoint that returns a `next_cursor`, but no parameter name tried continues
+from it, so the date window is used instead.
 
 ## Resolved Dataset
 
@@ -81,16 +114,31 @@ resolved but void or split (no label): N
 closed but pending (no settlement record): N
 still open: N
 histories fetched: N (empty: N, errors: N)
+  served at 60-minute bars: N
+  served at 1440-minute bars: N
 ```
 
-Running with `--max-markets 20` is the quick check. The `data/` directory is
-ignored by git.
+Running with `--max-markets 20` is the quick check; `--no-history` runs the
+discovery alone, which takes about two minutes for the largest domain. The
+`data/` directory is ignored by git.
+
+Price histories are keyed by CLOB token and requested with `interval=max`.
+Measured on 2026-09-13, the venue serves bars finer than daily (down to the
+raw trade series at `fidelity=10` or below) only for markets that closed
+within roughly the last month, and daily bars for everything older back to
+2023. `PolymarketSource.history` therefore asks for hourly bars first and
+falls back to daily, and each stored series records the `bar_minutes` it
+was served at. For a backtest this means the price at an arbitrary cutoff
+is known to the hour only for recent markets and to the day otherwise; the
+snapshot collector below is what accumulates finer data going forward.
 
 ## Snapshots
 
 `vp snapshot --domain cs2 weather epl --depth 5` discovers open markets,
 attaches five book levels per side to each outcome, and writes
-`data/snapshots/<domain>/<UTC stamp>.parquet`. Runs are append-only, so the
+`data/snapshots/<domain>/<UTC stamp>.parquet`. A listed token whose book the
+CLOB answers with 404 (seen once, on a market not yet trading) keeps its
+quote without a book. Runs are append-only, so the
 directory accumulates a time series of books that later phases use as backtest
 input and as the paper-trading feed. With the default request spacing of
 0.35 s per host, a market with depth costs about one second, so a snapshot of
@@ -103,5 +151,5 @@ Both schemas are explicit in `vp.markets.store`. The `markets` table flattens
 the two outcomes into `outcome_0_*` and `outcome_1_*` columns, stores each book
 as a list of `{price, size}` structs, `tags` as a list of strings and `parsed`
 as a string map. The `histories` table has one row per point:
-`market_id, clob_token_id, outcome, timestamp, implied_probability`. A file
-written from an empty list still carries its columns.
+`market_id, clob_token_id, outcome, timestamp, implied_probability,
+bar_minutes`. A file written from an empty list still carries its columns.

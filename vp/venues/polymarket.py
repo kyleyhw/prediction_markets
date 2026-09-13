@@ -23,9 +23,11 @@ Data comes from two public, no-auth Polymarket services:
   - ``GET /events?slug=<exact slug>`` returns a list (empty on a partial slug;
     the match is exact, not prefix).
   - ``GET /markets/<numeric id>`` returns one market object.
-  - ``GET /events?tag_id=&closed=&limit=&offset=`` lists events by tag with
-    offset pagination, as the archived collector used it; ``closed`` takes
-    ``true``/``false``. Event objects carry ``tags: [{id, label, slug}]``.
+  - ``GET /events?tag_id=&closed=&limit=&offset=&order=endDate&ascending=
+    &end_date_min=`` lists events by tag; ``closed`` takes ``true``/``false``.
+    Measured in September 2026: ``limit`` is capped at 100 and ``offset`` at
+    2000 (HTTP 422 beyond it), so deeper listing restarts from an
+    ``end_date_min`` bound. Event objects carry ``tags: [{id, label, slug}]``.
   Event objects carry ``id, ticker, slug, title, description, startDate,
   endDate, closedTime, active, closed, archived, liquidity, volume,
   volume24hr, markets``. Market objects carry ``id, question, conditionId,
@@ -125,6 +127,9 @@ _MIN_INTERVAL_ENV = "VP_POLYMARKET_MIN_INTERVAL"
 # without being banned; override with the environment variable for batch jobs.
 _DEFAULT_MIN_INTERVAL = 0.35
 _TIMEOUT_S = 20.0
+# Gamma rejects ``offset`` above this with HTTP 422 ("offset too large, use
+# /events/keyset for deeper pagination"); measured in September 2026.
+_OFFSET_CAP = 2000
 
 SearchStatus = Literal["open", "closed", "any"]
 Interval = Literal["1h", "6h", "1d", "1w", "1m", "max"]
@@ -653,15 +658,23 @@ def fetch_history(
     *,
     interval: Interval = "max",
     outcome: str | None = None,
+    fidelity: int | None = None,
 ) -> dict[str, Any]:
     """Fetch one outcome's implied-probability time series.
 
     Args:
         identifier: CLOB token id, ``0x`` condition id, or Gamma market id.
         interval: Lookback window; ``1m`` is one month and ``max`` the full
-            series. Bar width follows :data:`_FIDELITY_MINUTES`.
+            series. Bar width follows :data:`_FIDELITY_MINUTES` unless
+            ``fidelity`` is given.
         outcome: Outcome name to select when the id names a whole market;
             defaults to the first outcome. Ignored for a CLOB token id.
+        fidelity: Bar width in minutes, overriding the interval's default.
+            Measured live on 2026-09-13: bars finer than daily are served
+            only for markets that closed within roughly the last month
+            (present from 2026-08-13, absent for 2026-08-07 and earlier);
+            older markets return an empty series at ``fidelity=60`` and a
+            populated one at ``1440``.
 
     Returns:
         Context fields plus ``interval``, ``bar_minutes`` and ``points``, each
@@ -672,14 +685,11 @@ def fetch_history(
         requests.RequestException: Propagated from the HTTP layer.
     """
     token_id, context = _resolve_history_token(identifier, outcome)
+    bar_minutes = fidelity if fidelity is not None else _FIDELITY_MINUTES[interval]
     payload = _get_json(
         _CLOB_HISTORY_URL,
         host_key=_CLOB_HOST_KEY,
-        params={
-            "market": token_id,
-            "interval": interval,
-            "fidelity": _FIDELITY_MINUTES[interval],
-        },
+        params={"market": token_id, "interval": interval, "fidelity": bar_minutes},
     )
     raw_points = payload.get("history") if isinstance(payload, dict) else None
     if not isinstance(raw_points, list):
@@ -704,7 +714,7 @@ def fetch_history(
     return {
         **context,
         "interval": interval,
-        "bar_minutes": _FIDELITY_MINUTES[interval],
+        "bar_minutes": bar_minutes,
         "points": points,
     }
 
@@ -776,31 +786,44 @@ def list_events(
     closed: bool | None = None,
     limit: int = 100,
     offset: int = 0,
+    end_date_min: str | None = None,
 ) -> list[dict[str, Any]]:
     """List one page of the event catalogue, optionally by tag and trading state.
+
+    Pages are ordered by event end date, ascending, so a walk is deterministic
+    and can be resumed from a date (see :func:`iter_events`).
 
     Args:
         tag_id: Gamma tag id to filter on; ``None`` lists across all tags.
         closed: ``True`` for events whose trading has ended, ``False`` for
             those still trading, ``None`` for both. This is a trading-state
             filter, not a settlement filter.
-        limit: Page size. The archived collector used up to 500 without
-            complaint; the upstream ceiling is not documented.
-        offset: Number of events to skip, for pagination.
+        limit: Page size. Measured in September 2026: the venue caps it at
+            100 and silently truncates larger values.
+        offset: Number of events to skip. Measured in September 2026: values
+            above 2000 are rejected with HTTP 422.
+        end_date_min: ISO-8601 lower bound (inclusive) on the event end date.
 
     Returns:
-        Event records with their markets, in the order the catalogue returns
-        them. An empty list means the page is past the end.
+        Event records with their markets, in end-date order. An empty list
+        means the page is past the end.
 
     Raises:
         ValueError: The payload is not a list.
         requests.RequestException: Propagated from the HTTP layer.
     """
-    params: dict[str, Any] = {"limit": limit, "offset": offset}
+    params: dict[str, Any] = {
+        "limit": limit,
+        "offset": offset,
+        "order": "endDate",
+        "ascending": "true",
+    }
     if tag_id is not None:
         params["tag_id"] = tag_id
     if closed is not None:
         params["closed"] = "true" if closed else "false"
+    if end_date_min is not None:
+        params["end_date_min"] = end_date_min
     payload = _get_json(_GAMMA_EVENTS_URL, host_key=_GAMMA_HOST_KEY, params=params)
     if not isinstance(payload, list):
         raise ValueError("unexpected events payload shape")
@@ -812,11 +835,40 @@ def list_events(
 def iter_events(
     *, tag_id: str | None = None, closed: bool | None = None, page_size: int = 100
 ) -> Iterator[dict[str, Any]]:
-    """Walk the catalogue page by page until an empty or short page ends it."""
+    """Walk the catalogue in end-date order until an empty or short page ends it.
+
+    The venue's offset cap (:data:`_OFFSET_CAP`) would stop a walk at 2000
+    events, which a busy tag exceeds. When the next page would cross it, the
+    walk restarts at offset 0 with ``end_date_min`` set to the last end date
+    seen; events sharing that boundary date are skipped by id so none is
+    yielded twice. A boundary that does not advance (more events on one end
+    date than the cap) or has no end date ends the walk, since nothing past
+    it can be reached this way.
+    """
+    seen: set[str] = set()
     offset = 0
+    end_date_min: str | None = None
     while True:
-        page = list_events(tag_id=tag_id, closed=closed, limit=page_size, offset=offset)
-        yield from page
+        page = list_events(
+            tag_id=tag_id,
+            closed=closed,
+            limit=page_size,
+            offset=offset,
+            end_date_min=end_date_min,
+        )
+        for event in page:
+            key = event.get("event_id")
+            if key in seen:
+                continue
+            if key is not None:
+                seen.add(key)
+            yield event
         if len(page) < page_size:
             return
         offset += page_size
+        if offset + page_size > _OFFSET_CAP:
+            boundary = page[-1].get("end_date")
+            if not boundary or boundary == end_date_min:
+                logger.warning("walk stopped at the offset cap, end date %s", boundary)
+                return
+            end_date_min, offset = boundary, 0

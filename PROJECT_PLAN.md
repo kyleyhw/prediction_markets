@@ -139,16 +139,21 @@ tasks below, not repeated here.
       threshold and date; fixture and date) for use by forecasters.
     - Parsers are built from question strings recorded in the archived
       reports; the EPL match forms are unverified until the first live run.
-8.  [in-progress] Historical dataset of resolved markets for backtesting.
+8.  [completed] Historical dataset of resolved markets for backtesting.
     - Verify that resolved markets and their price histories are retrievable;
       the archived project found some closed-market Gamma endpoints returning
       400/404, so this is a measurement, not an assumption.
     - Persist to `data/` as Parquet with a documented schema.
-    - [completed] `vp build-dataset` implemented, with the retrievability
-      counts printed as its report; tested against a fake source.
-    - [pending] Run it live: the development container cannot reach
-      Polymarket, so the measurement itself, and the Gamma tag ids for CS2
-      and weather, wait on a run from a machine with access.
+    - `vp build-dataset` implemented, with the retrievability counts printed
+      as its report; tested against a fake source.
+    - Measured live on 2026-09-13 (`tests/reports/phase7_data_layer.md`):
+      resolved markets are served with a settlement label for 97% (EPL,
+      12,716), 89% (CS2, 88,668) and 99.8% (weather, 134,077) of the closed
+      markets discovered; price histories are served for every sampled
+      market, at hourly bars for markets closed within about the last month
+      and daily bars before that. Gamma tag ids recorded for all three
+      domains; the catalogue's 100-row and 2000-offset caps handled by an
+      end-date walk; the parsers corrected to the live question forms.
 9.  [completed] Snapshot collector for ongoing data.
     - Periodic capture of live prices and books for the three domains, feeding
       both future backtests and paper trading.

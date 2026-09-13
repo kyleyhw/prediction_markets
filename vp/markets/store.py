@@ -4,8 +4,9 @@ Two tables. ``markets`` holds one row per :class:`BinaryMarket` observation,
 with the two outcomes flattened into numbered columns and each order book as a
 list of ``{price, size}`` structs, so a file is readable by any Parquet tool
 without this package. ``histories`` holds one row per price point of one
-outcome token. Both schemas are explicit rather than inferred so that a file
-written from an empty list still carries the columns.
+outcome token, with the bar width the series was served at. Both schemas are
+explicit rather than inferred so that a file written from an empty list still
+carries the columns.
 """
 
 from __future__ import annotations
@@ -66,6 +67,7 @@ HISTORY_SCHEMA = pa.schema(
         ("outcome", pa.string()),
         ("timestamp", pa.string()),
         ("implied_probability", pa.float64()),
+        ("bar_minutes", pa.int32()),
     ]
 )
 
@@ -176,6 +178,7 @@ def write_history(
     clob_token_id: str | None,
     outcome: str | None,
     points: list[dict[str, Any]],
+    bar_minutes: int | None = None,
 ) -> None:
     """Write one outcome token's price series as returned by the client."""
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -186,6 +189,7 @@ def write_history(
             "outcome": outcome,
             "timestamp": point["timestamp"],
             "implied_probability": point["implied_probability"],
+            "bar_minutes": bar_minutes,
         }
         for point in points
     ]

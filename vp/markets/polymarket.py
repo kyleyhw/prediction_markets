@@ -146,13 +146,30 @@ class PolymarketSource:
         )
 
     def history(
-        self, market: BinaryMarket, *, outcome_index: int = 0
+        self,
+        market: BinaryMarket,
+        *,
+        outcome_index: int = 0,
+        bar_minutes: tuple[int, ...] = (60, 1440),
     ) -> dict[str, Any]:
-        """Full price history of one of the market's outcome tokens."""
+        """Full price history of one of the market's outcome tokens.
+
+        Bar widths are tried in order and the first non-empty series is
+        returned, because the venue serves sub-daily bars only for recently
+        closed markets (see ``fetch_history``). The series carries the
+        ``bar_minutes`` it was served at.
+        """
         outcome = market.outcomes[outcome_index]
         if outcome.clob_token_id is None:
             raise ValueError("outcome has no CLOB token id")
-        return self._fetch_history(outcome.clob_token_id, interval="max")
+        series: dict[str, Any] = {}
+        for fidelity in bar_minutes:
+            series = self._fetch_history(
+                outcome.clob_token_id, interval="max", fidelity=fidelity
+            )
+            if series.get("points"):
+                break
+        return series
 
 
 def _levels(raw: Any) -> list[BookLevel]:

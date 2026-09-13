@@ -39,6 +39,7 @@ class BuildReport:
     still_open: int = 0
     histories_fetched: int = 0
     histories_empty: int = 0
+    histories_by_bar: dict[int, int] = field(default_factory=dict)
     history_errors: list[tuple[str, str]] = field(default_factory=list)
     markets_path: Path | None = None
 
@@ -54,6 +55,8 @@ class BuildReport:
             f"histories fetched: {self.histories_fetched} "
             f"(empty: {self.histories_empty}, errors: {len(self.history_errors)})",
         ]
+        for bar, count in sorted(self.histories_by_bar.items()):
+            lines.append(f"  served at {bar}-minute bars: {count}")
         for market_id, error in self.history_errors[:10]:
             lines.append(f"  history error {market_id}: {error}")
         if self.markets_path is not None:
@@ -113,14 +116,18 @@ def build_resolved_dataset(
                 logger.warning("history failed for %s: %s", key, exc)
                 continue
             points = series.get("points") or []
+            bar = series.get("bar_minutes")
             report.histories_fetched += 1
             if not points:
                 report.histories_empty += 1
+            elif isinstance(bar, int):
+                report.histories_by_bar[bar] = report.histories_by_bar.get(bar, 0) + 1
             write_history(
                 root / "histories" / domain.name / f"{key}.parquet",
                 market_id=market.market_id,
                 clob_token_id=market.outcomes[0].clob_token_id,
                 outcome=market.outcomes[0].name,
                 points=points,
+                bar_minutes=bar if isinstance(bar, int) else None,
             )
     return report

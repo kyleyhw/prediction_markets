@@ -4,7 +4,13 @@ Question forms observed in the archived December 2025 reports:
 
 * daily temperature bucket: ``Will the highest temperature in London be
   between 54-55°F on December 7?``, ``... be 53°F or below on December 7?``,
-  ``... be 62°F or higher on December 8?``
+  ``... be 62°F or higher on December 8?``, and the one-degree form seen
+  live in September 2026, ``Will the highest temperature in Cape Town be
+  17°C on September 12?``, which is the bucket ``[17, 17]``. A range may use
+  an en dash or drop the word "between" (``be 64–65°F on December 4?``). Of
+  131,285 resolved daily-temperature questions seen in September 2026, all
+  but 23 parse; the 23 are malformed early-2025 forms (``be between 42°F
+  and 43°F``, a missing "be") not worth a pattern.
 * record rank: ``Will 2025 be the hottest year on record?``,
   ``Will November 2025 be the 1st hottest on record?``,
   ``Will 2026 rank as the sixth-hottest year on record or lower?``
@@ -14,9 +20,11 @@ Question forms observed in the archived December 2025 reports:
 The daily buckets are the most useful for a forecaster because they resolve
 within days against a named station's observation; a bucket is stored as an
 inclusive low and high in the question's unit, with an open end left empty.
-Tag labels ``Weather`` and ``climate & weather`` exist on the venue; their ids
-were not recorded. The exclusion list is the archived one: keywords such as
-"Rain" and "Golden" pull in sports teams.
+The Gamma tag id measured live is ``84`` (Weather), which every daily
+temperature event carries alongside ``103040`` (Daily Temperature) and a city
+tag; record-rank events carry ``832`` (Global Temp) and ``87`` (climate). The
+exclusion list is the archived one: keywords such as "Rain" and "Golden" pull
+in sports teams.
 """
 
 from __future__ import annotations
@@ -31,10 +39,12 @@ _DAILY = re.compile(
     re.IGNORECASE,
 )
 _BETWEEN = re.compile(
-    r"^between (?P<lo>-?\d+(?:\.\d+)?)\s*-\s*(?P<hi>-?\d+(?:\.\d+)?)\s*(?P<unit>°[CF])$"
+    r"^(?:between )?(?P<lo>-?\d+(?:\.\d+)?)\s*[-–]\s*(?P<hi>-?\d+(?:\.\d+)?)"
+    r"\s*(?P<unit>°[CF])$"
 )
 _BELOW = re.compile(r"^(?P<hi>-?\d+(?:\.\d+)?)\s*(?P<unit>°[CF]) or below$")
 _ABOVE = re.compile(r"^(?P<lo>-?\d+(?:\.\d+)?)\s*(?P<unit>°[CF]) or higher$")
+_EXACT = re.compile(r"^(?P<v>-?\d+(?:\.\d+)?)\s*(?P<unit>°[CF])$")
 _RECORD = re.compile(
     r"^Will (?P<period>.+?) (?:be|rank as) the (?:(?P<rank>\S+?)[- ])?hottest"
     r"(?: (?:year|month))? on record(?P<tail> or lower)?\?$",
@@ -54,6 +64,8 @@ def _bucket(text: str) -> dict[str, str] | None:
         return {"low": "", "high": m["hi"], "unit": m["unit"]}
     if m := _ABOVE.match(text):
         return {"low": m["lo"], "high": "", "unit": m["unit"]}
+    if m := _EXACT.match(text):
+        return {"low": m["v"], "high": m["v"], "unit": m["unit"]}
     return None
 
 
@@ -85,8 +97,17 @@ def parse(question: str, event_title: str | None) -> dict[str, str] | None:
 
 WEATHER = Domain(
     name="weather",
-    tag_ids=(),
-    tag_labels=("weather", "climate & weather", "climate change", "temperature"),
+    tag_ids=("84",),
+    tag_labels=(
+        "weather",
+        "climate & weather",
+        "climate change",
+        "temperature",
+        "daily temperature",
+        "highest temperature",
+        "lowest temperature",
+        "global temp",
+    ),
     keywords=(
         "temperature in",
         "hottest",
