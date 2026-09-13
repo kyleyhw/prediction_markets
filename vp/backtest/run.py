@@ -55,6 +55,7 @@ class BacktestConfig:
     fee_rate: float = 0.0
     kelly_multiplier: float = 0.25
     max_fraction: float = 0.05
+    min_edge: float = 0.0
 
 
 @dataclass
@@ -181,6 +182,7 @@ def run_backtest(
                 fees=FeeModel(config.fee_rate),
                 kelly_multiplier=config.kelly_multiplier,
                 max_fraction=config.max_fraction,
+                min_edge=config.min_edge,
             )
             pnl = np.array([b.pnl for b in result.bets], dtype=float)
             result.stats = bankroll.bet_stats(pnl, config.initial_cash)
@@ -235,7 +237,7 @@ def summary(result: BacktestResult) -> str:
         "",
         f"Simulated bets from {c.initial_cash:.0f}, half-spread {c.half_spread}, "
         f"fee rate {c.fee_rate}, {c.kelly_multiplier} Kelly, cap {c.max_fraction:.0%} "
-        "per bet:",
+        f"per bet, minimum edge {c.min_edge}:",
         "",
         "| Forecaster | Bets | Return | Max drawdown | Win rate | Profit factor "
         "| Per-bet Sharpe | Sharpe 95% CI | P(Sharpe > 0) |",

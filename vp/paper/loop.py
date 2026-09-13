@@ -104,6 +104,7 @@ def run_cycle(
     fees: FeeModel = FeeModel(),
     kelly_multiplier: float = 0.25,
     max_fraction: float = 0.05,
+    min_edge: float = 0.0,
     now: datetime | None = None,
 ) -> dict[str, int]:
     """Snapshot, forecast, and place simulated orders; returns counts."""
@@ -150,6 +151,7 @@ def run_cycle(
                 fees=fees,
                 kelly_multiplier=kelly_multiplier,
                 max_fraction=max_fraction,
+                min_edge=min_edge,
             )
             if position is None:
                 continue

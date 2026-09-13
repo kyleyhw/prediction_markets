@@ -1,8 +1,11 @@
 """Baseline forecasters: the market itself, ignorance, and climatology.
 
-* ``MarketPrice`` returns the market's own price at the cutoff, $q$. It is
-  the baseline every other forecaster is scored against: a forecaster with
-  skill must beat it on a proper score over the same markets.
+* ``MarketPrice`` returns the market's own price at the cutoff, $q$: the
+  stored history point at the cutoff in a backtest, or the snapshot price
+  itself for a market still trading (the forward loop, where the snapshot
+  is the present). It is the baseline every other forecaster is scored
+  against: a forecaster with skill must beat it on a proper score over the
+  same markets.
 * ``Constant`` returns a fixed probability, 0.5 by default; it anchors the
   scale (a Brier score of 0.25 is what knowing nothing earns).
 * ``Climatology`` answers a daily-temperature bucket question with the
@@ -29,6 +32,8 @@ class MarketPrice:
 
     def forecast(self, market: BinaryMarket, evidence: Evidence) -> Forecast | None:
         q = evidence.price_at(market)
+        if q is None and not market.trading_closed:
+            q = market.p_yes
         if q is None:
             return None
         return Forecast(

@@ -184,6 +184,12 @@ def test_evidence_price_at_cutoff(root: Path) -> None:
         "5", "market", CUTOFF.isoformat(), 0.45, "market price at cutoff: 0.450"
     )
     assert MarketPrice().forecast(EPL[0], ev) is None
+    # A market still trading has no history yet; its snapshot price stands in.
+    from dataclasses import replace
+
+    live = replace(EPL[0], trading_closed=False)
+    f = MarketPrice().forecast(live, ev)
+    assert f is not None and f.p_hat == 0.5
 
 
 def test_constant_and_clip(root: Path) -> None:

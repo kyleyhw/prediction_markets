@@ -70,6 +70,7 @@ def size(
     fees: FeeModel = FeeModel(),
     kelly_multiplier: float = 0.25,
     max_fraction: float = 0.05,
+    min_edge: float = 0.0,
 ) -> Position | None:
     """Choose the side with positive expected value and size it by fractional Kelly.
 
@@ -81,15 +82,19 @@ def size(
         fees: Taker fee model.
         kelly_multiplier: Fraction of full Kelly to stake.
         max_fraction: Hard cap on the fraction of bankroll per position.
+        min_edge: Smallest probability edge over the effective price worth
+            a position. Zero bets on every market outside the spread, which
+            a noisy forecaster turns into a stream of coin flips against the
+            spread; a few points of required edge filters that.
 
     Returns:
-        The position, or ``None`` when neither side has edge after fees.
+        The position, or ``None`` when neither side has enough edge after fees.
     """
     yes_price = ask + fees.per_share(ask)
     no_price = (1.0 - bid) + fees.per_share(1.0 - bid)
     yes_edge = p_hat - yes_price
     no_edge = (1.0 - p_hat) - no_price
-    if max(yes_edge, no_edge) <= 0.0:
+    if max(yes_edge, no_edge) <= max(min_edge, 0.0):
         return None
     if yes_edge >= no_edge:
         side, price, p = "yes", yes_price, p_hat

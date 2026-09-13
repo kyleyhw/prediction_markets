@@ -105,6 +105,9 @@ def main() -> None:
     back.add_argument("--fee-rate", type=float, default=0.0)
     back.add_argument("--half-spread", type=float, default=0.01)
     back.add_argument(
+        "--min-edge", type=float, default=0.0, help="edge required to bet (default 0)"
+    )
+    back.add_argument(
         "--out", type=Path, default=None, help="report directory (default: under root)"
     )
 
@@ -114,6 +117,7 @@ def main() -> None:
     _add_common(prun)
     prun.add_argument("--forecasters", nargs="+", default=["market", "constant"])
     prun.add_argument("--depth", type=int, default=5)
+    prun.add_argument("--min-edge", type=float, default=0.0)
     psettle = paper_sub.add_parser("settle", help="settle resolved open positions")
     psettle.add_argument("--root", type=Path, default=Path("data"))
     pleak = paper_sub.add_parser("leakage", help="forward vs backtest scores")
@@ -150,6 +154,7 @@ def main() -> None:
                     ledger,
                     depth=args.depth,
                     max_markets=args.max_markets,
+                    min_edge=args.min_edge,
                 )
                 print(f"{name}: {counts}")
         return
@@ -164,6 +169,7 @@ def main() -> None:
             seed=args.seed,
             fee_rate=args.fee_rate,
             half_spread=args.half_spread,
+            min_edge=args.min_edge,
         )
         stamp = utc_now_iso().replace("-", "").replace(":", "")
         out = args.out or args.root / "backtests" / args.domain / stamp

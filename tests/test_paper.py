@@ -65,21 +65,28 @@ def test_cycle_orders_at_the_touch_and_settles(tmp_path: Path) -> None:
     counts = run_cycle(
         CS2, forecasters, source, tmp_path, ledger, depth=1, initial_cash=100.0, now=NOW
     )
-    # The market baseline has no stored history, so it declines; the constant forecasts.
-    assert counts == {"snapshot": 1, "parsed": 1, "forecasts": 1, "orders": 1}
+    # The market baseline forecasts the snapshot price (0.5) and never orders;
+    # the constant forecasts and orders.
+    assert counts == {"snapshot": 1, "parsed": 1, "forecasts": 2, "orders": 1}
     accounts = replay(ledger, 100.0)
     order = accounts["sure"].open["6"]
     # Kelly on 0.9 at ask 0.51 exceeds the 5% cap: stake 5 = 9.8 shares, but the
     # touch rests 7 shares, so the fill is capped at 7 shares for 3.57.
     assert order["side"] == "yes" and order["price"] == 0.51
     assert order["shares"] == 7.0 and order["stake"] == pytest.approx(3.57)
-    assert [e["kind"] for e in ledger.entries()] == ["cycle", "forecast", "order"]
+    assert [e["kind"] for e in ledger.entries()] == [
+        "cycle",
+        "forecast",
+        "forecast",
+        "order",
+    ]
 
-    # Second cycle: the position is open, so no new order.
+    # Second cycle: the market baseline forecasts again (it never holds a
+    # position); the constant's position is open, so no new order.
     counts = run_cycle(
         CS2, forecasters, source, tmp_path, ledger, depth=1, initial_cash=100.0, now=NOW
     )
-    assert counts["orders"] == 0 and counts["forecasts"] == 0
+    assert counts["orders"] == 0 and counts["forecasts"] == 1
 
     # Settlement: pending first, then resolved Yes.
     assert settle(source, ledger, initial_cash=100.0) == {

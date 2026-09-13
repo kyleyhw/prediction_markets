@@ -59,6 +59,7 @@ def simulate(
     fees: FeeModel = FeeModel(),
     kelly_multiplier: float = 0.25,
     max_fraction: float = 0.05,
+    min_edge: float = 0.0,
 ) -> list[Bet]:
     """Fill and settle every opportunity with edge, in settlement order."""
     bankroll = initial_cash
@@ -75,6 +76,7 @@ def simulate(
             fees=fees,
             kelly_multiplier=kelly_multiplier,
             max_fraction=max_fraction,
+            min_edge=min_edge,
         )
         if position is None:
             continue

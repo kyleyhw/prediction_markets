@@ -39,3 +39,6 @@ def test_size_picks_the_side_with_edge() -> None:
     capped = size(0.99, ask=0.10, bid=0.09)
     assert capped is not None and capped.fraction == 0.05
     assert size(0.53, ask=0.52, bid=0.50, fees=FeeModel(rate=0.1)) is None
+    # A minimum edge filters a thin one.
+    assert size(0.55, ask=0.52, bid=0.50, min_edge=0.05) is None
+    assert size(0.58, ask=0.52, bid=0.50, min_edge=0.05) is not None
