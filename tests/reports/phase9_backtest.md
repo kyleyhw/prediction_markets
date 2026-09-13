@@ -112,3 +112,32 @@ forecast than a climatology built from the venue's own resolved buckets,
 by a wide margin. This is the expected result, and the reason the plan
 puts numerical-weather-prediction output on the list for weather: a
 forecaster needs the forecast the market is presumably already pricing.
+
+### EPL, Elo against the market
+
+`vp backtest --domain epl --forecasters market constant elo --kinds match
+--hours-before-close H --min-edge 0.05` on the 400-market sample (398 with
+a price at the cutoff; 65 of the 400 histories are hourly, the rest daily):
+
+| Cutoff | Scored | Market Brier | Elo Brier | Skill | Elo REL / RES | Market REL / RES |
+| :--- | ---: | ---: | ---: | ---: | :--- | :--- |
+| 24 h | 389 | 0.2178 | 0.2223 | −0.021 | 0.0046 / 0.0103 | 0.0072 / 0.0149 |
+| 2 h | 391 | 0.2082 | 0.2227 | −0.069 | 0.0047 / 0.0104 | 0.0041 / 0.0232 |
+
+Elo from the venue's own resolutions is within two points of the market a
+day out and is the better-calibrated of the two (reliability 0.0046
+against 0.0072); it lacks the market's resolution, and the gap widens as
+the market sharpens toward kick-off while Elo, whose evidence is the same
+at both cutoffs, does not move. Its bets (167 at a 5% minimum edge) return
+−3% at 24 h and −57% at 2 h, with a bootstrap $P(\text{Sharpe} > 0)$ of
+0.59 and 0.21: no edge.
+
+The constant baseline is the surprise of the run: +97% at 24 h from 340
+bets, $P(\text{Sharpe} > 0) = 0.87$, but −9% at 2 h. A belief of 0.5 buys
+the complementary share of every side priced below 0.45, which is a bet
+against long shots; the favourite-longshot bias is a known feature of
+sports markets and the 24-hour figure is consistent with it, but the
+interval includes zero, the 2-hour figure reverses it, and a strategy
+that requires the market to be biased in a fixed direction is not a
+forecast. It is recorded because it is what the data said, and as the
+kind of result the leakage check and forward loop exist to test.
