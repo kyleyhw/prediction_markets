@@ -190,18 +190,18 @@ tasks below, not repeated here.
       hash), modelled on Vibe-Trading's hypothesis registry.
 
 ## Phase 9: Backtest scoring
-15. [pending] Proper scoring and calibration.
+15. [completed] Proper scoring and calibration.
     - Brier, log score, and skill scores relative to the market baseline;
       reliability diagram; Murphy decomposition into reliability, resolution
       and uncertainty. Derivations in `docs/scoring.md`.
-16. [pending] Edge, fees and sizing.
+16. [completed] Edge, fees and sizing.
     - The Polymarket fee model; expected value of a unit position; Kelly
       fraction and fractional Kelly. Derivations in `docs/sizing.md`.
-17. [pending] Event-contract fill simulator.
+17. [completed] Event-contract fill simulator.
     - Fills against the recorded book at cutoff, settlement to 0 or 1 at
       resolution, equity curve; bankroll statistics via the ported metrics and
       validation modules.
-18. [pending] Backtest report.
+18. [completed] Backtest report.
     - CLI `vp backtest` producing calibration plots, cumulative score versus
       market, equity curve, and per-domain breakdown, with a test report
       recording runtime in `tests/reports/`.
@@ -231,9 +231,9 @@ tasks below, not repeated here.
 24. [pending] Canary rollout at minimal stake with the mandate enforced.
 
 ## Phase 12: Documentation and tests (continuous)
-25. [pending] Each phase lands with its `docs/` page linked from `docs/index.md`
+25. [completed] Each phase lands with its `docs/` page linked from `docs/index.md`
     and the README, and a test report in `tests/reports/` with runtimes.
-26. [pending] Pre-commit hooks (`ruff`, `ty`, `detect-secrets`) passing on every
+26. [completed] Pre-commit hooks (`ruff`, `ty`, `detect-secrets`) passing on every
     commit.
 
 ## Deferred

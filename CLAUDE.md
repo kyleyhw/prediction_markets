@@ -24,36 +24,59 @@ The original `prediction_markets` project is archived unchanged under
 - `PROJECT_PLAN.md`: phases 1–5 are the archived project; 6–12 are this one.
   Status tags are kept current; update them as tasks finish.
 - `README.md`, `docs/index.md`: entry points. `docs/architecture.md` has the
-  data flow and design decisions; `docs/data_layer.md` the record, domains,
-  dataset and snapshots.
+  data flow and design decisions; then one page per phase:
+  `data_layer.md`, `forecasters.md`, `scoring.md`, `sizing.md`,
+  `paper_trading.md`, `security.md`.
 - `vp/`: the package. `venues/polymarket.py` (read-only client with the
   closed-is-not-resolved evidence ladder), `domains/` (cs2, weather, epl),
   `markets/` (record, source, Parquet store, dataset, snapshot),
-  `backtest/bankroll.py`, `cli.py` (`vp build-dataset`, `vp snapshot`).
+  `forecast/` (evidence, baselines, Elo, LLM, registry), `backtest/`
+  (scoring, sizing, simulator, runner, bankroll), `paper/` (ledger, loop,
+  leakage), `cli.py` (`vp build-dataset`, `vp snapshot`, `vp backtest`,
+  `vp paper`).
 - `tests/`: offline tests only; `tests/reports/` has a report per phase with
   runtimes. `data/` is git-ignored.
 
-## State at handoff (2026-09-13)
+## State at handoff (2026-09-13, evening)
 
-Phases 6 and 7 are complete, including the live measurement (task 8), which
-ran from a container with access to Polymarket on 2026-09-13. Its results
-are in `tests/reports/phase7_data_layer.md` and `docs/data_layer.md`: the
-Gamma tag ids for all three domains are recorded in `vp/domains/`, the
-parsers were corrected to the question forms the venue actually serves, the
-catalogue pager handles Gamma's 100-row and 2000-offset caps, and price
-histories fall back from hourly to daily bars because the venue keeps
-sub-daily bars only for about a month.
+Phases 6 to 10 are complete and Phase 12's continuous items are in place;
+Phase 11 has its security design proposed in `docs/security.md` and is
+waiting for the user to agree to it before any execution code is written.
+Each phase has a report in `tests/reports/` with what was measured live.
+
+What exists, in order of the data flow: the Polymarket client and data
+layer (`vp/venues`, `vp/markets`, `vp/domains`); forecasters behind a
+cutoff-bounded `Evidence` object (`vp/forecast`: market price, constant,
+climatology, Elo, and the LLM forecaster on the official Anthropic SDK);
+scoring, sizing, the fill simulator and `vp backtest` (`vp/backtest`); and
+paper trading on a hash-chained ledger with settlement and the leakage
+check (`vp/paper`, `vp paper run|settle|leakage`).
 
 Things a future session should know:
 
-- The resolved sets are large (13k EPL, 89k CS2, 134k weather labelled
-  markets) and dominated by props (over/under, handicaps, exact scores) that
-  parse to no fields. Match, season and daily-temperature markets are the
-  parsed subsets a forecaster can use; see the kind counts in the report.
-- `uv run vp build-dataset --domain <d> --no-history` takes 20 s to 2 min per
-  domain; with histories it is one request per market at 0.35 s spacing.
-- The next step is Phase 8 (forecasters). Ask for the go-ahead before
-  starting it.
+- The LLM forecaster has never been run against the API: the container
+  holds no credentials. `LLMForecaster()` builds a client from the
+  environment, so the first keyed run needs only the key, and
+  `vp backtest --forecasters market llm --max-markets 50` on a domain is
+  the first thing to do with it. The cost per forecast is printed.
+- Live baseline results so far (Phase 9 report): on weather buckets the
+  market beats climatology decisively; EPL and CS2 Elo results are in the
+  same report. Nothing beats the market yet, which is the honest state.
+- Evidence comes from the resolved dataset itself (resolutions as results
+  and realised buckets). Open-Meteo's archive and previous-runs endpoints
+  were rate-limited from the container; wiring them in is the obvious
+  next step for weather.
+- Known follow-up: `vp paper run --max-markets N` caps the snapshot, not
+  the parsed markets, so a small N can yield nothing to forecast in EPL.
+- `data/` is git-ignored; a session starts with no datasets. Rebuilding:
+  `vp build-dataset --domain <d> --no-history` (20 s to 2 min), then
+  histories for the markets to be backtested (about one per second).
+- The SessionStart hook refreshes `uv` (the container's is too old to
+  install the pinned Python 3.14.7) and sets the git identity to the
+  repository owner. Commits must carry that identity and no assistant
+  attribution.
+- Work was pushed to the branch the web session was given; merging into
+  `master` is the user's call.
 
 ## Invariants to preserve
 
