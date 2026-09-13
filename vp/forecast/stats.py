@@ -22,32 +22,56 @@ on the same resolved set the backtest scores would be a leak of its own.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from vp.forecast.base import Forecast, clip
 from vp.forecast.evidence import Evidence, MatchResult, canonical
 from vp.markets.schema import BinaryMarket
 
 
+@dataclass
+class EloState:
+    """Ratings after replaying a prefix of a results list, resumable."""
+
+    ratings: dict[str, float] = field(default_factory=dict)
+    games: int = 0
+    draws: int = 0
+    first: MatchResult | None = None
+
+    @property
+    def draw_rate(self) -> float:
+        return self.draws / self.games if self.games else 0.0
+
+
 def fit_elo(
-    results: list[MatchResult], *, k: float = 32.0, home: float = 0.0
-) -> tuple[dict[str, float], float]:
-    """Replay results in order; return ratings and the empirical draw rate."""
-    ratings: dict[str, float] = {}
-    draws = 0
-    for r in results:
-        ra = ratings.get(r.team_a, 1500.0)
-        rb = ratings.get(r.team_b, 1500.0)
+    results: list[MatchResult],
+    *,
+    k: float = 32.0,
+    home: float = 0.0,
+    state: EloState | None = None,
+) -> EloState:
+    """Replay results in order from ``state``, or from 1500 for everyone.
+
+    A state is reused only when ``results`` extends the list it was fitted
+    on (same first result, at least as many); otherwise the fit restarts.
+    """
+    st = state if state is not None else EloState()
+    if st.games > len(results) or (st.games and st.first is not results[0]):
+        st = EloState()
+    for r in results[st.games :]:
+        ra = st.ratings.get(r.team_a, 1500.0)
+        rb = st.ratings.get(r.team_b, 1500.0)
         expected = 1.0 / (1.0 + 10 ** ((rb - ra - home) / 400.0))
         score = 1.0 if r.winner == r.team_a else (0.5 if r.winner == "draw" else 0.0)
-        draws += r.winner == "draw"
-        ratings[r.team_a] = ra + k * (score - expected)
-        ratings[r.team_b] = rb - k * (score - expected)
-    draw_rate = draws / len(results) if results else 0.0
-    return ratings, draw_rate
+        st.draws += r.winner == "draw"
+        st.ratings[r.team_a] = ra + k * (score - expected)
+        st.ratings[r.team_b] = rb - k * (score - expected)
+    st.games = len(results)
+    st.first = results[0] if results else None
+    return st
 
 
-@dataclass(frozen=True)
+@dataclass
 class Elo:
     """Elo forecaster for ``match`` markets of one domain."""
 
@@ -56,13 +80,15 @@ class Elo:
     home: float = 0.0
     min_games: int = 3
     name: str = "elo"
+    _state: EloState | None = field(default=None, repr=False, compare=False)
 
     def forecast(self, market: BinaryMarket, evidence: Evidence) -> Forecast | None:
         p = market.parsed
         if market.domain != self.domain or p.get("kind") != "match":
             return None
         results = evidence.results(self.domain)
-        ratings, draw_rate = fit_elo(results, k=self.k, home=self.home)
+        self._state = fit_elo(results, k=self.k, home=self.home, state=self._state)
+        ratings, draw_rate = self._state.ratings, self._state.draw_rate
         a, b = canonical(p["team_a"]), canonical(p["team_b"])
         played = {a: 0, b: 0}
         for r in results:

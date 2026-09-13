@@ -24,9 +24,11 @@ bucket resolution (a temperature is known to the bucket, not the degree).
 
 from __future__ import annotations
 
+from bisect import bisect_left
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from pathlib import Path
+from typing import Any
 
 from vp.markets.schema import BinaryMarket
 from vp.markets.store import read_history, read_markets
@@ -146,6 +148,8 @@ class Evidence:
         root: Data root written by ``vp build-dataset``.
         markets: Resolved markets to derive results and observations from;
             loaded from the root per domain on first use when omitted.
+        cache: Shared index store, so views at many cutoffs (a backtest)
+            load and sort the resolved sets once; see :meth:`at`.
     """
 
     def __init__(
@@ -154,14 +158,31 @@ class Evidence:
         root: Path,
         *,
         markets: dict[str, list[BinaryMarket]] | None = None,
+        cache: dict[str, Any] | None = None,
     ) -> None:
         if cutoff.tzinfo is None:
             raise ValueError("cutoff must be timezone-aware")
         self.cutoff = cutoff.astimezone(timezone.utc)
         self.root = root
-        self._markets = dict(markets or {})
-        self._results: dict[str, list[MatchResult]] = {}
-        self._highs: dict[str, dict[str, list[Observation]]] = {}
+        cache = cache if cache is not None else {}
+        self._markets: dict[str, list[BinaryMarket]] = cache.setdefault("markets", {})
+        self._markets.update(markets or {})
+        self._results: dict[str, list[MatchResult]] = cache.setdefault("results", {})
+        self._highs: dict[str, dict[str, list[Observation]]] = cache.setdefault(
+            "highs", {}
+        )
+
+    def at(self, cutoff: datetime) -> Evidence:
+        """A new view at another cutoff sharing this object's loaded indexes."""
+        return Evidence(
+            cutoff,
+            self.root,
+            cache={
+                "markets": self._markets,
+                "results": self._results,
+                "highs": self._highs,
+            },
+        )
 
     def _resolved(self, domain: str) -> list[BinaryMarket]:
         if domain not in self._markets:
@@ -208,7 +229,8 @@ class Evidence:
                 )
             out.sort(key=lambda r: r.settled)
             self._results[domain] = out
-        return [r for r in self._results[domain] if r.settled < self.cutoff]
+        rows = self._results[domain]
+        return rows[: bisect_left([r.settled for r in rows], self.cutoff)]
 
     def daily_highs(self, city: str, statistic: str = "highest") -> list[Observation]:
         """Realised daily temperatures at ``city`` for dates before the cutoff."""

@@ -194,11 +194,17 @@ def test_constant_and_clip(root: Path) -> None:
 
 
 def test_elo_uses_only_pre_cutoff_results(root: Path) -> None:
-    ratings, draw_rate = fit_elo(Evidence(CUTOFF, root).results("epl"), k=32)
-    assert ratings["arsenal"] == pytest.approx(1516.0) and ratings[
-        "chelsea"
-    ] == pytest.approx(1484.0)
+    results = Evidence(CUTOFF, root).results("epl")
+    state = fit_elo(results, k=32)
+    ratings, draw_rate = state.ratings, state.draw_rate
+    assert ratings["arsenal"] == pytest.approx(1516.0)
+    assert ratings["chelsea"] == pytest.approx(1484.0)
     assert draw_rate == 0.5
+    # Resuming from the state on a longer prefix equals a fresh fit on it.
+    later = Evidence(datetime(2026, 3, 9, tzinfo=timezone.utc), root).results("epl")
+    resumed = fit_elo(later, k=32, state=state)
+    assert resumed.ratings == fit_elo(later, k=32).ratings and resumed.games == 4
+    assert fit_elo(results, k=32, state=resumed).games == 2  # shorter list: refit
     elo = Elo("epl", min_games=1)
     f = elo.forecast(EPL[4], Evidence(CUTOFF, root))  # Chelsea to win round two
     assert f is not None
