@@ -10,19 +10,22 @@ with the market's price as the quote, and the bankroll statistics of
 ``vp.backtest.bankroll`` are computed on its settled bets.
 
 Outputs under ``out_dir``: ``forecasts.jsonl`` (the registry for the run),
-``summary.md`` (the tables), and three figures: the reliability diagram per
-forecaster, the cumulative Brier advantage over the market in settlement
-order, and the equity curves.
+``summary.md`` (the tables), ``results.json`` (the same numbers plus the
+series behind the figures, which the dashboard draws itself), and three
+figures: the reliability diagram per forecaster, the cumulative Brier
+advantage over the market in settlement order, and the equity curves.
 """
 
 from __future__ import annotations
 
+import json
 import logging
 import time
 from collections.abc import Sequence
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 
@@ -205,9 +208,57 @@ def run_backtest(
         time.monotonic() - started,
     )
     (out_dir / "summary.md").write_text(summary(outcome))
+    (out_dir / "results.json").write_text(
+        json.dumps(results_json(outcome, forecasts, y, reference), indent=1)
+    )
     if scored:
         plots(outcome, forecasts, y, reference, out_dir)
     return outcome
+
+
+def results_json(
+    result: BacktestResult,
+    forecasts: dict[str, list[Forecast]],
+    y: np.ndarray,
+    reference: np.ndarray,
+) -> dict[str, Any]:
+    """Scores, calibration bins and the plotted series, as plain JSON."""
+    out: dict[str, Any] = {
+        "config": asdict(result.config),
+        "candidates": result.candidates,
+        "with_price": result.with_price,
+        "common": result.common,
+        "seconds": round(result.seconds, 2),
+        "forecasters": [],
+    }
+    for r in result.results:
+        p = np.array([f.p_hat for f in forecasts[r.name]], dtype=float)
+        advantage = (
+            np.cumsum(reference - scoring.brier(p, y)).tolist() if p.size else []
+        )
+        out["forecasters"].append(
+            {
+                "name": r.name,
+                "n": r.n,
+                "brier": r.brier,
+                "log": r.log,
+                "skill": r.skill,
+                "cost_usd": r.cost_usd,
+                "calibration": {
+                    "reliability": r.calibration.reliability,
+                    "resolution": r.calibration.resolution,
+                    "uncertainty": r.calibration.uncertainty,
+                    "ece": r.calibration.expected_calibration_error,
+                    "bins": [asdict(b) for b in r.calibration.bins],
+                },
+                "advantage": advantage,
+                "equity": [result.config.initial_cash]
+                + [b.bankroll_after for b in r.bets],
+                "stats": asdict(r.stats) if r.stats else None,
+                "sharpe": asdict(r.sharpe) if r.sharpe else None,
+            }
+        )
+    return out
 
 
 def summary(result: BacktestResult) -> str:

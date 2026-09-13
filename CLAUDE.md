@@ -8,13 +8,18 @@ plan phase, and keep code minimal with full reasoning in docs.
 
 ## What this is
 
-An LLM forecaster for binary Polymarket contracts in three domains (CS2
-esports, weather, English Premier League), scored first by backtest against
-resolved markets, then by paper trading, with live execution planned but
-gated on a security design that is not yet agreed. Polymarket is the only
-venue for the foreseeable future; Kalshi is deferred. The LLM forecaster is
-the point of the project, in the spirit of HKUDS/Vibe-Trading, which was
-reviewed and partly ported (see `docs/provenance.md`, `NOTICE`).
+A platform on which people implement their own forecasting strategies for
+binary Polymarket contracts through conversation with an LLM, in three
+domains (CS2 esports, weather, English Premier League). The platform is
+the aim, not any particular edge: it supplies the data, the cutoff-safe
+evidence, the scoring, the backtest, paper trading, a dashboard and,
+behind an agreed security design, live execution, so that a strategy
+described in conversation can be built, scored honestly against the market
+and run. The baseline results it reports (no baseline beats the market)
+are the benchmark it offers, not a target it has failed. Polymarket is the
+only venue for the foreseeable future; Kalshi is deferred. The LLM
+forecaster is the central component, in the spirit of HKUDS/Vibe-Trading,
+which was reviewed and partly ported (see `docs/provenance.md`, `NOTICE`).
 
 The original `prediction_markets` project is archived unchanged under
 `archive/prediction_markets/` and excluded from tooling. Do not delete it.
@@ -55,7 +60,9 @@ scoring, sizing, the fill simulator and `vp backtest` (`vp/backtest`); and
 paper trading on a hash-chained ledger with settlement and the leakage
 check (`vp/paper`, `vp paper run|settle|leakage`); and a read-only browser
 dashboard over all of it (`vp ui`, standard library, one hand-written
-page; it deliberately has no actions, see `docs/ui.md`).
+page with vendored Inter and JetBrains Mono and charts drawn in the page
+from the runner's `results.json`; it deliberately has no actions, see
+`docs/ui.md`).
 
 Things a future session should know:
 
@@ -67,7 +74,8 @@ Things a future session should know:
 - Live baseline results (Phase 9 report): no baseline beats the market.
   Weather climatology has skill −0.19 against it, EPL Elo −0.02 (at par a
   day out) and CS2 Elo −0.12; every simulated strategy loses at a 5%
-  minimum edge. That is the bar the LLM forecaster has to clear.
+  minimum edge. Edge is not the project's goal (see "What this is"); these
+  are the benchmark a user's strategy is measured against.
 - Evidence comes from the resolved dataset itself (resolutions as results
   and realised buckets). Open-Meteo's archive and previous-runs endpoints
   were rate-limited from the container; wiring them in is the obvious

@@ -85,10 +85,14 @@ class DataView:
         for summary in sorted(self.root.glob("backtests/*/*/summary.md"), reverse=True):
             run_dir = summary.parent
             text = summary.read_text()
+            results = run_dir / "results.json"
             runs.append(
                 {
                     "domain": run_dir.parent.name,
                     "stamp": run_dir.name,
+                    "results": (
+                        json.loads(results.read_text()) if results.exists() else None
+                    ),
                     "lines": [
                         ln
                         for ln in text.splitlines()
@@ -108,10 +112,26 @@ class DataView:
         return {
             "entries": len(entries),
             "verified": ledger.verify() is None if entries else None,
+            "last_at": entries[-1]["at"] if entries else None,
             "accounts": [
                 {
                     "forecaster": name,
                     "bankroll": round(acc.bankroll, 2),
+                    "exposure": round(sum(o["stake"] for o in acc.open.values()), 2),
+                    "realised": round(
+                        sum(
+                            s["data"]["pnl"]
+                            for s in settlements
+                            if s["data"]["forecaster"] == name
+                        ),
+                        2,
+                    ),
+                    "curve": [1000.0]
+                    + [
+                        s["data"]["bankroll_after"]
+                        for s in settlements
+                        if s["data"]["forecaster"] == name
+                    ],
                     "open": [
                         {k: v for k, v in o.items() if k != "forecaster"}
                         for o in acc.open.values()
@@ -131,6 +151,15 @@ class DataView:
         if not snaps:
             return {"domain": domain, "stamp": None, "markets": []}
         markets = self._cached(snaps[-1], read_markets) or []
+        forecasts: dict[str, list[dict[str, Any]]] = {}
+        for f in self.forecasts(limit=5000):
+            forecasts.setdefault(str(f.get("market_id")), []).append(
+                {
+                    "forecaster": f["forecaster"],
+                    "p_hat": f["p_hat"],
+                    "cutoff": f["cutoff"],
+                }
+            )
         rows = [
             {
                 "market_id": m.market_id,
@@ -138,6 +167,8 @@ class DataView:
                 "event": m.event_title,
                 "kind": m.parsed.get("kind"),
                 "parsed": m.parsed,
+                "has_book": bool(m.outcomes[0].bids or m.outcomes[0].asks),
+                "forecasts": forecasts.get(str(m.market_id), []),
                 "p_yes": m.p_yes,
                 "bid": m.outcomes[0].bids[0].price
                 if m.outcomes[0].bids
@@ -149,6 +180,7 @@ class DataView:
             }
             for m in markets
         ]
+        rows.sort(key=lambda r: (not r["has_book"], r["end_date"] or ""))
         return {"domain": domain, "stamp": snaps[-1].stem, "markets": rows}
 
     def forecasts(self, *, limit: int = 100) -> list[dict[str, Any]]:

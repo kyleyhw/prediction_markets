@@ -1,9 +1,12 @@
 # vibe-predict
 
-An LLM forecaster for binary prediction-market contracts on Polymarket, scored
-by backtest against resolved markets and then by paper trading, with live
-execution planned but gated on a security design. Domains: Counter-Strike 2
-esports, weather, and English Premier League football.
+A platform for implementing your own forecasting strategies for binary
+prediction-market contracts on Polymarket through conversation with an LLM.
+It supplies the data, cutoff-safe evidence, proper scoring, a backtest,
+paper trading and a dashboard, so a strategy described in conversation can
+be built, scored honestly against the market, and run; live execution is
+gated on an agreed security design. Domains: Counter-Strike 2 esports,
+weather, and English Premier League football.
 
 This repository continues from an earlier project that compared Polymarket and
 Kalshi prices; that code is preserved unchanged under
@@ -47,7 +50,7 @@ prediction_markets/
 │   │   └── controls.py        # kill switch, environments, approvals, keyring
 │   └── ui/
 │       ├── server.py          # read-only JSON API over the data root
-│       └── static/index.html  # the dashboard page
+│       └── static/            # the dashboard page and vendored fonts
 ├── docs/                      # documentation (see index below)
 ├── tests/
 │   ├── reports/               # test reports with runtimes, one per phase

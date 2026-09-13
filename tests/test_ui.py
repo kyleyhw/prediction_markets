@@ -75,6 +75,11 @@ def test_page_and_api(served: str) -> None:
         "equity.png",
         "reliability.png",
     ]
+    results = runs[0]["results"]
+    assert results["config"]["domain"] == "epl" and results["common"] == 1
+    assert [f["name"] for f in results["forecasters"]] == ["market", "constant"]
+    assert results["forecasters"][1]["advantage"] == pytest.approx([0.01 - 0.25])
+    assert len(results["forecasters"][1]["equity"]) == 2
     status, ctype, body = get(served, "/api/backtests/epl/20260913T000000Z/equity.png")
     assert status == 200 and ctype == "image/png" and body[:4] == b"\x89PNG"
 
