@@ -1,7 +1,7 @@
 [project]
 name = "vibe-predict"
 version = "0.1.0"
-description = "An LLM forecaster for binary prediction-market contracts on Polymarket, scored by backtest and paper trading before any live execution."
+description = "Describe a prediction-market strategy in plain language, backtest it honestly against the market, and paper trade it. Polymarket contracts on CS2 esports, weather and the Premier League."
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
