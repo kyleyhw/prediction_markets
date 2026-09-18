@@ -42,6 +42,14 @@ uv run vp ui --root data          # http://127.0.0.1:8765/
   every chart has a legend and a table beside it, so no value is carried
   by colour alone. Positive and negative skill and returns use the status
   colours and nothing else does.
+- **Every term explains itself.** Each metric, market type, forecaster
+  name and status is rendered as a dotted term; clicking it opens a
+  definition with the direction that is better and the `docs/` page that
+  carries the derivation. The definitions live in one `GLOSSARY` map in
+  the page. Each view opens with a sentence on what it shows, each table
+  and chart carries a caption, and rows open on click (a run from the
+  overview, an entry's full record in the ledger, a market's parsed fields
+  and forecasts).
 - **Cached reads.** Parquet reads are keyed by file modification time, so
   the 134k-row weather set is read once per change; the overview reads
   only the two columns it needs.
