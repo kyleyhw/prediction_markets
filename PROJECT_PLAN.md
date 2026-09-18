@@ -243,6 +243,77 @@ tasks below, not repeated here.
     data root, standard library only, with datasets, backtest runs and
     figures, the paper ledger and the latest snapshots (`docs/ui.md`).
 
+## Phase 13: Hosted app foundation
+Design in `docs/product.md`. The browser becomes the whole product for one
+person; no terminal for the user or the operator.
+28. [pending] Web service.
+    - FastAPI over the unchanged `vp/` engine: endpoints mirroring the CLI
+      (build, snapshot, backtest, paper run, settle, leakage) plus health;
+      the existing dashboard JSON endpoints move here unchanged.
+    - The OpenAPI page is the API reference for technical users.
+29. [pending] Accounts and per-user state.
+    - Email magic-link sign-in; Postgres for users, sessions, strategies,
+      forecasts, jobs; one hash-chained ledger per user.
+    - Shared market data on a volume, written by the same Parquet code.
+30. [pending] Jobs and schedules.
+    - Postgres-backed queue and a worker in the same image; hourly
+      snapshots, paper cycles and settlements; daily dataset and history
+      refresh; on-demand backtests with progress reported to the page.
+31. [pending] Deploy without a terminal.
+    - One image, one database, one volume on a push-to-deploy host; GitHub
+      Actions runs the tests and deploys `master`; HTTPS and a domain.
+    - An admin page for the operator: data refresh, user budgets, costs,
+      pause.
+32. [pending] Product-paid LLM calls with budgets.
+    - Platform key server-side; per-user monthly budget with the cost of a
+      run shown before it starts; optional own key stored encrypted.
+33. [pending] Existing views on the new service, end-to-end test in a
+    browser, Phase 13 report.
+
+## Phase 14: Friendly for everyone
+34. [pending] Simple and Detailed reading levels, one switch, every screen
+    rendered both ways; Simple never omits a decision-relevant fact.
+35. [pending] Guided first run: what this is, pick interests, see your
+    markets, watch a sample strategy. Skippable, three to five screens.
+36. [pending] Brokerage-style home: play-money balance, its chart, what
+    changed today, one next step.
+37. [pending] P&L charts wherever money is shown, with the market-following
+    baseline drawn alongside.
+38. [pending] Plain-language Simple mode: prices as chances, every number
+    with a sentence; Detailed keeps the glossary.
+39. [pending] Learn section: prediction markets, why the price is a
+    forecast, backtests, paper trading, why beating the market is hard.
+40. [pending] Settings: interests, play money, reading level, theme; model,
+    budget, own key, export for Detailed.
+41. [pending] Terms of use, age gate, jurisdiction notice, and the
+    first-screen statement that this is a tool, not advice.
+42. [pending] Usability sessions with at least three people who have never
+    used a prediction market, and the fixes they produce; Phase 14 report.
+
+## Phase 15: Strategies from conversation
+Designed on its own page before any code (`docs/strategies.md`, to be
+written and agreed).
+43. [pending] Strategy spec: selector, rule, optional belief, sizing, with
+    defaults and the fields a prompt may override.
+44. [pending] Parse the prop markets the spec needs (over/under totals,
+    handicaps, halftime, exact score, odd/even) and store each market's
+    resolution description.
+45. [pending] Compiler: prompt to spec through the LLM with structured
+    output, then a plain-language restatement the user confirms.
+46. [pending] Preview: which markets the spec selects, with examples and
+    counts, before anything runs.
+47. [pending] Strategies backtested and paper traded through the same
+    engine, with per-strategy P&L and skill on the Strategies screen.
+48. [pending] Refinement by conversation: "make it smaller stakes", "only
+    weekends", producing a new spec version, never editing the old one.
+
+## Phase 16: Hosted live execution (planned, gated)
+49. [pending] Security design v2 for the hosted setting: non-custodial
+    browser signing, the mandate, kill switch, approvals and audit ledger
+    carried over from `docs/security.md`; agreed before any code.
+50. [pending] Order preparation server-side, signing in the user's wallet,
+    submission, and the canary at minimum stake.
+
 ## Deferred
 - Kalshi as a second venue. Not in scope for the foreseeable future. The archived
   `src/collectors/kalshi.py` and the `KXCSGOGAME` and `KXENGLISHPREMIERLEAGUE`

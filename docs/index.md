@@ -18,6 +18,8 @@ Polymarket, scored by backtest and paper trading before any live execution. The
   Kelly.
 - [Paper trading](paper_trading.md): the hash-chained ledger, the forward
   cycle, settlement and the leakage check.
+- [Product design](product.md): the hosted app for everyone, Phases 13
+  to 16: architecture, accounts and money, the experience, sequencing.
 - [Browser dashboard](ui.md): `vp ui`, a read-only local page over the
   data root: datasets, backtests with figures, the paper ledger, markets.
 - [Security design](security.md): the proposed design for live execution

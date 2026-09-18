@@ -26,8 +26,10 @@ The original `prediction_markets` project is archived unchanged under
 
 ## Where things are
 
-- `PROJECT_PLAN.md`: phases 1–5 are the archived project; 6–12 are this one.
-  Status tags are kept current; update them as tasks finish.
+- `PROJECT_PLAN.md`: phases 1–5 are the archived project; 6–12 are the
+  engine and dashboard; 13–16 are the hosted app for everyone
+  (`docs/product.md`). Status tags are kept current; update them as tasks
+  finish.
 - `README.md`, `docs/index.md`: entry points. `docs/architecture.md` has the
   data flow and design decisions; then one page per phase:
   `data_layer.md`, `forecasters.md`, `scoring.md`, `sizing.md`,
@@ -91,6 +93,10 @@ Things a future session should know:
   attribution.
 - The user asked for the branch to be merged: `master` is fast-forwarded
   to the same commits as the session branch.
+- Direction set on 2026-09-18: the product becomes a hosted web app with no
+  terminal for users or operators (`docs/product.md`); Phase 13 is next
+  and needs the go-ahead. The vibe-to-strategy pipeline is Phase 15 and
+  gets its own design page before code.
 
 ## Invariants to preserve
 

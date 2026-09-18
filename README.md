@@ -85,6 +85,7 @@ prediction_markets/
 - [Forecasters](docs/forecasters.md): contract, cutoff-bounded evidence, baselines, Elo, the LLM forecaster.
 - [Scoring](docs/scoring.md) and [sizing](docs/sizing.md): proper scores, calibration, fees, Kelly.
 - [Paper trading](docs/paper_trading.md): ledger, forward loop, settlement, leakage check.
+- [Product design](docs/product.md): the hosted app for everyone, Phases 13 to 16.
 - [Browser dashboard](docs/ui.md): `vp ui`, a read-only local page over the data root.
 - [Security design](docs/security.md): proposed gate for live execution.
 - [Provenance](docs/provenance.md): code adapted from Vibe-Trading and how it was changed.
