@@ -1,7 +1,7 @@
 [project]
 name = "vibe-predict"
 version = "0.1.0"
-description = "A platform for building and testing prediction-market strategies on Polymarket. Contains tools for describing a strategy in plain language, backtesting it honestly against the market's own prices, and paper trading it with play money before any real money is involved, all from a browser and without any programming."
+description = "A platform for building and testing prediction-market strategies on Polymarket. Contains tools for describing a strategy in plain language, backtesting it honestly against the market's own prices, and paper trading it before any real money is involved, all from a browser and without any programming."
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
