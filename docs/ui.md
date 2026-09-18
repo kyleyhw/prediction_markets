@@ -22,9 +22,9 @@ uv run vp ui --root data          # http://127.0.0.1:8765/
   control (system, light, dark; remembered per browser), a page header,
   cards on an 8px spacing scale, tables with sticky headers and hover
   rows, and empty states that show the command to run.
-- **Type.** Inter for text and JetBrains Mono for numbers, identifiers and
+- **Type.** Instrument Sans for text and JetBrains Mono for numbers, identifiers and
   axis ticks, vendored as latin-subset variable woff2 files under
-  `static/fonts` (80 KB together, SIL Open Font License, see `NOTICE`), so
+  `static/fonts` (about 70 KB together, SIL Open Font License, see `NOTICE`), so
   the page works offline and makes no third-party request. Columns of
   numbers use tabular figures; large standalone numbers do not.
 - **Charts drawn in the page.** The backtest runner writes `results.json`

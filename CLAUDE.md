@@ -60,7 +60,7 @@ scoring, sizing, the fill simulator and `vp backtest` (`vp/backtest`); and
 paper trading on a hash-chained ledger with settlement and the leakage
 check (`vp/paper`, `vp paper run|settle|leakage`); and a read-only browser
 dashboard over all of it (`vp ui`, standard library, one hand-written
-page with vendored Inter and JetBrains Mono and charts drawn in the page
+page with vendored Instrument Sans and JetBrains Mono and charts drawn in the page
 from the runner's `results.json`; it deliberately has no actions, see
 `docs/ui.md`).
 

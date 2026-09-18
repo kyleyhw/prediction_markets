@@ -56,6 +56,11 @@ def test_page_and_api(served: str) -> None:
     assert status == 200 and "text/html" in ctype and b"vibe-predict" in body
     status, ctype, body = get(served, "/#backtests")
     assert status == 200
+    # Vendored fonts are served as files; any other non-API path is the page.
+    status, ctype, body = get(served, "/fonts/InstrumentSans-latin.woff2")
+    assert status == 200 and ctype == "font/woff2" and body[:4] == b"wOF2"
+    status, ctype, body = get(served, "/some/view")
+    assert status == 200 and "text/html" in ctype
 
     o = json.loads(get(served, "/api/overview")[2])
     assert o["domains"]["epl"]["resolved"]["markets"] == len(EPL)

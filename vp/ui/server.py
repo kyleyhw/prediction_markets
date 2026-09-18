@@ -233,7 +233,11 @@ class Handler(SimpleHTTPRequestHandler):
         url = urlparse(self.path)
         parts = [p for p in url.path.split("/") if p]
         if not parts or parts[0] != "api":
-            self.path = "/index.html"
+            # Static assets (the fonts) are served as files; every other
+            # non-API path is the single page, whose views live in the hash.
+            asset = STATIC.joinpath(*parts) if parts else None
+            if not (asset and ".." not in parts and asset.is_file()):
+                self.path = "/index.html"
             return super().do_GET()
         query = parse_qs(url.query)
         limit = int(query.get("limit", ["50"])[0])

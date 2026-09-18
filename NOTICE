@@ -36,7 +36,7 @@ SOFTWARE.
 
 ## Fonts
 
-`vp/ui/static/fonts/Inter-latin.woff2` is Inter by Rasmus Andersson and
+`vp/ui/static/fonts/InstrumentSans-latin.woff2` is Instrument Sans by Rodrigo Fuenzalida and
 `vp/ui/static/fonts/JetBrainsMono-latin.woff2` is JetBrains Mono by
 JetBrains, both under the SIL Open Font License 1.1, vendored as the
 latin-subset variable builds served by Google Fonts so the dashboard works
