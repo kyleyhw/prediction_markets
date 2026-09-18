@@ -1,5 +1,12 @@
 # Archived: prediction_markets
 
+The repository's description while this was the project:
+
+> A quantitative investigation into prediction market dynamics (Polymarket &
+> Kalshi). Contains scripts for analyzing market microstructure, visualizing
+> bid-ask spreads, detecting arbitrage opportunities, and verifying historical
+> data integrity via CLOB and Gamma APIs.
+
 This directory holds the original `prediction_markets` project unchanged. It
 compared Polymarket and Kalshi prices for CS2 and English Premier League
 markets, fetched price history for active markets, and analysed spreads and

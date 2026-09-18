@@ -1,7 +1,7 @@
 [project]
 name = "vibe-predict"
 version = "0.1.0"
-description = "Describe a prediction-market strategy in plain language, backtest it honestly against the market, and paper trade it. Polymarket contracts on CS2 esports, weather and the Premier League."
+description = "A platform for building and testing prediction-market strategies on Polymarket (CS2 esports, weather, Premier League). Contains a market data layer over the Gamma and CLOB APIs, cutoff-safe forecasters including an LLM forecaster, proper-scoring backtests against the market price, hash-chained paper trading, and a browser dashboard, with live execution gated behind a security design."
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
