@@ -94,8 +94,8 @@ Things a future session should know:
 - The user asked for the branch to be merged: `master` is fast-forwarded
   to the same commits as the session branch.
 - Direction set on 2026-09-18: the product becomes a hosted web app with no
-  terminal for users or operators (`docs/product.md`); Phase 13 is next
-  and needs the go-ahead. The vibe-to-strategy pipeline is Phase 15 and
+  terminal for users; developers and the operator keep the command line
+  (`docs/product.md`). Phase 13 is next and needs the go-ahead. The vibe-to-strategy pipeline is Phase 15 and
   gets its own design page before code.
 
 ## Invariants to preserve

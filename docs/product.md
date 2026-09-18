@@ -1,10 +1,11 @@
 # Product Design: the Hosted App
 
 vibe-predict becomes a web app people open in a browser, with no
-terminal, no repository and no installation anywhere in the story: not for
-the person using it, and not for the person running it. This page is the
-design behind Phases 13 to 16 of the plan. The engine (`vp/`) stays as it
-is; what changes is who can reach it and how.
+terminal, no repository and no installation anywhere in the user's story.
+Developers and the operator keep the command line: the `vp` commands, the
+tests, and deploys from CI stay as they are. This page is the design
+behind Phases 13 to 16 of the plan. The engine (`vp/`) stays as it is;
+what changes is who can reach it and how.
 
 ## Who It Is For
 
@@ -27,8 +28,9 @@ it is only explained.
 
 ## Why Hosted
 
-A hosted app is the only form with no terminal for anyone: the user opens
-a URL, and the operator deploys by pushing to the repository. It is also
+A hosted app is the only form with no terminal for the user: they open a
+URL. The operator deploys by pushing to the repository, and keeps the
+command line for everything else. It is also
 the most portable (phone, tablet, any computer) and lets the shared data
 (datasets, snapshots, histories) be fetched once for everyone rather than
 once per machine. Its costs are real and are planned for below: accounts,
@@ -67,8 +69,9 @@ browser  ──HTTPS──▶  web service (FastAPI)  ──▶  Postgres (users
   Every job reports progress the page can show.
 - **Deploy.** One container image holding web and worker, one Postgres, one
   volume, on a host with push-to-deploy (Fly.io or Render); GitHub Actions
-  runs the tests and deploys `master`. Operators never type a command:
-  admin actions (refresh data, pause a user, see costs) are an admin page.
+  runs the tests and deploys `master`. Operator actions (refresh data,
+  pause a user, set budgets, read costs) are `vp admin` commands first and
+  an admin page only if they turn out to be needed often.
 - **Frontend.** The existing hand-written page grows into a small
   build-free app: ES modules served statically, the same fonts and charts,
   a router, and forms. No bundler, no framework, so there is still no

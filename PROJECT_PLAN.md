@@ -244,8 +244,8 @@ tasks below, not repeated here.
     figures, the paper ledger and the latest snapshots (`docs/ui.md`).
 
 ## Phase 13: Hosted app foundation
-Design in `docs/product.md`. The browser becomes the whole product for one
-person; no terminal for the user or the operator.
+Design in `docs/product.md`. The browser becomes the whole product for the
+user; developers and the operator keep the command line.
 28. [pending] Web service.
     - FastAPI over the unchanged `vp/` engine: endpoints mirroring the CLI
       (build, snapshot, backtest, paper run, settle, leakage) plus health;
@@ -259,11 +259,11 @@ person; no terminal for the user or the operator.
     - Postgres-backed queue and a worker in the same image; hourly
       snapshots, paper cycles and settlements; daily dataset and history
       refresh; on-demand backtests with progress reported to the page.
-31. [pending] Deploy without a terminal.
+31. [pending] Deploy.
     - One image, one database, one volume on a push-to-deploy host; GitHub
       Actions runs the tests and deploys `master`; HTTPS and a domain.
-    - An admin page for the operator: data refresh, user budgets, costs,
-      pause.
+    - `vp admin` commands for the operator: data refresh, user budgets,
+      costs, pause; an admin page only if needed often.
 32. [pending] Product-paid LLM calls with budgets.
     - Platform key server-side; per-user monthly budget with the cost of a
       run shown before it starts; optional own key stored encrypted.
