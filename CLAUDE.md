@@ -45,26 +45,38 @@ The original `prediction_markets` project is archived unchanged under
 - `tests/`: offline tests only; `tests/reports/` has a report per phase with
   runtimes. `data/` is git-ignored.
 
-## State at handoff (2026-09-13, evening)
+## State at handoff (2026-09-18)
 
-Phases 6 to 10 are complete and Phase 12's continuous items are in place;
-Phase 11 has its security design proposed in `docs/security.md`, with the
-safety layer it specifies built and tested in `vp/live/` (nothing there can
-sign or send an order), and is waiting for the user to agree to the design
-before the execution adapter (task 23) is written.
+Phases 6 to 10 and 12 are complete; Phase 11 has its security design
+proposed in `docs/security.md` with the safety layer built and tested in
+`vp/live/` (nothing there can sign or send an order), waiting for the user
+to agree the design before the execution adapter (task 23) is written.
 Each phase has a report in `tests/reports/` with what was measured live.
+
+Direction set on 2026-09-18 (`docs/product.md`, Phases 13–16 in the plan):
+the product becomes a hosted web app for people with no technical
+background, with no terminal for users; developers and the operator keep
+the command line. Phase 13 (service, accounts, per-user state, jobs,
+deploy, product-paid LLM budgets) is next and **needs the go-ahead**, plus
+two decisions listed in `docs/product.md`: hosting provider and region, and
+who operates budgets and abuse. Phase 15, strategies from conversation,
+gets its own design page (`docs/strategies.md`) before any code; the
+user wants sizing defaults that a prompt can override, and per-strategy
+P&L views. The domains will open up beyond CS2, weather and EPL; do not
+hard-code the three anywhere new, and the repository description no
+longer names them.
 
 What exists, in order of the data flow: the Polymarket client and data
 layer (`vp/venues`, `vp/markets`, `vp/domains`); forecasters behind a
 cutoff-bounded `Evidence` object (`vp/forecast`: market price, constant,
 climatology, Elo, and the LLM forecaster on the official Anthropic SDK);
-scoring, sizing, the fill simulator and `vp backtest` (`vp/backtest`); and
-paper trading on a hash-chained ledger with settlement and the leakage
-check (`vp/paper`, `vp paper run|settle|leakage`); and a read-only browser
-dashboard over all of it (`vp ui`, standard library, one hand-written
-page with vendored Instrument Sans and JetBrains Mono and charts drawn in the page
-from the runner's `results.json`; it deliberately has no actions, see
-`docs/ui.md`).
+scoring, sizing, the fill simulator and `vp backtest` (`vp/backtest`,
+which also writes `results.json` per run); paper trading on a hash-chained
+ledger with settlement and the leakage check (`vp/paper`); the live safety
+layer (`vp/live`); and the dashboard (`vp ui`: standard-library server, one
+hand-written page, vendored Instrument Sans and JetBrains Mono, charts
+drawn in the page, a glossary that makes every term clickable; read-only by
+design, see `docs/ui.md`).
 
 Things a future session should know:
 
@@ -73,30 +85,29 @@ Things a future session should know:
   environment, so the first keyed run needs only the key, and
   `vp backtest --forecasters market llm --max-markets 50` on a domain is
   the first thing to do with it. The cost per forecast is printed.
-- Live baseline results (Phase 9 report): no baseline beats the market.
-  Weather climatology has skill −0.19 against it, EPL Elo −0.02 (at par a
-  day out) and CS2 Elo −0.12; every simulated strategy loses at a 5%
-  minimum edge. Edge is not the project's goal (see "What this is"); these
-  are the benchmark a user's strategy is measured against.
-- Evidence comes from the resolved dataset itself (resolutions as results
-  and realised buckets). Open-Meteo's archive and previous-runs endpoints
-  were rate-limited from the container; wiring them in is the obvious
-  next step for weather.
-- Known follow-up: `vp paper run --max-markets N` caps the snapshot, not
-  the parsed markets, so a small N can yield nothing to forecast in EPL.
+- Live baseline results (Phase 9 report): no baseline beats the market
+  (weather climatology skill −0.19, EPL Elo −0.02, CS2 Elo −0.12). Edge is
+  not the goal; these are the benchmark a user's strategy is measured
+  against.
+- Evidence comes from the resolved dataset itself. Open-Meteo's archive and
+  previous-runs endpoints were rate-limited from the container; wiring them
+  in is the obvious next step for weather.
+- Known follow-up: `vp paper run --max-markets N` caps the snapshot, not the
+  parsed markets, so a small N can yield nothing to forecast in EPL.
 - `data/` is git-ignored; a session starts with no datasets. Rebuilding:
   `vp build-dataset --domain <d> --no-history` (20 s to 2 min), then
   histories for the markets to be backtested (about one per second).
-- The SessionStart hook refreshes `uv` (the container's is too old to
-  install the pinned Python 3.14.7) and sets the git identity to the
-  repository owner. Commits must carry that identity and no assistant
-  attribution.
-- The user asked for the branch to be merged: `master` is fast-forwarded
-  to the same commits as the session branch.
-- Direction set on 2026-09-18: the product becomes a hosted web app with no
-  terminal for users; developers and the operator keep the command line
-  (`docs/product.md`). Phase 13 is next and needs the go-ahead. The vibe-to-strategy pipeline is Phase 15 and
-  gets its own design page before code.
+- The SessionStart hook refreshes `uv` (the container's is too old for the
+  pinned Python 3.14.7) and sets the git identity to the repository owner.
+  Commits carry that identity and no assistant attribution.
+- Checking the dashboard visually: run `vp ui` on a data root, then
+  Playwright with the preinstalled Chromium
+  (`executable_path="/opt/pw-browsers/chromium"`, `args=["--no-proxy-server"]`,
+  because the container's proxy otherwise breaks localhost subresources),
+  via `uv run --with playwright`. Put server start and stop in a script
+  file: a `pkill -f "vp ui"` typed inline matches the shell running it.
+- `master` is kept fast-forwarded to the session branch at the user's
+  request; work on `master` directly when the session allows it.
 
 ## Invariants to preserve
 
