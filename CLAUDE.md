@@ -70,8 +70,17 @@ collaboration and delivery, 19 shadow forecaster, 20 portfolio, risk and
 the promotion protocol, 21 hosted live execution (moved from 16), 22 scale
 proof, 23 the documentation site (default "paper" style in `docs/site.md`,
 alternatives to trial later). Phase 13 is next and **needs the go-ahead**;
-the decisions each phase needs, with a proposal for each, are the table at
-the end of the plan. Phase 15 still gets `docs/strategies.md` before any
+the decisions each phase needed were taken on 2026-09-19 as proposed
+(Fly.io with Amsterdam as the first region, magic-link sign-in, quarter
+Kelly with a 5% cap and a 0.03 minimum edge, fees shown, session keys for
+live execution, the "paper" site style) and are recorded with fifteen
+flags at the end of the plan; the gating ones are F1 (confirm the host
+region is not geoblocked by the venue before deploying), F5 (paper trading
+charges no fees today and must), F9 (evidence sources' commercial terms),
+F11 (the repository has no licence file; the owner chooses one before
+contributions or the public site) and F12 (a session key can trade the
+whole balance). F15 notes the Phase 11 security design is still only
+proposed. Phase 15 still gets `docs/strategies.md` before any
 code, and the user wants sizing defaults a prompt can override and
 per-strategy P&L views. The domains will open up beyond CS2, weather and
 EPL; do not hard-code the three anywhere new, and the repository

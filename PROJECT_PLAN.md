@@ -1001,21 +1001,121 @@ searchable, reproducible.
 - An MCP client that lets the research agent call external tools inside a
   backtest: rejected by principle 5; reconsidered only for the forward loop.
 
-## Decisions needed from the user, by phase
+## Decisions, by phase
 
-| Phase | Decision | Proposed |
+Decided on 2026-09-19: each proposal below was examined and adopted as
+proposed, with two made concrete (the host and region in decision 1, a
+minimum-edge default in decision 6). The flags that came out of examining
+them follow the table and are part of the decision record; a flag marked
+**gating** must be resolved inside the phase it names before that phase is
+called done.
+
+| Phase | Decision | Decided |
 | :--- | :--- | :--- |
-| 13 | Hosting provider and region | a push-to-deploy host with managed Postgres and object storage in one region near the operator; stage A of `docs/scaling.md` |
-| 13 | Who operates budgets and abuse | the repository owner at first; an operator role exists from day one |
-| 13 | Identity provider | email magic link now, OpenID Connect when a team asks |
-| 13 | Prepare for the venue's builder programme now | no; decide with Phase 21 |
-| 14 | Fees in Simple mode | yes, in cents, since the venue charges takers on sports and weather |
-| 15 | Sizing defaults and the override whitelist | fraction 0.25, cap 5%, absolute caps set by the workspace; a prompt may lower any of them and raise none |
-| 15 | Whether the LLM forecaster ever sees the market price | only as an explicit belief option, never by default |
-| 15 | Default model tiers and the $5 budget | a cheap tier for breadth, the expensive tier on demand; the budget revisited on Phase 22's cost numbers |
-| 17 | Evidence sources and their licences per domain | evaluated in the design page; nothing scrape-hostile |
-| 17 | The order in which new domains open | by data availability and market count, listed in the design page |
-| 18 | Developer Certificate of Origin for external contributions | yes, once contributions are invited |
-| 21 | The live key model | session keys for execution, browser signing for consent |
-| 21 | Polymarket US | assess only |
-| 23 | The site's visual style | the "paper" default of `docs/site.md` as the placeholder; alternatives trialled later |
+| 13 | Hosting provider and region | Fly.io (machines for web, worker and ingest; managed Postgres; Tigris object storage), first region Amsterdam, confirmed by flag F1 before anything else is built; stage A of `docs/scaling.md` |
+| 13 | Who operates budgets and abuse | the repository owner; an operator role exists from day one so it can be handed over (F2) |
+| 13 | Identity provider | email magic link now, OpenID Connect when a team asks (F3) |
+| 13 | Prepare for the venue's builder programme now | no; decided with Phase 21 (F4) |
+| 14 | Fees in Simple mode | yes, in cents, since the venue charges takers on sports and weather (F5) |
+| 15 | Sizing defaults and the override whitelist | fraction 0.25, cap 5% of bankroll, a minimum edge of 0.03 after fees, absolute caps set by the workspace; a prompt may lower any of them and raise none (F6) |
+| 15 | Whether the LLM forecaster ever sees the market price | only as an explicit belief option, labelled on every run card, never by default (F7) |
+| 15 | Default model tiers and the $5 budget | a cheap tier for breadth, the expensive tier on demand; the budget revisited on Phase 22's cost numbers (F8) |
+| 17 | Evidence sources and their licences per domain | evaluated in the design page; nothing scrape-hostile; commercial terms checked for each (F9) |
+| 17 | The order in which new domains open | by data availability and market count, listed in the design page, each with a report before it is shown to users (F10) |
+| 18 | Developer Certificate of Origin for external contributions | yes, once contributions are invited (F11) |
+| 21 | The live key model | session keys for execution, browser signing for consent (F12) |
+| 21 | Polymarket US | assess only (F13) |
+| 23 | The site's visual style | the "paper" default of `docs/site.md` as the placeholder; alternatives trialled later (F14) |
+
+### Flags recorded with the decisions
+
+- **F1 (gating, Phase 13). Region against the venue's restrictions.** The
+  international venue geoblocks several jurisdictions, the United States
+  among them, and the list changes. The first task on the chosen host is to
+  confirm from its region that every read endpoint the platform uses is
+  served and, for Phase 21, that order endpoints are; if any is refused, the
+  region moves before anything else is deployed. Amsterdam is the first
+  candidate, not a certainty. Latency to the venue is irrelevant at the
+  cadences this platform runs.
+- **F2 (Phase 13). One operator is one point of failure.** The platform
+  halt, budget changes and abuse responses all rest on one person until the
+  operator role is granted to a second; a written hand-over procedure and a
+  second operator are due before public sign-up (Phase 14, task 48).
+- **F3 (Phase 13). Magic links need deliverable email.** A transactional
+  email provider with the domain authenticated (SPF, DKIM, DMARC) is a
+  hidden dependency and a small cost; sign-in emails are rate-limited per
+  address and per IP, links are single-use and short-lived, and sessions
+  are bound to the browser that requested them.
+- **F4 (Phase 21). The builder programme may matter for wallets.** The
+  venue's SDK creates deposit wallets for new users through builder
+  credentials and attributes volume through a builder code; Phase 21's
+  design decides whether users bring a wallet or the platform helps create
+  one. Nothing in Phase 13 precludes either.
+- **F5 (gating, Phases 14 and 17). Paper trading charges no fees today.**
+  `vp/paper/loop.py` orders at the touch with no fee term, and the backtest
+  default is zero. Showing fees in Simple mode is honest only if paper fills
+  pay them: the paper loop reads each market's `feeSchedule` and charges the
+  taker fee from the first Phase 13 cycle, and task 77 re-runs the Phase 9
+  baselines fee-aware. `docs/sizing.md` names a `taker_base_fee` field the
+  venue has since replaced; task 78 re-verifies the field.
+- **F6 (Phase 15, then 20). Per-market caps are not portfolio caps.** Until
+  Phase 20 adds per-event exposure and simultaneous Kelly, several positions
+  in one event (a winner market and its maps, the buckets of one weather
+  day) can together exceed the risk the 5% cap suggests; the preview says
+  so. The 0.03 minimum edge is a tunable, chosen because the Phase 9 report
+  found a 5% threshold removed every climatology bet and a zero threshold
+  lost the bankroll to the spread; it is revisited with the fee-aware
+  baselines.
+- **F7 (Phase 15). A belief that sees the price scores near par.** A run
+  whose belief was shown the market price is labelled on its run card and
+  excluded from the leaderboards' skill rankings, because its skill against
+  the market measures anchoring, not information. Signals and blends use
+  the price legitimately and say so in their metadata.
+- **F8 (Phase 15). A $5 budget is one small LLM backtest.** At $0.01 to
+  $0.05 a forecast the budget buys 100 to 500 forecasts a month; a
+  400-market backtest with an LLM belief can spend it in one run. The
+  preview shows the cost first, LLM backtests default to a 100-market sample
+  through the batch endpoint, and the memo cache makes repeated runs on the
+  same markets free. Model identifiers are chosen at build time from the
+  provider's current list, not fixed here.
+- **F9 (gating, Phase 17). Free tiers are for non-commercial use.**
+  Open-Meteo's free API is for non-commercial use and a hosted product with
+  users needs its paid plan; football data providers' free tiers carry rate
+  and redistribution limits; Liquipedia's API requires attribution and its
+  share-alike licence covers its text, not the facts derived from it. Each
+  source's terms are recorded in the evidence design page before its
+  collector runs against production, and the archive stores provenance so a
+  source can be withdrawn with its rows.
+- **F10 (Phase 17). Politics is a compliance domain, not only a data
+  domain.** Opening it needs the jurisdiction notice and terms of Phase 14
+  reviewed for it; it stays behind the other candidates.
+- **F11 (gating, Phase 18). The repository has no licence file.** Nothing
+  can be contributed to, or lawfully reused from, an unlicensed repository,
+  and the public site cannot launch without one. A licence is the owner's
+  decision (MIT would match the ported code's terms and the reference
+  implementation; a copyleft licence would not conflict with the MIT
+  notice); it is taken before Phase 18 starts, and before the site of Phase
+  23 goes public if that comes first.
+- **F12 (gating, Phase 21). A session key cannot withdraw, but it can
+  trade the whole balance.** The mandate's caps are the only limit against
+  a drained balance through bad fills, so the design requires users to fund
+  a dedicated deposit wallet with only what they are willing to risk, the
+  canary runs at the venue's minimum stake, and the key's fixed 180-day
+  expiry is tracked so a strategy never stops silently. Session keys are a
+  2026 venue feature available to deposit wallets; legacy proxy and Safe
+  wallets may not support them, and the design re-verifies the feature at
+  the time.
+- **F13 (Phase 21). United States users cannot trade live here.** The
+  international venue does not serve them; paper trading is not money and
+  is unaffected; live execution is gated by jurisdiction from the first
+  order, and Polymarket US is a separate venue with its own API and fees to
+  assess, not a fallback.
+- **F14 (Phase 23). The default style passes its own checks.** The teal
+  accent on the warm off-white background and its dark counterpart both
+  clear WCAG AA contrast (about 5.8:1 and 7.4:1); any trialled alternative
+  must clear the same bar before it is shown.
+- **F15 (open, not decided). The Phase 11 security design is still
+  proposed, not agreed.** Under this plan the operator-machine execution
+  adapter (Phase 11, tasks 23 and 24) is largely superseded by the hosted
+  model of Phase 21; the owner decides whether a local live path is still
+  wanted. Until then the invariant stands: no order-signing code.
