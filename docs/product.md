@@ -4,8 +4,12 @@ vibe-predict becomes a web app people open in a browser, with no
 terminal, no repository and no installation anywhere in the user's story.
 Developers and the operator keep the command line: the `vp` commands, the
 tests, and deploys from CI stay as they are. This page is the design
-behind Phases 13 to 16 of the plan. The engine (`vp/`) stays as it is;
-what changes is who can reach it and how.
+behind Phases 13 to 23 of the plan. The engine (`vp/`) stays as it is;
+what changes is who can reach it and how. The platform is designed for
+many users from its first release; the tenancy, storage, queue and
+capacity design is in [scaling.md](scaling.md), and the reference
+implementation's collaborative tools, rebuilt here for many workspaces,
+are mapped in [vibe_trading.md](vibe_trading.md).
 
 ## Who It Is For
 
@@ -41,15 +45,25 @@ wallet key.
 ## Architecture
 
 ```ascii
-browser  ──HTTPS──▶  web service (FastAPI)  ──▶  Postgres (users, strategies,
-   │                     │                            ledgers, forecasts, jobs)
-   │                     ├──▶ vp/ engine (unchanged)
-   │                     └──▶ shared data volume (Parquet datasets, histories,
-   │                                                snapshots)
-   └── wallet extension   worker (same image): job queue + schedules
-       (Phase 16 only:    ├── hourly: snapshot open markets, paper cycles, settle
-        signs orders       ├── daily: refresh resolved datasets and histories
-        client-side)       └── on demand: backtests, strategy previews, LLM calls
+browser / chat channels / MCP clients / API tokens
+        │ HTTPS, every request carries a principal (user, workspace, roles)
+        ▼
+web service (FastAPI, stateless replicas) ──▶ Postgres (workspaces, strategies,
+        │                                      runs, forecasts, per-account
+        ├──▶ vp/ engine (unchanged)            hash-chained ledgers, jobs,
+        │                                      budgets; row-level security)
+        └──▶ object storage (dataset versions, histories, snapshots,
+                             evidence archive, artifacts, ledger archives)
+                                                  ▲
+workers (same image, pools per job kind)          │
+   ├── forecast (LLM, statistical), backtest, paper cycle, settlement
+   ├── evidence capture, dataset build, delivery (email, Telegram, ...)
+   └── scheduler: cron with time zones, enqueues jobs
+market-data service (same image): one WebSocket subscription to the venue
+   for every tracked market, keyset discovery, resolutions, quotes coalesced
+   per minute, the snapshot files vp already writes, fan-out to consumers
+wallet / session key (Phase 21 only): the user's delegated signer, scoped
+   and revocable, never the wallet key; mandate, gates and halts around it
 ```
 
 - **Engine.** `vp/` as today. The service imports it; nothing in the engine
@@ -60,13 +74,18 @@ browser  ──HTTPS──▶  web service (FastAPI)  ──▶  Postgres (users
   the API documentation for the technical user. Endpoints mirror the CLI:
   build, snapshot, backtest, paper run, settle, leakage, plus auth,
   strategies and settings.
-- **Storage.** Postgres for everything per user and for the job queue;
-  Parquet on a shared volume for market data, exactly the files `vp`
-  already writes. Per-user ledgers keep the hash chain, one chain per user.
-- **Jobs.** A worker process runs a queue table in Postgres (no extra
-  broker) with scheduled entries for snapshots, cycles, settlements and
-  dataset refreshes, and on-demand entries for backtests and LLM runs.
-  Every job reports progress the page can show.
+- **Storage.** Postgres for everything per workspace and for the job
+  queue, with row-level security keyed on the request's principal; Parquet
+  in object storage for market data, exactly the files `vp` already writes,
+  as immutable dataset versions. Per-account ledgers keep the hash chain,
+  one chain per account, verifiable offline with the existing code.
+- **Jobs.** Workers run a queue table in Postgres (no extra broker at
+  first) with a pool per job kind, so a slow LLM queue never delays a
+  settlement; scheduled entries for snapshots, cycles, settlements and
+  refreshes, on-demand entries for backtests and LLM runs, idempotency
+  keys, retries and progress the page can show. A single market-data
+  service holds the venue subscription for everyone; users never poll the
+  venue.
 - **Deploy.** One container image holding web and worker, one Postgres, one
   volume, on a host with push-to-deploy (Fly.io or Render); GitHub Actions
   runs the tests and deploys `master`. Operator actions (refresh data,
@@ -81,7 +100,7 @@ browser  ──HTTPS──▶  web service (FastAPI)  ──▶  Postgres (users
 
 - **Sign-in** by email magic link (no passwords to store) with OAuth later.
 - **Paper first.** Every account starts with a paper bankroll and can never
-  lose real money in the product as shipped in Phases 13 to 15.
+  lose real money in the product as shipped in Phases 13 to 20.
 - **LLM calls are paid by the product**, with a monthly budget per user
   shown in the app, because asking a non-technical person to obtain an API
   key defeats the purpose. Technical users may add their own key, stored
@@ -89,11 +108,16 @@ browser  ──HTTPS──▶  web service (FastAPI)  ──▶  Postgres (users
   strategies is Sonnet 5 with a per-user monthly cap in dollars (proposed
   default $5, adjustable by the operator); backtests show their cost before
   they run.
-- **Live execution** (Phase 16) is non-custodial: the server prepares an
-  order, the user's wallet extension signs it in the browser, and the
-  signed order is submitted. The server never holds a key. The mandate,
-  kill switch, approvals and audit ledger from `docs/security.md` apply
-  unchanged; the keyring section is replaced by client-side signing.
+- **Live execution** (Phase 21) never holds the user's wallet key. The
+  proposed model is the venue's session keys: a delegated signer the user
+  authorises on the venue, scoped to trading, unable to withdraw, expiring
+  in 180 days and revocable by the user at any time independently of us,
+  held under envelope encryption; the user's wallet signs only the mandate
+  commit and high-value approvals in the browser. The mandate, kill
+  switches, approvals and audit ledger from `docs/security.md` apply; the
+  keyring section is replaced by this model in the design's version 2. Live
+  execution is offered only to strategies that passed the promotion
+  protocol (Phase 20) and only where the venue serves the user.
 - **Compliance.** Prediction markets are restricted in several
   jurisdictions and Polymarket itself geo-fences. Before public launch the
   app needs terms of use, an age gate, a jurisdiction notice, and the
@@ -134,22 +158,33 @@ Design rules:
 
 ## Sequencing
 
-Phase 13 makes the browser the whole product for one person: service,
-accounts, per-user state, jobs, deploy, and the existing views on top.
-Phase 14 makes it friendly: the guided start, Simple mode, plain language,
-Learn, Settings, P&L charts. Phase 15 is the vibe-to-strategy pipeline,
-designed first and separately, which lands as the "New strategy" button in
-a product that already has users who understand what it will do. Phase 16
-is hosted live execution behind the revised security design. Phase 12's
-rule holds throughout: each phase lands with its page and its report.
+Phase 13 makes the browser the whole product, built for many users from
+the start: service, identity and workspaces, storage, jobs, the
+market-data service, deploy, budgets, observability, and the existing views
+on top. Phase 14 makes it friendly: the guided start, Simple mode, plain
+language, Learn, Settings, P&L charts, fees shown honestly. Phase 15 is the
+research session and the strategy spec, designed first and separately,
+which lands as the "New strategy" button in a product that already has
+users who understand what it will do. Phase 16 adds the signal library,
+forecast committees and the public benchmark; Phase 17 the evidence
+archive and new domains; Phase 18 teams, sharing, comments, leaderboards,
+chat channels, scheduled briefs and the MCP server; Phase 19 the shadow
+forecaster over a user's own public record; Phase 20 portfolio risk,
+strategy health and the promotion protocol; Phase 21 hosted live execution
+behind the revised security design; Phase 22 the scale proof; Phase 23 the
+documentation site and research lab, continuous. Phase 12's rule holds
+throughout: each phase lands with its page and its report.
 
 ## Open Questions, to Settle Before Each Phase
 
-- Hosting provider and region (Phase 13).
+The full table, with a proposal for each, is at the end of the
+[project plan](../PROJECT_PLAN.md). The ones that gate the next phase:
+
+- Hosting provider and region, and the object-storage provider (Phase 13).
 - Who the operator is for budgets and abuse (Phase 13).
-- Whether Simple mode shows fees at all before Phase 16 (Phase 14: proposed
-  no, since paper trading has none).
-- The strategy spec, sizing defaults and how a prompt overrides them
+- Fees in Simple mode: now proposed yes, in cents, because the venue's 2026
+  schedule charges takers on sports and weather markets (Phase 14).
+- The strategy spec, sizing defaults and the fields a prompt may override
   (Phase 15, its own design page).
-- Which wallet flow Polymarket's CLOB supports for browser signing at the
-  time (Phase 16).
+- The live key model: session keys for execution, browser signing for
+  consent (Phase 21).

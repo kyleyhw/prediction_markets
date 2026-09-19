@@ -85,7 +85,10 @@ prediction_markets/
 - [Forecasters](docs/forecasters.md): contract, cutoff-bounded evidence, baselines, Elo, the LLM forecaster.
 - [Scoring](docs/scoring.md) and [sizing](docs/sizing.md): proper scores, calibration, fees, Kelly.
 - [Paper trading](docs/paper_trading.md): ledger, forward loop, settlement, leakage check.
-- [Product design](docs/product.md): the hosted app for everyone, Phases 13 to 16.
+- [Product design](docs/product.md): the hosted app for everyone, Phases 13 to 23.
+- [Scaling](docs/scaling.md): the multi-user architecture and capacity model.
+- [Vibe-Trading review](docs/vibe_trading.md): the reference implementation, its collaborative tools, the capability mapping, non-infringement rules.
+- [Documentation site](docs/site.md): the public site's structure and default visual style.
 - [Browser dashboard](docs/ui.md): `vp ui`, a read-only local page over the data root.
 - [Security design](docs/security.md): proposed gate for live execution.
 - [Provenance](docs/provenance.md): code adapted from Vibe-Trading and how it was changed.
@@ -162,6 +165,11 @@ event = polymarket.fetch_event(hits["events"][0]["event_id"])
 market = polymarket.fetch_market(event["markets"][0]["market_id"], depth=5)
 print(market["question"], market["resolution"]["state"])
 ```
+
+## Licence
+
+MIT, see [LICENSE](LICENSE). Code adapted from other projects and the
+bundled fonts carry their own notices in [NOTICE](NOTICE).
 
 ## References
 

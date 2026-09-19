@@ -27,13 +27,17 @@ The original `prediction_markets` project is archived unchanged under
 ## Where things are
 
 - `PROJECT_PLAN.md`: phases 1–5 are the archived project; 6–12 are the
-  engine and dashboard; 13–16 are the hosted app for everyone
-  (`docs/product.md`). Status tags are kept current; update them as tasks
-  finish.
+  engine and dashboard; 13–23 are the hosted platform for many users
+  (`docs/product.md`, `docs/scaling.md`), rewritten in detail on
+  2026-09-18 with a decisions table at the end. Status tags are kept
+  current; update them as tasks finish.
 - `README.md`, `docs/index.md`: entry points. `docs/architecture.md` has the
   data flow and design decisions; then one page per phase:
   `data_layer.md`, `forecasters.md`, `scoring.md`, `sizing.md`,
-  `paper_trading.md`, `security.md`, `ui.md`.
+  `paper_trading.md`, `security.md`, `ui.md`; and the platform design
+  pages `product.md`, `scaling.md`, `site.md`, plus `vibe_trading.md`, the
+  full review of the reference implementation with the capability mapping
+  and the non-infringement rules.
 - `vp/`: the package. `venues/polymarket.py` (read-only client with the
   closed-is-not-resolved evidence ladder), `domains/` (cs2, weather, epl),
   `markets/` (record, source, Parquet store, dataset, snapshot),
@@ -45,7 +49,7 @@ The original `prediction_markets` project is archived unchanged under
 - `tests/`: offline tests only; `tests/reports/` has a report per phase with
   runtimes. `data/` is git-ignored.
 
-## State at handoff (2026-09-18)
+## State at handoff (2026-09-19)
 
 Phases 6 to 10 and 12 are complete; Phase 11 has its security design
 proposed in `docs/security.md` with the safety layer built and tested in
@@ -53,18 +57,37 @@ proposed in `docs/security.md` with the safety layer built and tested in
 to agree the design before the execution adapter (task 23) is written.
 Each phase has a report in `tests/reports/` with what was measured live.
 
-Direction set on 2026-09-18 (`docs/product.md`, Phases 13–16 in the plan):
-the product becomes a hosted web app for people with no technical
-background, with no terminal for users; developers and the operator keep
-the command line. Phase 13 (service, accounts, per-user state, jobs,
-deploy, product-paid LLM budgets) is next and **needs the go-ahead**, plus
-two decisions listed in `docs/product.md`: hosting provider and region, and
-who operates budgets and abuse. Phase 15, strategies from conversation,
-gets its own design page (`docs/strategies.md`) before any code; the
-user wants sizing defaults that a prompt can override, and per-strategy
-P&L views. The domains will open up beyond CS2, weather and EPL; do not
-hard-code the three anywhere new, and the repository description no
-longer names them.
+Direction set on 2026-09-18 (`docs/product.md`): the product becomes a
+hosted web app for people with no technical background, with no terminal
+for users; developers and the operator keep the command line; it must
+scale to many users (`docs/scaling.md`). The plan's Phases 13–23 were
+rewritten that day after a full review of Vibe-Trading
+(`docs/vibe_trading.md`, which also records its collaborative tools and
+the non-infringement rules): 13 platform foundation, 14 friendly for
+everyone, 15 research sessions and the strategy spec, 16 signal library,
+committees and benchmark, 17 evidence archive and new domains, 18
+collaboration and delivery, 19 shadow forecaster, 20 portfolio, risk and
+the promotion protocol, 21 hosted live execution (moved from 16), 22 scale
+proof, 23 the documentation site (default "paper" style in `docs/site.md`,
+alternatives to trial later). Phase 13 is next and **needs the go-ahead**;
+the decisions each phase needed were taken on 2026-09-19 as proposed
+(Fly.io with Amsterdam as the first region, magic-link sign-in, quarter
+Kelly with a 5% cap and a 0.03 minimum edge, fees shown, session keys for
+live execution, the "paper" site style) and are recorded with fifteen
+flags at the end of the plan; the gating ones are F1 (confirm the host
+region is not geoblocked by the venue before deploying), F5 (paper trading
+charges no fees today and must), F9 (evidence sources' commercial terms),
+F12 (a session key can trade the whole balance). F11 was resolved the
+same day: the repository is MIT-licensed (`LICENSE`, `pyproject.toml`). The
+owner also set the rule that venue access must be lawful under the venue's
+terms and the law of the host's and users' places, never merely
+unblocked (F1), that paper trading must use the backtest's fee model (F5,
+task 37), and that self-hosting is not the users' path (F9, task 116).
+F15 notes the Phase 11 security design is still only proposed. Phase 15 still gets `docs/strategies.md` before any
+code, and the user wants sizing defaults a prompt can override and
+per-strategy P&L views. The domains will open up beyond CS2, weather and
+EPL; do not hard-code the three anywhere new, and the repository
+description no longer names them.
 
 What exists, in order of the data flow: the Polymarket client and data
 layer (`vp/venues`, `vp/markets`, `vp/domains`); forecasters behind a
@@ -85,6 +108,11 @@ Things a future session should know:
   environment, so the first keyed run needs only the key, and
   `vp backtest --forecasters market llm --max-markets 50` on a domain is
   the first thing to do with it. The cost per forecast is printed.
+- The Phase 9 backtests ran with the zero-fee default. The venue's 2026
+  schedule charges takers on sports and weather markets ($C \cdot r \cdot
+  p(1-p)$, $r$ = 0.05, read from each market's `feeSchedule`); the plan's
+  task 77 re-runs the baselines fee-aware and `docs/sizing.md` still
+  carries the 2026-09-13 assumption until then.
 - Live baseline results (Phase 9 report): no baseline beats the market
   (weather climatology skill −0.19, EPL Elo −0.02, CS2 Elo −0.12). Edge is
   not the goal; these are the benchmark a user's strategy is measured
@@ -119,7 +147,8 @@ Things a future session should know:
 - Every forecaster will take an explicit information cutoff and must not
   read anything after it.
 - Live execution code is not to be written until the security design in
-  Phase 11 task 22 is agreed with the user.
+  Phase 11 task 22 is agreed with the user, and hosted live execution not
+  until its version 2 (Phase 21 task 105) is agreed.
 
 ## Commands
 

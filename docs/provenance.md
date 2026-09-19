@@ -47,6 +47,21 @@ than 30 markets, and truncating it would silently bias the dataset. The event
 resolution logic, which upstream had to reason about uninspected markets, is
 simplified accordingly.
 
+## Second Review, 2026-09-18
+
+Vibe-Trading was read again in full at commit `e5f7195` (version 0.1.15
+plus nine days of unreleased changes) for its product, its collaborative
+tools and its scaling posture, to plan Phases 13 to 23. Nothing further was
+ported: the upstream `prediction_market_tool.py` is unchanged in size (1,241
+lines) since the first review, and the rest of the project is bound to
+continuous-price instruments or to a single-operator runtime. What the
+second review yielded is design patterns, each re-derived for binary
+contracts under an explicit cutoff and never copied; they are listed with
+the phase that adopts each in [vibe_trading.md](vibe_trading.md) § 7, and
+the rules that keep the analogue clear of the original's name, marks,
+assets and text are in its § 9. Any future port is recorded in the table
+above with the upstream commit hash.
+
 ## References
 
 <span id="ref-vibe-trading">[1]</span> HKUDS (2026). *Vibe-Trading: Your Personal Trading Agent.* Version 0.1.15. [Link](https://github.com/HKUDS/Vibe-Trading)
