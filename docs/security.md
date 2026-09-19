@@ -1,6 +1,16 @@
 # Live Execution: Security Design (Phase 11, task 22)
 
-**Status: proposed, awaiting agreement.** The safety layer described in
+**Status: base for version 2.** Proposed on 2026-09-13 for live execution
+from an operator's machine. On 2026-09-19 the owner decided that live
+execution is hosted only, so that a strategy trades while the user's
+computer is closed, and is built last (Phase 22 of the plan). This page is
+therefore the base that version 2 revises: sections 2 to 7 carry over; the
+keyring of section 1 is replaced by the venue's session keys held under
+envelope encryption, and approvals move to the browser and chat channels
+(plan, task 112 and flag F12). The invariant is unchanged until version 2
+is agreed: no order-signing code.
+
+Original text follows. The safety layer described in
 sections 2 to 6 is implemented and tested in `vp/live/` (mandate guard,
 kill switch, environment separation, proposal-and-approval protocol,
 keyring credential access); none of it can sign or send an order. Order

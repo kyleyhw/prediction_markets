@@ -392,8 +392,8 @@ refer to [PROJECT_PLAN.md](../PROJECT_PLAN.md).
 | Strategy Development Manager decay states | **Strategy health**: rolling forward skill with a sequential test; healthy, watch, decayed; auto-pause | 20 | Skill against the market, not IC |
 | Shadow Account from a broker export | **Shadow forecaster** from a public Polymarket address: closing-line value, calibration, biases, rule extraction, counterfactual | 19 | No export needed: positions and activity are public on the Data API |
 | Portfolio aggregation and risk x-ray | Exposure by event and resolution date, correlated outcomes, simultaneous Kelly, worst case at settlement | 20 | Outcomes are discrete and correlated within events |
-| Mandate, consent state machine, fail-closed gates, kill switch, pending actions, audit with redaction | Security design v2 for the hosted setting, on the existing safety layer | 11, 21 | Session keys replace broker credentials: scoped, revocable, unable to withdraw |
-| TAP credential proxy with chat approval | Session keys held in a key-management service; approvals through channels | 21 | |
+| Mandate, consent state machine, fail-closed gates, kill switch, pending actions, audit with redaction | Security design v2 for the hosted setting, on the existing safety layer | 11, 22 | Session keys replace broker credentials: scoped, revocable, unable to withdraw |
+| TAP credential proxy with chat approval | Session keys held in a key-management service; approvals through channels | 22 | |
 | Scheduled research, playbooks, propose-then-commit, verdict blocks, delivery targets, outbox | **Scheduled briefs** with the same shape | 18 | |
 | Sixteen chat adapters, pairing, operators | Channels: email first, then Telegram, Discord, Slack, a generic webhook; the same bus and pairing pattern | 18 | Fewer adapters, multi-tenant from the start |
 | MCP server (no order tools) | MCP server with per-user scoped tokens, read-only tools, never an order tool | 18 | |

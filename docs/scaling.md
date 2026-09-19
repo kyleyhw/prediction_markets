@@ -4,7 +4,7 @@ vibe-predict is to serve many people at once: a few at first, then, if it
 earns them, thousands or more. This page is the design that makes that
 possible without rebuilding, and the capacity model that says what "many"
 costs. It applies from the first hosted release (Phase 13) and is proven
-under load in Phase 22; until then its numbers are estimates, and each is
+under load in Phase 21; until then its numbers are estimates, and each is
 marked as such. The product design it serves is [product.md](product.md);
 the engine it scales is unchanged.
 
@@ -29,7 +29,7 @@ the engine it scales is unchanged.
    budget; users read from our copy. Ten thousand users must not become ten
    thousand pollers.
 6. **Measure before believing.** Each capacity number below has an
-   assumption beside it and is replaced by a measurement in the Phase 22
+   assumption beside it and is replaced by a measurement in the Phase 21
    report.
 
 ## 2. Shared and Per-User Work
@@ -234,7 +234,7 @@ no build farm either.
   are users who would notice.
 - **Kill switches.** A platform halt (a row, not a file: no worker runs
   jobs, no LLM call is made, no order is prepared while it is set); a
-  workspace halt; the user's own halts (Phase 21). Each is a ledger entry.
+  workspace halt; the user's own halts (Phase 22). Each is a ledger entry.
 - **Backups and recovery.** Point-in-time recovery for Postgres, versioned
   object storage, a restore drill on a schedule, a documented recovery time.
 - **Secrets.** In the host's secret store or a key-management service, never
@@ -246,7 +246,7 @@ no build farm either.
 
 ## 11. Capacity Model
 
-Estimates, to be replaced by Phase 22 measurements. Assumptions: three to
+Estimates, to be replaced by Phase 21 measurements. Assumptions: three to
 ten domains; 3,000 open markets tracked at a time (up to 10,000 with more
 domains); each user runs three strategies selecting fifty markets a day
 between them, placing twenty paper orders and generating about a hundred
@@ -293,7 +293,7 @@ state, a `Queue`, a `MarketState` reader).
 Tenancy isolation is tested, not assumed (section 3). Session keys and
 user-supplied API keys are stored under envelope encryption with a
 key-management service and are never logged; live execution has three
-independent halts (section 10 and Phase 21). Abuse controls are budgets,
+independent halts (section 10 and Phase 22). Abuse controls are budgets,
 rate limits, sign-up friction and the operator's pause. Live execution is
 gated by jurisdiction; paper trading is not real money and is not. Personal
 data is exportable and deletable per workspace. An external security review
@@ -301,8 +301,8 @@ precedes public live execution.
 
 ## 14. What Is Measured Before It Is Believed
 
-Phase 22 runs synthetic workspaces at the three scales of section 11 against
+Phase 21 runs synthetic workspaces at the three scales of section 11 against
 staging, records every metric in section 10, finds the first component to
 miss its objective, fixes it, and publishes the numbers in
-`tests/reports/phase22_scale.md`. Until that report exists this page is a
+`tests/reports/phase21_scale.md`. Until that report exists this page is a
 design, and the plan says so wherever it relies on it.

@@ -62,7 +62,7 @@ workers (same image, pools per job kind)          │
 market-data service (same image): one WebSocket subscription to the venue
    for every tracked market, keyset discovery, resolutions, quotes coalesced
    per minute, the snapshot files vp already writes, fan-out to consumers
-wallet / session key (Phase 21 only): the user's delegated signer, scoped
+wallet / session key (Phase 22 only): the user's delegated signer, scoped
    and revocable, never the wallet key; mandate, gates and halts around it
 ```
 
@@ -108,7 +108,7 @@ wallet / session key (Phase 21 only): the user's delegated signer, scoped
   strategies is Sonnet 5 with a per-user monthly cap in dollars (proposed
   default $5, adjustable by the operator); backtests show their cost before
   they run.
-- **Live execution** (Phase 21) never holds the user's wallet key. The
+- **Live execution** (Phase 22) never holds the user's wallet key. The
   proposed model is the venue's session keys: a delegated signer the user
   authorises on the venue, scoped to trading, unable to withdraw, expiring
   in 180 days and revocable by the user at any time independently of us,
@@ -170,9 +170,10 @@ forecast committees and the public benchmark; Phase 17 the evidence
 archive and new domains; Phase 18 teams, sharing, comments, leaderboards,
 chat channels, scheduled briefs and the MCP server; Phase 19 the shadow
 forecaster over a user's own public record; Phase 20 portfolio risk,
-strategy health and the promotion protocol; Phase 21 hosted live execution
-behind the revised security design; Phase 22 the scale proof; Phase 23 the
-documentation site and research lab, continuous. Phase 12's rule holds
+strategy health and the promotion protocol; Phase 21 the scale proof;
+Phase 22 hosted live execution behind the revised security design, built
+last so that strategies trade while the user's computer is closed; Phase
+23 the documentation site and research lab, continuous. Phase 12's rule holds
 throughout: each phase lands with its page and its report.
 
 ## Open Questions, to Settle Before Each Phase
@@ -187,4 +188,4 @@ The full table, with a proposal for each, is at the end of the
 - The strategy spec, sizing defaults and the fields a prompt may override
   (Phase 15, its own design page).
 - The live key model: session keys for execution, browser signing for
-  consent (Phase 21).
+  consent (Phase 22).

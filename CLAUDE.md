@@ -51,11 +51,13 @@ The original `prediction_markets` project is archived unchanged under
 
 ## State at handoff (2026-09-19)
 
-Phases 6 to 10 and 12 are complete; Phase 11 has its security design
-proposed in `docs/security.md` with the safety layer built and tested in
-`vp/live/` (nothing there can sign or send an order), waiting for the user
-to agree the design before the execution adapter (task 23) is written.
-Each phase has a report in `tests/reports/` with what was measured live.
+Phases 6 to 10 and 12 are complete. Phase 11 is superseded: on
+2026-09-19 the user decided live execution is hosted only (so strategies
+trade while the user's computer is closed) and built last, as Phase 22;
+the safety layer in `vp/live/` stays and is reused, and `docs/security.md`
+is the base for the design's version 2. Nothing in the repository can sign
+or send an order. Each phase has a report in `tests/reports/` with what was
+measured live.
 
 Direction set on 2026-09-18 (`docs/product.md`): the product becomes a
 hosted web app for people with no technical background, with no terminal
@@ -67,8 +69,8 @@ the non-infringement rules): 13 platform foundation, 14 friendly for
 everyone, 15 research sessions and the strategy spec, 16 signal library,
 committees and benchmark, 17 evidence archive and new domains, 18
 collaboration and delivery, 19 shadow forecaster, 20 portfolio, risk and
-the promotion protocol, 21 hosted live execution (moved from 16), 22 scale
-proof, 23 the documentation site (default "paper" style in `docs/site.md`,
+the promotion protocol, 21 scale
+proof, 22 hosted live execution (built last), 23 the documentation site (default "paper" style in `docs/site.md`,
 alternatives to trial later). Phase 13 is next and **needs the go-ahead**;
 the decisions each phase needed were taken on 2026-09-19 as proposed
 (Fly.io with Amsterdam as the first region, magic-link sign-in, quarter
@@ -82,8 +84,8 @@ same day: the repository is MIT-licensed (`LICENSE`, `pyproject.toml`). The
 owner also set the rule that venue access must be lawful under the venue's
 terms and the law of the host's and users' places, never merely
 unblocked (F1), that paper trading must use the backtest's fee model (F5,
-task 37), and that self-hosting is not the users' path (F9, task 116).
-F15 notes the Phase 11 security design is still only proposed. Phase 15 still gets `docs/strategies.md` before any
+task 37), and that self-hosting is not the users' path (F9, task 108).
+F15 is resolved: hosted live execution only, built last. Phase 15 still gets `docs/strategies.md` before any
 code, and the user wants sizing defaults a prompt can override and
 per-strategy P&L views. The domains will open up beyond CS2, weather and
 EPL; do not hard-code the three anywhere new, and the repository
@@ -146,9 +148,10 @@ Things a future session should know:
   market price and label all refer to it.
 - Every forecaster will take an explicit information cutoff and must not
   read anything after it.
-- Live execution code is not to be written until the security design in
-  Phase 11 task 22 is agreed with the user, and hosted live execution not
-  until its version 2 (Phase 21 task 105) is agreed.
+- Live execution is hosted only and built last (Phase 22). No
+  order-signing code is written until the security design's version 2
+  (Phase 22, task 112, revising `docs/security.md`) is agreed with the
+  user.
 
 ## Commands
 

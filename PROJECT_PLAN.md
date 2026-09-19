@@ -264,8 +264,12 @@ Three further rules govern every claim the platform makes from Phase 13 on:
     - Compare forward scores with backtest scores per forecaster; a material gap
       indicates look-ahead in the backtest.
 
-## Phase 11: Live execution (planned, not to be written yet)
-22. [in-progress] Security design, agreed before any code.
+## Phase 11: Live execution (superseded by Phase 22 on 2026-09-19)
+The operator-machine path this phase planned is not built: the owner
+decided live execution is hosted only, so that strategies trade while the
+user's computer is closed. The safety layer stays and is reused; the
+design page becomes the base for version 2.
+22. [superseded] Security design, agreed before any code.
     - Proposed in `docs/security.md` (2026-09-13); awaiting agreement.
     - The safety layer it specifies (mandate guard, kill switch,
       environment separation, approvals, keyring access) is implemented
@@ -277,9 +281,10 @@ Three further rules govern every claim the platform makes from Phase 13 on:
       per day, expiry; fail-closed order guard.
     - Filesystem kill switch independent of the running process.
     - Human approval for every write; hash-chained audit ledger.
-23. [pending] Polymarket CLOB execution adapter (order signing and placement),
-    blocked on task 22.
-24. [pending] Canary rollout at minimal stake with the mandate enforced.
+23. [superseded] Polymarket CLOB execution adapter (order signing and placement),
+    blocked on task 22; replaced by Phase 22, task 113.
+24. [superseded] Canary rollout at minimal stake with the mandate enforced;
+    replaced by Phase 22, task 115.
 
 ## Phase 12: Documentation and tests (continuous)
 25. [completed] Each phase lands with its `docs/` page linked from `docs/index.md`
@@ -296,10 +301,13 @@ Revised on 2026-09-18 after the full review of Vibe-Trading
 (`docs/vibe_trading.md`) and the direction that the product must serve many
 users (`docs/scaling.md`). Phases 13 to 15 keep the meaning they had in the
 2026-09-18 product design (`docs/product.md`); hosted live execution, which
-was Phase 16, is now Phase 21, because the phases between it produce the
-evidence for whether any strategy should trade real money and the machinery
-(portfolio risk, strategy health, promotion criteria) that makes doing so at
-scale defensible. Every phase below is pending; the order is the order of
+was Phase 16, is now Phase 22, the last phase built, because the phases
+between produce the evidence for whether any strategy should trade real
+money and the machinery (portfolio risk, strategy health, promotion
+criteria, a platform proven under load) that makes doing so at scale
+defensible. Decided on 2026-09-19: live execution is hosted only, so a
+strategy trades while the user's computer is closed; no operator-machine
+path is built. Every phase below is pending; the order is the order of
 work, and each phase begins only after the user has agreed to it.
 
 Principles that hold for everything below:
@@ -463,7 +471,7 @@ see any of it; and when the report holds the measurements above.
 
 Decisions before starting: hosting provider and region; who operates
 budgets and abuse; the object-storage provider; whether to prepare for the
-venue's builder programme (attributed volume) now or in Phase 21.
+venue's builder programme (attributed volume) now or in Phase 22.
 
 ## Phase 14: Friendly for everyone
 Design: `docs/product.md` (the experience). Two people equally at home: one
@@ -583,7 +591,7 @@ that runs, is scored, and is shown honestly.
       size an edge of this size would need, the manifest hash, and caveats
       written from data (small $n$, daily-bar cutoffs, contaminated window).
 58. [pending] Strategy lifecycle: draft, previewed, backtested, paper,
-    retired (live is added in Phase 21); versions are never edited; each
+    retired (live is added in Phase 22); versions are never edited; each
     strategy has its own P&L, skill and settled-count views and its own
     paper account; refinement by conversation produces a new version.
 59. [pending] Evals harness, offline and deterministic, over persisted
@@ -852,14 +860,39 @@ portfolio whether or not the user thinks of it as one.
      backtests, health-state transitions on the paper record, the
      promotion criteria applied to every existing strategy.
 
-## Phase 21: Hosted live execution (gated)
+## Phase 21: Scale proof and operations
+Design: `docs/scaling.md` § 11 to 14. The capacity model becomes
+measurements, and the platform becomes something one can operate.
+
+105. [pending] Load tests with synthetic workspaces at the three scales of
+     the capacity model against staging, recording every metric of the
+     observability section; the first component to miss its objective is
+     found and fixed; the numbers published.
+106. [pending] Stage B: web, worker and ingest as separate services; Redis
+     for limits and cache; a read replica; monthly partitions archived to
+     object storage with chain hashes; the same handlers.
+107. [pending] Queue and stream decision on measured claim latency and
+     message rate; migration behind the existing interfaces if needed.
+108. [pending] Cost per user-day measured and shown to the operator by
+     component; budget and tier defaults revisited on the numbers. The same
+     image published as a single-workspace, self-hostable build for
+     developers who bring their own keys and accept the sources' terms
+     themselves (F9); it is not the product's path for users.
+109. [pending] Disaster recovery drill, incident runbooks, on-call, status
+     page, abuse controls exercised.
+110. [pending] Privacy and compliance: export and delete per workspace
+     tested; data retention enforced; the terms and notices reviewed.
+111. [pending] Phase 21 report: objectives attained per scale, the growth
+     path's trigger metrics with current values.
+
+## Phase 22: Hosted live execution (gated)
 Design: `docs/security.md` version 2, agreed before any code, replacing the
 keyring section with the hosted model and keeping everything else. The
 safety layer of Phase 11 (`vp/live/`) is the base. Live execution is
 available only to strategies that passed the promotion protocol and only in
 jurisdictions the venue serves.
 
-105. [pending] Security design version 2.
+112. [pending] Security design version 2.
      - Key model, with a recommendation to decide: (A) the venue's session
        keys, a delegated signer the user authorises on the venue, scoped to
        trading, unable to withdraw, expiring in 180 days, revocable by the
@@ -890,51 +923,26 @@ jurisdictions the venue serves.
      - Jurisdiction gating; the builder attribution decision; fees from the
        market's schedule at match time; pUSD and approvals through the
        relayer.
-106. [pending] Execution adapter on CLOB v2: the session-key signer, L1 and
+113. [pending] Execution adapter on CLOB v2: the session-key signer, L1 and
      L2 authentication, limit and post-only orders at our price (never a
      market order), the user WebSocket channel for order and fill events,
      trade identifiers, reconciliation with the Data API; the paper and live
      paths identical except the signer and the environment, which are
      structurally different credentials.
-107. [pending] Approvals through channels for orders above a mandate
+114. [pending] Approvals through channels for orders above a mandate
      threshold; expiring, single-use, attributable.
-108. [pending] Canary: one domain, one promoted strategy, the venue's
+115. [pending] Canary: one domain, one promoted strategy, the venue's
      minimum stake, a fixed number of settlements, total exposure of a few
      dollars; the mandate widened only by a new version after the canary
      ledger is read.
-109. [pending] Live views: per-strategy live P&L and skill, live against
+116. [pending] Live views: per-strategy live P&L and skill, live against
      paper divergence (fills, slippage, fees), the audit ledger.
-110. [pending] External security review before live execution is offered
+117. [pending] External security review before live execution is offered
      beyond the canary workspace.
-111. [pending] Polymarket US assessment: a separately regulated venue with
+118. [pending] Polymarket US assessment: a separately regulated venue with
      its own API and fee coefficients; whether and how to add it as a second
      venue for users it serves; a decision, not code.
-112. [pending] Phase 21 report.
-
-## Phase 22: Scale proof and operations
-Design: `docs/scaling.md` § 11 to 14. The capacity model becomes
-measurements, and the platform becomes something one can operate.
-
-113. [pending] Load tests with synthetic workspaces at the three scales of
-     the capacity model against staging, recording every metric of the
-     observability section; the first component to miss its objective is
-     found and fixed; the numbers published.
-114. [pending] Stage B: web, worker and ingest as separate services; Redis
-     for limits and cache; a read replica; monthly partitions archived to
-     object storage with chain hashes; the same handlers.
-115. [pending] Queue and stream decision on measured claim latency and
-     message rate; migration behind the existing interfaces if needed.
-116. [pending] Cost per user-day measured and shown to the operator by
-     component; budget and tier defaults revisited on the numbers. The same
-     image published as a single-workspace, self-hostable build for
-     developers who bring their own keys and accept the sources' terms
-     themselves (F9); it is not the product's path for users.
-117. [pending] Disaster recovery drill, incident runbooks, on-call, status
-     page, abuse controls exercised.
-118. [pending] Privacy and compliance: export and delete per workspace
-     tested; data retention enforced; the terms and notices reviewed.
-119. [pending] Phase 22 report: objectives attained per scale, the growth
-     path's trigger metrics with current values.
+119. [pending] Phase 22 report.
 
 ## Phase 23: Documentation site, research lab and community (continuous)
 Design: `docs/site.md`. A public site as detailed and as useful as
@@ -1000,7 +1008,7 @@ searchable, reproducible.
   archived `src/collectors/kalshi.py` and the `KXCSGOGAME` and
   `KXENGLISHPREMIERLEAGUE` series tickers are the starting point if this is
   revisited.
-- Polymarket US, a separately regulated venue: assessed in Phase 21, task
+- Polymarket US, a separately regulated venue: assessed in Phase 22, task
   111.
 - Short-horizon crypto price markets and perpetuals on the venue: not
   pursued (Phase 17, task 79).
@@ -1023,16 +1031,16 @@ called done.
 | 13 | Hosting provider and region | Fly.io (machines for web, worker and ingest; managed Postgres; Tigris object storage), first region Amsterdam, confirmed by flag F1 before anything else is built; stage A of `docs/scaling.md` |
 | 13 | Who operates budgets and abuse | the repository owner; an operator role exists from day one so it can be handed over (F2) |
 | 13 | Identity provider | email magic link now, OpenID Connect when a team asks (F3) |
-| 13 | Prepare for the venue's builder programme now | no; decided with Phase 21 (F4) |
+| 13 | Prepare for the venue's builder programme now | no; decided with Phase 22 (F4) |
 | 14 | Fees in Simple mode | yes, in cents, since the venue charges takers on sports and weather (F5) |
 | 15 | Sizing defaults and the override whitelist | fraction 0.25, cap 5% of bankroll, a minimum edge of 0.03 after fees, absolute caps set by the workspace; a prompt may lower any of them and raise none (F6) |
 | 15 | Whether the LLM forecaster ever sees the market price | only as an explicit belief option, labelled on every run card, never by default (F7) |
-| 15 | Default model tiers and the $5 budget | a cheap tier for breadth, the expensive tier on demand; the budget revisited on Phase 22's cost numbers (F8) |
+| 15 | Default model tiers and the $5 budget | a cheap tier for breadth, the expensive tier on demand; the budget revisited on Phase 21's cost numbers (F8) |
 | 17 | Evidence sources and their licences per domain | evaluated in the design page; nothing scrape-hostile; commercial terms checked for each (F9) |
 | 17 | The order in which new domains open | by data availability and market count, listed in the design page, each with a report before it is shown to users (F10) |
 | 18 | Developer Certificate of Origin for external contributions | yes, once contributions are invited (F11) |
-| 21 | The live key model | session keys for execution, browser signing for consent (F12) |
-| 21 | Polymarket US | assess only (F13) |
+| 22 | The live key model | session keys for execution, browser signing for consent (F12) |
+| 22 | Polymarket US | assess only (F13) |
 | 23 | The site's visual style | the "paper" default of `docs/site.md` as the placeholder; alternatives trialled later (F14) |
 
 ### Flags recorded with the decisions
@@ -1054,7 +1062,7 @@ called done.
   from its region that the endpoints the platform uses are served and
   records the terms review in the Phase 13 report; a written legal opinion
   is obtained before public sign-up (Phase 14, task 48) and again before
-  live execution (Phase 21, task 110). Amsterdam is the first candidate,
+  live execution (Phase 22, task 117). Amsterdam is the first candidate,
   not a certainty.
 - **F2 (Phase 13). One operator is one point of failure.** The platform
   halt, budget changes and abuse responses all rest on one person until the
@@ -1065,9 +1073,9 @@ called done.
   hidden dependency and a small cost; sign-in emails are rate-limited per
   address and per IP, links are single-use and short-lived, and sessions
   are bound to the browser that requested them.
-- **F4 (Phase 21). The builder programme may matter for wallets.** The
+- **F4 (Phase 22). The builder programme may matter for wallets.** The
   venue's SDK creates deposit wallets for new users through builder
-  credentials and attributes volume through a builder code; Phase 21's
+  credentials and attributes volume through a builder code; Phase 22's
   design decides whether users bring a wallet or the platform helps create
   one. Nothing in Phase 13 precludes either.
 - **F5 (gating, Phase 13). Paper trading charges no fees today; it will
@@ -1121,7 +1129,7 @@ called done.
   want their own: the local `vp` command line, which already runs on a
   laptop with the user's own keys, and a single-workspace image of the same
   platform that a developer can self-host with their own keys and terms
-  (Phase 22, task 116). Each source's terms are recorded in the evidence
+  (Phase 21, task 108). Each source's terms are recorded in the evidence
   design page before its collector runs against production, and the
   archive stores provenance so a source can be withdrawn with its rows.
 - **F10 (Phase 17). Politics is a compliance domain, not only a data
@@ -1133,7 +1141,7 @@ called done.
   `pyproject.toml` declares it, and `NOTICE` keeps the ported code's and the
   fonts' notices. Contributions (Phase 18) are accepted under it with the
   Developer Certificate of Origin.
-- **F12 (gating, Phase 21). What a session key is, and what it cannot
+- **F12 (gating, Phase 22). What a session key is, and what it cannot
   protect against.** On the venue, a user's money sits in a wallet that only
   the user's own key controls. A session key is a second key the user
   creates and authorises on the venue to trade on that wallet's behalf: it
@@ -1151,7 +1159,7 @@ called done.
   strategy never stops silently. Session keys are a 2026 venue feature for
   its current wallet type; older wallet types may not support them, and the
   design checks this at the time.
-- **F13 (Phase 21). United States users cannot trade live here.** The
+- **F13 (Phase 22). United States users cannot trade live here.** The
   international venue does not serve them; paper trading is not money and
   is unaffected; live execution is gated by jurisdiction from the first
   order, and Polymarket US is a separate venue with its own API and fees to
@@ -1160,8 +1168,10 @@ called done.
   accent on the warm off-white background and its dark counterpart both
   clear WCAG AA contrast (about 5.8:1 and 7.4:1); any trialled alternative
   must clear the same bar before it is shown.
-- **F15 (open, not decided). The Phase 11 security design is still
-  proposed, not agreed.** Under this plan the operator-machine execution
-  adapter (Phase 11, tasks 23 and 24) is largely superseded by the hosted
-  model of Phase 21; the owner decides whether a local live path is still
-  wanted. Until then the invariant stands: no order-signing code.
+- **F15 (resolved 2026-09-19). Live execution is hosted only, and
+  built last.** The owner decided that trades must execute while the
+  user's computer is closed, so the operator-machine path of Phase 11
+  (tasks 23 and 24) is superseded by Phase 22, and Phase 22 is built after
+  every other numbered phase, including the scale proof. `docs/security.md`
+  is the base for the design's version 2. The invariant stands until that
+  version is agreed: no order-signing code anywhere.
