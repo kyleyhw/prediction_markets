@@ -166,6 +166,11 @@ market = polymarket.fetch_market(event["markets"][0]["market_id"], depth=5)
 print(market["question"], market["resolution"]["state"])
 ```
 
+## Licence
+
+MIT, see [LICENSE](LICENSE). Code adapted from other projects and the
+bundled fonts carry their own notices in [NOTICE](NOTICE).
+
 ## References
 
 <span id="ref-gneiting-2007">[1]</span> Gneiting, T. and Raftery, A. E. (2007). *Strictly proper scoring rules, prediction, and estimation.* Journal of the American Statistical Association, 102(477), 359–378. [Link](https://doi.org/10.1198/016214506000001437)

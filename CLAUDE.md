@@ -77,10 +77,13 @@ live execution, the "paper" site style) and are recorded with fifteen
 flags at the end of the plan; the gating ones are F1 (confirm the host
 region is not geoblocked by the venue before deploying), F5 (paper trading
 charges no fees today and must), F9 (evidence sources' commercial terms),
-F11 (the repository has no licence file; the owner chooses one before
-contributions or the public site) and F12 (a session key can trade the
-whole balance). F15 notes the Phase 11 security design is still only
-proposed. Phase 15 still gets `docs/strategies.md` before any
+F12 (a session key can trade the whole balance). F11 was resolved the
+same day: the repository is MIT-licensed (`LICENSE`, `pyproject.toml`). The
+owner also set the rule that venue access must be lawful under the venue's
+terms and the law of the host's and users' places, never merely
+unblocked (F1), that paper trading must use the backtest's fee model (F5,
+task 37), and that self-hosting is not the users' path (F9, task 116).
+F15 notes the Phase 11 security design is still only proposed. Phase 15 still gets `docs/strategies.md` before any
 code, and the user wants sizing defaults a prompt can override and
 per-strategy P&L views. The domains will open up beyond CS2, weather and
 EPL; do not hard-code the three anywhere new, and the repository

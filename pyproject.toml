@@ -3,6 +3,8 @@ name = "vibe-predict"
 version = "0.1.0"
 description = "A platform for designing and evaluating prediction-market strategies on Polymarket. Contains tooling for specifying strategies in natural language, backtesting them against historical market prices, paper trading them on live order books, and auditing every forecast and position through a browser, with no programming required."
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE", "NOTICE"]
 requires-python = ">=3.14"
 dependencies = [
     "anthropic>=1.5.0",

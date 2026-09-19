@@ -441,10 +441,15 @@ first release, on one host at first (`docs/scaling.md` § 12, stage A).
     - The platform halt as a row: while set, no worker runs a job, no LLM
       call is made and no order is prepared; a workspace halt likewise; each
       is a ledger entry with its principal.
-37. [pending] The existing views on the new service.
+37. [pending] The existing views on the new service, and fees in paper
+    trading.
     - Overview, backtests, paper and markets rendered from tenant-scoped
       queries instead of a data root; the same page, fonts, charts and
       glossary; a browser end-to-end test with the preinstalled Chromium.
+    - Paper cycles charge the taker fee from each market's `feeSchedule`
+      through the same fee function the backtest uses, record it per order
+      and settle net of it (F5); the paper-trading page and the glossary
+      say so.
 38. [pending] Phase 13 report.
     - Measured: request latency, ingestion lag and reconnects, venue rate
       limits observed, job start latency, cost per user-day on the staging
@@ -920,7 +925,10 @@ measurements, and the platform becomes something one can operate.
 115. [pending] Queue and stream decision on measured claim latency and
      message rate; migration behind the existing interfaces if needed.
 116. [pending] Cost per user-day measured and shown to the operator by
-     component; budget and tier defaults revisited on the numbers.
+     component; budget and tier defaults revisited on the numbers. The same
+     image published as a single-workspace, self-hostable build for
+     developers who bring their own keys and accept the sources' terms
+     themselves (F9); it is not the product's path for users.
 117. [pending] Disaster recovery drill, incident runbooks, on-call, status
      page, abuse controls exercised.
 118. [pending] Privacy and compliance: export and delete per workspace
@@ -1029,14 +1037,25 @@ called done.
 
 ### Flags recorded with the decisions
 
-- **F1 (gating, Phase 13). Region against the venue's restrictions.** The
-  international venue geoblocks several jurisdictions, the United States
-  among them, and the list changes. The first task on the chosen host is to
-  confirm from its region that every read endpoint the platform uses is
-  served and, for Phase 21, that order endpoints are; if any is refused, the
-  region moves before anything else is deployed. Amsterdam is the first
-  candidate, not a certainty. Latency to the venue is irrelevant at the
-  cadences this platform runs.
+- **F1 (gating, Phase 13). Region and access must be lawful, not merely
+  unblocked.** The rule, set by the owner on 2026-09-19: the platform abides
+  by the venue's terms of service and by the law of the place it runs and
+  of the places its users are. Concretely: the host region is one where the
+  venue lawfully serves its public API, chosen for that reason and never to
+  evade a restriction that applies to the platform or a user; access goes
+  through the public, documented APIs under the venue's terms (rate limits
+  honoured, no scraping of pages, no circumvention of any block), and the
+  terms are read for what they say about automated access, storing and
+  redistributing market data, and commercial use before the first
+  production request; a user's own jurisdiction is attested at sign-up and
+  checked again before live execution, which is offered only where the
+  venue serves that user (F13); paper trading is play money and not a
+  wager, and the terms of use say so. The first task on the host confirms
+  from its region that the endpoints the platform uses are served and
+  records the terms review in the Phase 13 report; a written legal opinion
+  is obtained before public sign-up (Phase 14, task 48) and again before
+  live execution (Phase 21, task 110). Amsterdam is the first candidate,
+  not a certainty.
 - **F2 (Phase 13). One operator is one point of failure.** The platform
   halt, budget changes and abuse responses all rest on one person until the
   operator role is granted to a second; a written hand-over procedure and a
@@ -1051,13 +1070,19 @@ called done.
   credentials and attributes volume through a builder code; Phase 21's
   design decides whether users bring a wallet or the platform helps create
   one. Nothing in Phase 13 precludes either.
-- **F5 (gating, Phases 14 and 17). Paper trading charges no fees today.**
-  `vp/paper/loop.py` orders at the touch with no fee term, and the backtest
-  default is zero. Showing fees in Simple mode is honest only if paper fills
-  pay them: the paper loop reads each market's `feeSchedule` and charges the
-  taker fee from the first Phase 13 cycle, and task 77 re-runs the Phase 9
-  baselines fee-aware. `docs/sizing.md` names a `taker_base_fee` field the
-  venue has since replaced; task 78 re-verifies the field.
+- **F5 (gating, Phase 13). Paper trading charges no fees today; it will
+  use the backtest's fee model, one implementation.** `vp/paper/loop.py`
+  orders at the touch with no fee term, and the backtest default is zero,
+  so every paper P&L to date is optimistic. Decided 2026-09-19: the market
+  record carries each market's `feeSchedule` as captured with the snapshot;
+  the one fee function in `vp/backtest/sizing.py` computes the taker fee
+  $C \cdot r \cdot p(1-p)$ for backtest fills and paper fills alike; a paper
+  order records the fee it paid and the effective price; settlement P&L is
+  net of it; and the run card and the ledger show fees paid. This lands in
+  Phase 13 (task 37) so that the first hosted paper cycle is realistic, and
+  task 77 re-runs the Phase 9 baselines fee-aware. `docs/sizing.md` names a
+  `taker_base_fee` field the venue has since replaced; task 78 re-verifies
+  the field against a live response.
 - **F6 (Phase 15, then 20). Per-market caps are not portfolio caps.** Until
   Phase 20 adds per-event exposure and simultaneous Kelly, several positions
   in one event (a winner market and its maps, the buckets of one weather
@@ -1078,33 +1103,54 @@ called done.
   through the batch endpoint, and the memo cache makes repeated runs on the
   same markets free. Model identifiers are chosen at build time from the
   provider's current list, not fixed here.
-- **F9 (gating, Phase 17). Free tiers are for non-commercial use.**
-  Open-Meteo's free API is for non-commercial use and a hosted product with
-  users needs its paid plan; football data providers' free tiers carry rate
-  and redistribution limits; Liquipedia's API requires attribution and its
-  share-alike licence covers its text, not the facts derived from it. Each
-  source's terms are recorded in the evidence design page before its
-  collector runs against production, and the archive stores provenance so a
-  source can be withdrawn with its rows.
+- **F9 (gating, Phase 17). Free tiers are for non-commercial use; the
+  shared archive pays for commercial terms.** Open-Meteo's free API is for
+  non-commercial use and a hosted product with users needs its paid plan;
+  football data providers' free tiers carry rate and redistribution limits;
+  Liquipedia's API requires attribution and its share-alike licence covers
+  its text, not the facts derived from it. The owner asked on 2026-09-19
+  whether each user hosting their own instance would avoid this. It would
+  not serve the product: the audience has no terminal (`docs/product.md`),
+  every self-hosted instance would poll every source and the venue
+  separately (against principle 4 and the venue's limits), and an archive
+  only accumulates forward, so a personal archive started today has no past
+  to backtest against; the shared archive, captured once from the first
+  week of Phase 13, is the asset. Commercial terms for the shared sources
+  cost tens of dollars a month and scale with the number of sources, not
+  users, so the platform pays them. Two things are kept for people who do
+  want their own: the local `vp` command line, which already runs on a
+  laptop with the user's own keys, and a single-workspace image of the same
+  platform that a developer can self-host with their own keys and terms
+  (Phase 22, task 116). Each source's terms are recorded in the evidence
+  design page before its collector runs against production, and the
+  archive stores provenance so a source can be withdrawn with its rows.
 - **F10 (Phase 17). Politics is a compliance domain, not only a data
   domain.** Opening it needs the jurisdiction notice and terms of Phase 14
   reviewed for it; it stays behind the other candidates.
-- **F11 (gating, Phase 18). The repository has no licence file.** Nothing
-  can be contributed to, or lawfully reused from, an unlicensed repository,
-  and the public site cannot launch without one. A licence is the owner's
-  decision (MIT would match the ported code's terms and the reference
-  implementation; a copyleft licence would not conflict with the MIT
-  notice); it is taken before Phase 18 starts, and before the site of Phase
-  23 goes public if that comes first.
-- **F12 (gating, Phase 21). A session key cannot withdraw, but it can
-  trade the whole balance.** The mandate's caps are the only limit against
-  a drained balance through bad fills, so the design requires users to fund
-  a dedicated deposit wallet with only what they are willing to risk, the
-  canary runs at the venue's minimum stake, and the key's fixed 180-day
-  expiry is tracked so a strategy never stops silently. Session keys are a
-  2026 venue feature available to deposit wallets; legacy proxy and Safe
-  wallets may not support them, and the design re-verifies the feature at
-  the time.
+- **F11 (resolved 2026-09-19). The repository is MIT-licensed.** The owner
+  chose MIT; `LICENSE` names the copyright holder as configured in the
+  repository's git identity (a full legal name can replace it at any time),
+  `pyproject.toml` declares it, and `NOTICE` keeps the ported code's and the
+  fonts' notices. Contributions (Phase 18) are accepted under it with the
+  Developer Certificate of Origin.
+- **F12 (gating, Phase 21). What a session key is, and what it cannot
+  protect against.** On the venue, a user's money sits in a wallet that only
+  the user's own key controls. A session key is a second key the user
+  creates and authorises on the venue to trade on that wallet's behalf: it
+  can place and cancel orders, it cannot move money out, the venue cancels
+  its orders the moment the user revokes it, and it expires after 180 days.
+  The platform would hold this second key (encrypted) and never the user's
+  own, so a breach of the platform cannot steal funds. What it cannot
+  prevent is losing money through trades themselves: a bug or a bad
+  strategy could keep buying until the wallet is empty, because the venue
+  does not cap how much the session key may trade. That is why the
+  platform's mandate (caps per order, per market, in total and per day) is
+  the only limit, and why the design requires three further things: the
+  user funds a separate wallet with only what they are willing to risk, the
+  canary runs at the venue's minimum stake, and the expiry is tracked so a
+  strategy never stops silently. Session keys are a 2026 venue feature for
+  its current wallet type; older wallet types may not support them, and the
+  design checks this at the time.
 - **F13 (Phase 21). United States users cannot trade live here.** The
   international venue does not serve them; paper trading is not money and
   is unaffected; live execution is gated by jurisdiction from the first
