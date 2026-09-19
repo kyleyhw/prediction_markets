@@ -19,7 +19,15 @@ Polymarket, scored by backtest and paper trading before any live execution. The
 - [Paper trading](paper_trading.md): the hash-chained ledger, the forward
   cycle, settlement and the leakage check.
 - [Product design](product.md): the hosted app for everyone, Phases 13
-  to 16: architecture, accounts and money, the experience, sequencing.
+  to 23: architecture, accounts and money, the experience, sequencing.
+- [Scaling](scaling.md): tenancy, storage, the job queue, the market-data
+  service, LLM cost controls, the capacity model and the growth path for
+  many users.
+- [Vibe-Trading review](vibe_trading.md): what the reference implementation
+  is and has, its collaborative tools, the capability mapping to this
+  project's phases, and the non-infringement rules.
+- [Documentation site](site.md): the public site's structure, build rules
+  and the default "paper" visual style, with the alternatives to trial.
 - [Browser dashboard](ui.md): `vp ui`, a read-only local page over the
   data root: datasets, backtests with figures, the paper ledger, markets.
 - [Security design](security.md): the proposed design for live execution
