@@ -256,7 +256,11 @@ uv run vp paper leakage --domain epl --backtest data/backtests/epl/<stamp>
 ```
 
 `run` prints the counts for the cycle — markets snapshotted, of those parsed by
-the domain, forecasts made and orders filled. `settle` looks up each open
+the domain, forecasts made and orders filled. Budget time for it: a cycle
+fetches one order book per open market at the default 0.35 s spacing, and EPL
+alone had 1,444 open markets on 2026-09-20, so the book requests are eight
+minutes before anything is forecast. A fifteen-minute cap was not enough for
+one uncapped EPL cycle to finish. `settle` looks up each open
 position's market and writes a settlement entry for the ones the venue has
 resolved. `leakage` compares the forward scores against a backtest's, which is
 the check that the backtest is not quietly optimistic.
@@ -295,7 +299,9 @@ data/
   are scored the table comes back with `n = 0`. Build the full domain dataset
   before backtesting Elo.
 - **`vp paper run --max-markets N` caps the snapshot, not the parsed markets**,
-  so a small `N` can leave nothing to forecast.
+  so a small `N` can leave nothing to forecast: `--max-markets 10` on EPL gave
+  `{'snapshot': 10, 'parsed': 0, 'forecasts': 0, 'orders': 0}`. Raising `N`
+  costs a book request each, so there is no quick way to run one cycle today.
 - **A few order books return 404** during snapshots; the collector warns per
   market and carries on, and the snapshot is still written.
 - **No baseline beats the market** (weather climatology skill −0.19, EPL Elo
