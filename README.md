@@ -1,139 +1,36 @@
 # vibe-predict
 
-A platform for implementing your own forecasting strategies for binary
-prediction-market contracts on Polymarket through conversation with an LLM.
-It supplies the data, cutoff-safe evidence, proper scoring, a backtest,
-paper trading and a dashboard, so a strategy described in conversation can
-be built, scored honestly against the market, and run; live execution is
-gated on an agreed security design. Three domains ship today — Counter-Strike 2
-esports, weather and English Premier League football — and the set is meant to
-open up.
+A platform for building forecasting strategies for prediction markets, scoring
+them honestly against the market's own price, and running them.
 
-This repository continues from an earlier project that compared Polymarket and
-Kalshi prices; that code is preserved unchanged under
-[`archive/prediction_markets/`](archive/prediction_markets/README.md).
+A binary Polymarket contract pays 1 if an event happens and 0 if it does not,
+so its price is the market's probability of that event. Beating that price is
+the whole difficulty, and the platform is built to measure whether a strategy
+does: it supplies the data, evidence that cannot see past a forecast's cutoff,
+strictly proper scoring, a backtest, paper trading and a dashboard. The honest
+headline so far is that no baseline beats the market — weather climatology
+scores −0.19 against it, EPL Elo −0.02, CS2 Elo −0.12 — which is the bar a
+strategy has to clear, not a result the project is trying to explain away.
 
-## Directory Structure
+## What state it is in
 
-```ascii
-prediction_markets/
-├── vp/                        # the vibe-predict package (import name `vp`)
-│   ├── cli.py                 # `vp build-dataset`, `vp snapshot`, `vp backtest`, `vp paper`, `vp ui`
-│   ├── venues/
-│   │   ├── _http.py           # throttled HTTP GET
-│   │   └── polymarket.py      # read-only Polymarket client
-│   ├── domains/               # cs2, weather, epl: membership and parsers
-│   ├── markets/
-│   │   ├── schema.py          # BinaryMarket record
-│   │   ├── polymarket.py      # typed source: discovery, books, history
-│   │   ├── store.py           # Parquet read and write
-│   │   ├── dataset.py         # resolved-market dataset and report
-│   │   └── snapshot.py        # snapshots of open markets
-│   ├── forecast/
-│   │   ├── base.py            # Forecast, Forecaster protocol
-│   │   ├── evidence.py        # cutoff-bounded evidence (the look-ahead safeguard)
-│   │   ├── baselines.py       # market price, constant, climatology
-│   │   ├── stats.py           # Elo
-│   │   ├── llm.py             # the LLM forecaster (Claude, tools, structured output)
-│   │   └── registry.py        # append-only forecast registry
-│   ├── backtest/
-│   │   ├── scoring.py         # Brier, log, skill, reliability, Murphy decomposition
-│   │   ├── sizing.py          # fees, edge, Kelly
-│   │   ├── simulate.py        # fill-and-settle simulator
-│   │   ├── run.py             # the backtest runner and its report
-│   │   └── bankroll.py        # bankroll statistics over per-bet P&L
-│   ├── paper/
-│   │   ├── ledger.py          # hash-chained append-only ledger
-│   │   ├── loop.py            # forward cycle and settlement
-│   │   └── leakage.py         # forward-versus-backtest check
-│   ├── live/                  # safety layer only; no signing until the design is agreed
-│   │   ├── mandate.py         # fail-closed guard over hard caps
-│   │   └── controls.py        # kill switch, environments, approvals, keyring
-│   └── ui/
-│       ├── server.py          # read-only JSON API over the data root
-│       └── static/            # the dashboard page and vendored fonts
-├── docs/                      # documentation (see index below)
-├── tests/
-│   ├── reports/               # test reports with runtimes, one per phase
-│   ├── test_bankroll.py       # bankroll arithmetic on a hand-checked sequence
-│   ├── test_polymarket.py     # resolution ladder and catalogue walk on fixtures
-│   ├── test_domains.py        # membership and parsing on recorded questions
-│   ├── test_schema_store.py   # record labels and Parquet round trip
-│   ├── test_dataset.py        # dataset and snapshot against a fake source
-│   ├── test_forecast.py       # evidence cutoff rule, baselines, Elo, registry
-│   ├── test_llm.py            # LLM elicitation loop against a fake client
-│   ├── test_scoring.py        # scores and the Murphy identity
-│   ├── test_sizing.py         # fees and Kelly
-│   ├── test_simulate.py       # fills and compounding
-│   ├── test_backtest.py       # the runner end to end
-│   ├── test_ledger.py         # chain integrity and tamper detection
-│   ├── test_paper.py          # forward cycle, settlement, leakage
-│   ├── test_live_guard.py     # every refusal path of the live safety layer
-│   └── test_ui.py             # dashboard endpoints against the fixtures
-├── archive/
-│   └── prediction_markets/    # the original project, unchanged
-├── NOTICE                     # attribution and licence for ported code
-├── PROJECT_PLAN.md            # phased roadmap with status tags
-├── pyproject.toml             # uv project, ruff and ty configuration
-└── .pre-commit-config.yaml    # ruff, ty and detect-secrets hooks
-```
-
-## Documentation
-
-- [Documentation index](docs/index.md)
-- [Architecture](docs/architecture.md): package layout, data flow and design decisions.
-- [Data layer](docs/data_layer.md): market record, domain adapters, dataset and snapshots.
-- [Forecasters](docs/forecasters.md): contract, cutoff-bounded evidence, baselines, Elo, the LLM forecaster.
-- [Scoring](docs/scoring.md) and [sizing](docs/sizing.md): proper scores, calibration, fees, Kelly.
-- [Paper trading](docs/paper_trading.md): ledger, forward loop, settlement, leakage check.
-- [Product design](docs/product.md): the hosted app for everyone, Phases 13 to 23.
-- [Scaling](docs/scaling.md): the multi-user architecture and capacity model.
-- [Vibe-Trading review](docs/vibe_trading.md): the reference implementation, its collaborative tools, the capability mapping, non-infringement rules.
-- [Documentation site](docs/site.md): the public site's structure and default visual style.
-- [Browser dashboard](docs/ui.md): `vp ui`, a read-only local page over the data root.
-- [Security design](docs/security.md): proposed gate for live execution.
-- [Provenance](docs/provenance.md): code adapted from Vibe-Trading and how it was changed.
-- [Project plan](PROJECT_PLAN.md): phases, tasks and their status.
-- [Archived project](archive/prediction_markets/README.md)
-
-## Overview
-
-A Polymarket contract on outcome $A$ is a token paying 1 if $A$ occurs and 0
-otherwise, so its price $q \in (0,1)$ is the market's implied probability of
-$A$. The project asks whether a language model, given only information
-available before a cutoff time $t$, can produce a probability $\hat p$ that
-beats $q$ as a forecast, and whether that edge survives fees and sizing.
-
-Forecasts are judged with strictly proper scoring rules, for which reporting
-one's true belief is the unique optimum [[1]](#ref-gneiting-2007). For outcome
-$y \in \{0,1\}$,
-
-$$\text{Brier}(\hat p, y) = (\hat p - y)^2, \qquad
-\text{Log}(\hat p, y) = -\bigl[y \ln \hat p + (1-y)\ln(1-\hat p)\bigr].$$
-
-The market price is the baseline forecast; skill is a mean score better than
-the market's over the same markets. Position size follows the Kelly criterion
-[[2]](#ref-kelly-1956): for a contract bought at price $q$ with belief
-$\hat p$, the growth-optimal fraction of bankroll is
-
-$$f^{*} = \frac{\hat p - q}{1 - q},$$
-
-which is scaled down in practice. Derivations, the fee model and the
-calibration decomposition are added to `docs/` by the phases that implement
-them.
-
-The pipeline is: venue client and data layer (done) → forecasters with an explicit cutoff → backtest scoring and fill simulation →
-paper trading → security-gated live execution. The
-[architecture page](docs/architecture.md) explains each stage and the reasoning
-behind the main design choices, in particular why a closed market is never
-treated as resolved without settlement evidence.
+- **Today it is a command line.** The engine is built and tested: build a
+  dataset, backtest forecasters against the market, paper trade against the
+  real order book, read it all in a local dashboard. That is what
+  [Using it](#using-it) walks through, and it needs Python and a terminal.
+- **The hosted web app is next.** An account, a browser, strategies described
+  in conversation and no terminal anywhere: that is Phase 13 onward of
+  [the plan](PROJECT_PLAN.md), designed in [docs/product.md](docs/product.md)
+  and not built yet. When it exists it is how most people will use this, and
+  this page will point at it.
+- **Live execution is last, and gated.** Nothing in this repository can sign
+  or send a real order, and nothing will until the hosted security design is
+  agreed (Phase 22). Paper trading is play money against real prices.
 
 ## Using it
 
 Everything happens through the `vp` command; the dashboard is a read-only view
-of what those commands wrote to the data root. Nothing here can sign or send a
-real order — hosted live execution is the last phase of the plan and is not
-built.
+of what those commands wrote to the data root.
 
 The shortest path from a clean checkout to a scored forecast:
 
@@ -323,6 +220,130 @@ event = polymarket.fetch_event(hits["events"][0]["event_id"])
 market = polymarket.fetch_market(event["markets"][0]["market_id"], depth=5)
 print(market["question"], market["resolution"]["state"])
 ```
+
+## Documentation
+
+- [Documentation index](docs/index.md)
+- [Architecture](docs/architecture.md): package layout, data flow and design decisions.
+- [Data layer](docs/data_layer.md): market record, domain adapters, dataset and snapshots.
+- [Forecasters](docs/forecasters.md): contract, cutoff-bounded evidence, baselines, Elo, the LLM forecaster.
+- [Scoring](docs/scoring.md) and [sizing](docs/sizing.md): proper scores, calibration, fees, Kelly.
+- [Paper trading](docs/paper_trading.md): ledger, forward loop, settlement, leakage check.
+- [Product design](docs/product.md): the hosted app for everyone, Phases 13 to 23.
+- [Scaling](docs/scaling.md): the multi-user architecture and capacity model.
+- [Vibe-Trading review](docs/vibe_trading.md): the reference implementation, its collaborative tools, the capability mapping, non-infringement rules.
+- [Documentation site](docs/site.md): the public site's structure and default visual style.
+- [Browser dashboard](docs/ui.md): `vp ui`, a read-only local page over the data root.
+- [Security design](docs/security.md): proposed gate for live execution.
+- [Provenance](docs/provenance.md): code adapted from Vibe-Trading and how it was changed.
+- [Project plan](PROJECT_PLAN.md): phases, tasks and their status.
+- [Archived project](archive/prediction_markets/README.md)
+
+## The mathematics
+
+A Polymarket contract on outcome $A$ is a token paying 1 if $A$ occurs and 0
+otherwise, so its price $q \in (0,1)$ is the market's implied probability of
+$A$. The project asks whether a language model, given only information
+available before a cutoff time $t$, can produce a probability $\hat p$ that
+beats $q$ as a forecast, and whether that edge survives fees and sizing.
+
+Forecasts are judged with strictly proper scoring rules, for which reporting
+one's true belief is the unique optimum [[1]](#ref-gneiting-2007). For outcome
+$y \in \{0,1\}$,
+
+$$\text{Brier}(\hat p, y) = (\hat p - y)^2, \qquad
+\text{Log}(\hat p, y) = -\bigl[y \ln \hat p + (1-y)\ln(1-\hat p)\bigr].$$
+
+The market price is the baseline forecast; skill is a mean score better than
+the market's over the same markets. Position size follows the Kelly criterion
+[[2]](#ref-kelly-1956): for a contract bought at price $q$ with belief
+$\hat p$, the growth-optimal fraction of bankroll is
+
+$$f^{*} = \frac{\hat p - q}{1 - q},$$
+
+which is scaled down in practice. Derivations, the fee model and the
+calibration decomposition are added to `docs/` by the phases that implement
+them.
+
+The pipeline is: venue client and data layer (done) → forecasters with an explicit cutoff → backtest scoring and fill simulation →
+paper trading → security-gated live execution. The
+[architecture page](docs/architecture.md) explains each stage and the reasoning
+behind the main design choices, in particular why a closed market is never
+treated as resolved without settlement evidence.
+
+## Repository layout
+
+This repository continues from an earlier project that compared Polymarket and
+Kalshi prices; that code is preserved unchanged under
+[`archive/prediction_markets/`](archive/prediction_markets/README.md).
+
+<details>
+<summary>The full tree</summary>
+
+```ascii
+prediction_markets/
+├── vp/                        # the vibe-predict package (import name `vp`)
+│   ├── cli.py                 # `vp build-dataset`, `vp snapshot`, `vp backtest`, `vp paper`, `vp ui`
+│   ├── venues/
+│   │   ├── _http.py           # throttled HTTP GET
+│   │   └── polymarket.py      # read-only Polymarket client
+│   ├── domains/               # cs2, weather, epl: membership and parsers
+│   ├── markets/
+│   │   ├── schema.py          # BinaryMarket record
+│   │   ├── polymarket.py      # typed source: discovery, books, history
+│   │   ├── store.py           # Parquet read and write
+│   │   ├── dataset.py         # resolved-market dataset and report
+│   │   └── snapshot.py        # snapshots of open markets
+│   ├── forecast/
+│   │   ├── base.py            # Forecast, Forecaster protocol
+│   │   ├── evidence.py        # cutoff-bounded evidence (the look-ahead safeguard)
+│   │   ├── baselines.py       # market price, constant, climatology
+│   │   ├── stats.py           # Elo
+│   │   ├── llm.py             # the LLM forecaster (Claude, tools, structured output)
+│   │   └── registry.py        # append-only forecast registry
+│   ├── backtest/
+│   │   ├── scoring.py         # Brier, log, skill, reliability, Murphy decomposition
+│   │   ├── sizing.py          # fees, edge, Kelly
+│   │   ├── simulate.py        # fill-and-settle simulator
+│   │   ├── run.py             # the backtest runner and its report
+│   │   └── bankroll.py        # bankroll statistics over per-bet P&L
+│   ├── paper/
+│   │   ├── ledger.py          # hash-chained append-only ledger
+│   │   ├── loop.py            # forward cycle and settlement
+│   │   └── leakage.py         # forward-versus-backtest check
+│   ├── live/                  # safety layer only; no signing until the design is agreed
+│   │   ├── mandate.py         # fail-closed guard over hard caps
+│   │   └── controls.py        # kill switch, environments, approvals, keyring
+│   └── ui/
+│       ├── server.py          # read-only JSON API over the data root
+│       └── static/            # the dashboard page and vendored fonts
+├── docs/                      # documentation (see index below)
+├── tests/
+│   ├── reports/               # test reports with runtimes, one per phase
+│   ├── test_bankroll.py       # bankroll arithmetic on a hand-checked sequence
+│   ├── test_polymarket.py     # resolution ladder and catalogue walk on fixtures
+│   ├── test_domains.py        # membership and parsing on recorded questions
+│   ├── test_schema_store.py   # record labels and Parquet round trip
+│   ├── test_dataset.py        # dataset and snapshot against a fake source
+│   ├── test_forecast.py       # evidence cutoff rule, baselines, Elo, registry
+│   ├── test_llm.py            # LLM elicitation loop against a fake client
+│   ├── test_scoring.py        # scores and the Murphy identity
+│   ├── test_sizing.py         # fees and Kelly
+│   ├── test_simulate.py       # fills and compounding
+│   ├── test_backtest.py       # the runner end to end
+│   ├── test_ledger.py         # chain integrity and tamper detection
+│   ├── test_paper.py          # forward cycle, settlement, leakage
+│   ├── test_live_guard.py     # every refusal path of the live safety layer
+│   └── test_ui.py             # dashboard endpoints against the fixtures
+├── archive/
+│   └── prediction_markets/    # the original project, unchanged
+├── NOTICE                     # attribution and licence for ported code
+├── PROJECT_PLAN.md            # phased roadmap with status tags
+├── pyproject.toml             # uv project, ruff and ty configuration
+└── .pre-commit-config.yaml    # ruff, ty and detect-secrets hooks
+```
+
+</details>
 
 ## Developing
 
