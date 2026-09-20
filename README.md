@@ -5,8 +5,9 @@ prediction-market contracts on Polymarket through conversation with an LLM.
 It supplies the data, cutoff-safe evidence, proper scoring, a backtest,
 paper trading and a dashboard, so a strategy described in conversation can
 be built, scored honestly against the market, and run; live execution is
-gated on an agreed security design. Domains: Counter-Strike 2 esports,
-weather, and English Premier League football.
+gated on an agreed security design. Three domains ship today — Counter-Strike 2
+esports, weather and English Premier League football — and the set is meant to
+open up.
 
 This repository continues from an earlier project that compared Polymarket and
 Kalshi prices; that code is preserved unchanged under
@@ -127,35 +128,186 @@ paper trading → security-gated live execution. The
 behind the main design choices, in particular why a closed market is never
 treated as resolved without settlement evidence.
 
-## Getting Started
+## Using it
+
+Everything happens through the `vp` command; the dashboard is a read-only view
+of what those commands wrote to the data root. Nothing here can sign or send a
+real order — hosted live execution is the last phase of the plan and is not
+built.
+
+The shortest path from a clean checkout to a scored forecast:
+
+```bash
+uv sync                                                 # environment
+uv run vp build-dataset --domain epl --max-markets 30   # ~30 s, data on disk
+uv run vp backtest --domain epl --forecasters market constant
+uv run vp ui --root data                                # http://127.0.0.1:8765/
+```
+
+### 1. Install
 
 Requires Python 3.14 and [uv](https://docs.astral.sh/uv/).
 
 ```bash
 uv sync                     # create the environment and install `vp`
-uv run pre-commit install   # ruff, ty and detect-secrets on every commit
 uv run vp --version
+uv run pre-commit install   # contributors: ruff, ty and detect-secrets on commit
 ```
 
-Quality checks, as run by the hooks:
+### 2. Build a dataset
+
+Reading Polymarket needs no credentials. `build-dataset` walks a domain's
+closed markets, keeps the ones carrying settlement evidence, fetches each
+one's price history and prints a retrievability report.
 
 ```bash
-uv run ruff check . && uv run ruff format --check .
-uv run ty check
-uv run detect-secrets scan --baseline .secrets.baseline
-uv run pytest
+uv run vp build-dataset --domain epl --max-markets 30   # a quick check, ~30 s
+uv run vp build-dataset --domain cs2 weather epl        # the full resolved set
 ```
 
-Building data. Neither command needs credentials; `data/` is git-ignored.
+```text
+domain: epl
+markets seen (closed, in domain): 30
+resolved with a label: 30
+resolved but void or split (no label): 0
+closed but pending (no settlement record): 0
+histories fetched: 30 (empty: 0, errors: 0)
+written: data/markets/epl/resolved.parquet
+```
+
+`--no-history` skips the per-market history requests, which is much faster but
+leaves the backtest with no market price at the cutoff, so nothing can be
+scored. Keep the histories for any domain you intend to backtest. Requests to
+each host are spaced by 0.35 s; set `VP_POLYMARKET_MIN_INTERVAL` (seconds) to
+change it.
+
+`vp snapshot` is the open-market counterpart — one file per run, with book
+depth, which is what paper trading fills against:
 
 ```bash
-uv run vp build-dataset --domain epl --max-markets 20   # quick retrievability check
-uv run vp build-dataset --domain cs2 weather epl        # full resolved dataset
-uv run vp snapshot --domain cs2 weather epl --depth 5   # one snapshot of open markets
+uv run vp snapshot --domain epl --depth 5
 ```
 
-Reading Polymarket needs no credentials. Requests to each host are spaced by
-0.35 s by default; set `VP_POLYMARKET_MIN_INTERVAL` (seconds) to change it.
+### 3. Backtest
+
+Every resolved market is forecast at its settlement time minus
+`--hours-before-close`, scored against the market's own price at that cutoff,
+and run through the fill simulator.
+
+```bash
+uv run vp backtest --domain epl --forecasters market constant
+```
+
+```text
+markets: 30 selected, 30 with a price at the cutoff, 30 forecast by every forecaster (scored)
+
+| Forecaster | n | Brier | Log | Skill vs market | Reliability | Resolution | ECE | Cost USD |
+| :--- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| market | 30 | 0.1997 | 0.5593 | +0.0000 | 0.0634 | 0.0878 | 0.1309 | 0.00 |
+| constant | 30 | 0.2500 | 0.6931 | -0.2522 | 0.0278 | 0.0000 | 0.1667 | 0.00 |
+
+written: data/backtests/epl/20260920T054313Z
+```
+
+The run directory holds `summary.md` (the tables above), `results.json` (the
+same numbers plus the series behind the figures), `forecasts.jsonl` (the
+registry for the run) and three figures: the reliability diagram, the
+cumulative Brier advantage over the market, and the equity curves.
+
+Forecasters are `market`, `constant`, `climatology`, `elo` and `llm`; `market`
+is the reference every other one is scored against. Sizing and cost
+assumptions are flags: `--fee-rate`, `--half-spread`, `--min-edge`, plus
+`--kinds` to restrict to one parsed market type and `--max-markets` to cut the
+run short.
+
+**Only markets that *every* named forecaster answered are scored**, so that the
+comparison is on one common set. A forecaster that abstains therefore empties
+the table rather than shrinking it — see the notes below.
+
+### 4. The LLM forecaster
+
+`llm` is the one forecaster that needs credentials and costs money. The client
+is built from the environment by the official Anthropic SDK, so exporting a key
+is all the setup there is:
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+uv run vp backtest --domain epl --forecasters market llm --max-markets 50
+```
+
+It defaults to `claude-opus-5`, and the USD cost of the run is printed in the
+`Cost USD` column and stored with each forecast. The model is shown the
+question, the domain's structured fields and the evidence tools, but
+deliberately not the market price. It has never been run against the API from
+this repository — the development container holds no key — so treat the first
+keyed run as the experiment it is, and start with `--max-markets`.
+
+### 5. Paper trading
+
+The forward loop snapshots a domain's open markets, forecasts them at *now*,
+sizes against the real touch of the book and records everything in a
+hash-chained ledger. All state is replayed from that ledger, so a cycle can be
+run on a schedule and stopped at any point.
+
+```bash
+uv run vp paper run --domain epl --forecasters market elo   # one cycle
+uv run vp paper settle                                      # resolve open positions
+uv run vp paper leakage --domain epl --backtest data/backtests/epl/<stamp>
+```
+
+`run` prints the counts for the cycle — markets snapshotted, of those parsed by
+the domain, forecasts made and orders filled. `settle` looks up each open
+position's market and writes a settlement entry for the ones the venue has
+resolved. `leakage` compares the forward scores against a backtest's, which is
+the check that the backtest is not quietly optimistic.
+
+### 6. The dashboard
+
+```bash
+uv run vp ui --root data      # http://127.0.0.1:8765/
+```
+
+A local, read-only page over the data root: what is on disk per domain, every
+backtest run with its tables and charts, the paper ledger with accounts and
+settlements, and the latest snapshot. It writes nothing and holds no state, so
+it can be started and stopped freely. Every metric and market type on the page
+is clickable for a definition. See [the dashboard page](docs/ui.md).
+
+### What lands in the data root
+
+`data/` is git-ignored, so a fresh clone starts empty and every command above
+rebuilds what it needs.
+
+```ascii
+data/
+├── markets/<domain>/resolved.parquet    # the labelled resolved set
+├── histories/<domain>/<market>.parquet  # price history per market
+├── snapshots/<domain>/<stamp>.parquet   # open markets with book depth
+├── backtests/<domain>/<stamp>/          # summary.md, results.json, forecasts.jsonl, figures
+└── paper/ledger.jsonl                   # the hash-chained paper-trading ledger
+```
+
+### Things worth knowing before you run it
+
+- **Elo needs a warm-up.** It only answers `match` markets and only once both
+  sides have at least three prior results before the cutoff. On a 30-market
+  slice it abstains on everything, and because only commonly-answered markets
+  are scored the table comes back with `n = 0`. Build the full domain dataset
+  before backtesting Elo.
+- **`vp paper run --max-markets N` caps the snapshot, not the parsed markets**,
+  so a small `N` can leave nothing to forecast.
+- **A few order books return 404** during snapshots; the collector warns per
+  market and carries on, and the snapshot is still written.
+- **No baseline beats the market** (weather climatology skill −0.19, EPL Elo
+  −0.02, CS2 Elo −0.12, measured in Phase 9). That is the benchmark a strategy
+  is measured against, not a result the project is trying to fix.
+- **The Phase 9 backtests ran fee-free.** The venue charges takers on sports
+  and weather markets; pass `--fee-rate` until the baselines are re-run
+  fee-aware.
+
+### Using it as a library
+
+The venue client is importable on its own and needs no credentials:
 
 ```python
 from vp.venues import polymarket
@@ -165,6 +317,18 @@ event = polymarket.fetch_event(hits["events"][0]["event_id"])
 market = polymarket.fetch_market(event["markets"][0]["market_id"], depth=5)
 print(market["question"], market["resolution"]["state"])
 ```
+
+## Developing
+
+```bash
+uv run pytest -q                                          # the offline test suite
+uv run ruff check . && uv run ruff format --check .
+uv run ty check
+uv run detect-secrets scan --baseline .secrets.baseline
+```
+
+The tests are offline: no command in the suite touches the network, and
+`tests/reports/` carries a report per phase with what was measured live.
 
 ## Licence
 
