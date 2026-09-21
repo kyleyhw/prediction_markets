@@ -20,6 +20,9 @@ Polymarket, scored by backtest and paper trading before any live execution. The
   cycle, settlement and the leakage check.
 - [Product design](product.md): the hosted app for everyone, Phases 13
   to 23: architecture, accounts and money, the experience, sequencing.
+- [Platform](platform.md): Phase 13's configuration, principal, tenancy
+  boundary and migrations, and the savepoint hazard behind the autocommit
+  rule.
 - [Scaling](scaling.md): tenancy, storage, the job queue, the market-data
   service, LLM cost controls, the capacity model and the growth path for
   many users.

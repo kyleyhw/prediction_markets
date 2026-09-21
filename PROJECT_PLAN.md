@@ -348,8 +348,14 @@ Design: `docs/product.md` (architecture, accounts and money) and
 capacity). The browser becomes the whole product for the user; the command
 line stays for developers and the operator. Built for many users from the
 first release, on one host at first (`docs/scaling.md` § 12, stage A).
+Started 2026-09-21; what is built is recorded in `docs/platform.md`.
 
-28. [pending] Web service over the unchanged engine.
+28. [in-progress] Web service over the unchanged engine.
+    - Landed: the configuration module, sole reader of the environment,
+      with no default for any secret, redaction of the database URL, and
+      `tests/test_config_gate.py` proving no second reader exists.
+    - Outstanding: the FastAPI application, the endpoints and the
+      OpenAPI page.
     - FastAPI application with a request principal on every route, health
       and readiness endpoints, the OpenAPI page as the technical user's API
       reference, JSON errors, structured logs through the redaction filter.
@@ -357,7 +363,15 @@ first release, on one host at first (`docs/scaling.md` § 12, stage A).
       (a lint rule enforces it); typed settings; no secret has a default.
     - Endpoints mirroring the CLI (build, snapshot, backtest, paper run,
       settle, leakage) and the dashboard's read endpoints moved unchanged.
-29. [pending] Identity, workspaces and tenancy.
+29. [in-progress] Identity, workspaces and tenancy.
+    - Landed: the `Principal` with derived attribution, roles held within
+      a workspace and an operator role that reaches no workspace data; the
+      workspaces, users and memberships tables with row-level security;
+      `tenant_session`; and the tenancy suite, which proves a query that
+      forgets its filter returns nothing, that naming another workspace
+      explicitly returns nothing, and that a context cannot outlive its
+      transaction.
+    - Outstanding: magic-link sign-in, sessions, API tokens.
     - `Principal` with `subject`, `auth_method`, `attributable` (derived,
       never caller-set), `workspace`, `roles`; email magic-link sign-in;
       OpenID Connect prepared but not shipped; HTTP-only session cookies;
@@ -369,7 +383,11 @@ first release, on one host at first (`docs/scaling.md` § 12, stage A).
     - API tokens hashed at rest, scoped and revocable.
     - A tenancy test suite that attempts every cross-workspace read and
       write and expects nothing.
-30. [pending] Storage.
+30. [in-progress] Storage.
+    - Landed: the migration runner (one transaction per file, checksummed,
+      immutable once applied) and `0001_foundation.sql`.
+    - Outstanding: the remaining tables, object storage, the DuckDB read
+      path, partitioning and archival.
     - Postgres schema: users, workspaces, memberships, strategies,
       strategy versions, runs and manifests, forecasts with memo keys, paper
       accounts, ledger entries, jobs, budgets and spend, settings, tokens,

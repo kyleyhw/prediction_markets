@@ -230,6 +230,7 @@ print(market["question"], market["resolution"]["state"])
 - [Scoring](docs/scoring.md) and [sizing](docs/sizing.md): proper scores, calibration, fees, Kelly.
 - [Paper trading](docs/paper_trading.md): ledger, forward loop, settlement, leakage check.
 - [Product design](docs/product.md): the hosted app for everyone, Phases 13 to 23.
+- [Platform](docs/platform.md): configuration, the principal, tenancy and migrations.
 - [Scaling](docs/scaling.md): the multi-user architecture and capacity model.
 - [Vibe-Trading review](docs/vibe_trading.md): the reference implementation, its collaborative tools, the capability mapping, non-infringement rules.
 - [Documentation site](docs/site.md): the public site's structure and default visual style.

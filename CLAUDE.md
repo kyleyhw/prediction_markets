@@ -38,7 +38,12 @@ The original `prediction_markets` project is archived unchanged under
   pages `product.md`, `scaling.md`, `site.md`, plus `vibe_trading.md`, the
   full review of the reference implementation with the capability mapping
   and the non-infringement rules.
-- `vp/`: the package. `venues/polymarket.py` (read-only client with the
+- `vp/platform/`: the hosted platform around the engine (Phase 13, in
+  progress): `config.py` (the only reader of the environment),
+  `principal.py`, `db.py` (migrations, `tenant_session`) and
+  `migrations/*.sql`. Reasoning in `docs/platform.md`. The engine must
+  never import it.
+- `vp/`: the engine. `venues/polymarket.py` (read-only client with the
   closed-is-not-resolved evidence ladder), `domains/` (cs2, weather, epl),
   `markets/` (record, source, Parquet store, dataset, snapshot),
   `forecast/` (evidence, baselines, Elo, LLM, registry), `backtest/`
@@ -71,7 +76,12 @@ committees and benchmark, 17 evidence archive and new domains, 18
 collaboration and delivery, 19 shadow forecaster, 20 portfolio, risk and
 the promotion protocol, 21 scale
 proof, 22 hosted live execution (built last), 23 the documentation site (default "paper" style in `docs/site.md`,
-alternatives to trial later). Phase 13 is next and **needs the go-ahead**;
+alternatives to trial later). Phase 13 **started on 2026-09-21**; the configuration module, the
+principal, the database foundation and the tenancy boundary are built and
+tested (`docs/platform.md`), and the web service, sign-in, jobs, the
+market-data service, deploy, budgets and observability are not.
+Database-backed tests skip unless `VP_TEST_DATABASE_URL` and
+`VP_TEST_APP_DATABASE_URL` are set; `docs/platform.md` says how. Earlier,
 the decisions each phase needed were taken on 2026-09-19 as proposed
 (Fly.io with Amsterdam as the first region, magic-link sign-in, quarter
 Kelly with a 5% cap and a 0.03 minimum edge, fees shown, session keys for
