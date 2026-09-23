@@ -8,16 +8,24 @@ license-files = ["LICENSE", "NOTICE"]
 requires-python = ">=3.14"
 dependencies = [
     "anthropic>=1.5.0",
+    "boto3>=1.43.100",
+    "croniter>=6.2.4",
+    "cryptography>=50.0.1",
+    "duckdb>=1.5.5",
     "fastapi>=0.115",
     "keyring>=25.7.0",
     "matplotlib>=3.11.2",
     "numpy>=2.3.5",
+    "opentelemetry-exporter-otlp-proto-http>=1.44.0",
+    "opentelemetry-sdk>=1.44.0",
+    "prometheus-client>=0.26.0",
     "psycopg-pool>=3.2",
     "psycopg[binary]>=3.2",
     "pyarrow>=25.0.1",
     "python-multipart>=0.0.18",
     "requests>=2.32.5",
     "uvicorn>=0.32",
+    "websockets>=17.1",
 ]
 
 [project.scripts]
@@ -34,10 +42,12 @@ build-backend = "hatchling.build"
 dev = [
     "detect-secrets>=1.5.0",
     "httpx>=0.28",
+    "moto[s3]>=5.2.3",
     "pre-commit>=4.5.0",
     "pytest>=9.1.1",
     "ruff>=0.14.8",
     "ty>=0.0.1a32",
+    "types-croniter>=6.2.4.20260711",
     "types-requests>=2.32",
 ]
 

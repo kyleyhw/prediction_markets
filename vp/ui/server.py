@@ -34,6 +34,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlparse
 
+import duckdb
 import pyarrow.parquet as pq
 
 from vp.domains import DOMAINS as DOMAIN_ADAPTERS
@@ -179,12 +180,7 @@ class DataView:
         if not found:
             return None
         market = found[0]
-        series = []
-        for path in snaps[-history:]:
-            for other in self._cached(path, read_markets) or []:
-                if other.market_id == market_id and other.p_yes is not None:
-                    series.append({"at": other.fetched_at, "p_yes": other.p_yes})
-                    break
+        series = market_series(snaps[-history:], market_id)
         forecasts = [
             {"forecaster": f["forecaster"], "p_hat": f["p_hat"], "cutoff": f["cutoff"]}
             for f in self.forecasts(limit=5000)
@@ -213,6 +209,23 @@ class DataView:
             return []
         lines = path.read_text().splitlines()
         return [json.loads(ln) for ln in lines[-limit:] if ln.strip()][::-1]
+
+
+def market_series(paths: list[Path], market_id: str) -> list[dict[str, Any]]:
+    """The first outcome's price in each snapshot file that carries the market.
+
+    DuckDB reads only the three columns it needs across all the files in
+    one scan, where decoding every record of every snapshot would read the
+    whole of each (a weather snapshot holds thousands of markets).
+    """
+    if not paths:
+        return []
+    rows = duckdb.execute(
+        "select fetched_at, outcome_0_price from read_parquet(?) "
+        "where market_id = ? and outcome_0_price is not null order by fetched_at",
+        [[str(p) for p in paths], market_id],
+    ).fetchall()
+    return [{"at": at, "p_yes": price} for at, price in rows]
 
 
 def _parse_at(value: str) -> datetime:

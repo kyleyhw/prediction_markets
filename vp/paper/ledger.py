@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from pathlib import Path
 from typing import Any
 
@@ -28,7 +28,12 @@ from vp.markets.schema import utc_now_iso
 GENESIS = "0" * 64
 
 
-def _digest(entry: dict[str, Any]) -> str:
+def entry_hash(entry: dict[str, Any]) -> str:
+    """SHA-256 over the canonical JSON of an entry without its ``hash`` key.
+
+    Public so that every store of this chain (the file here, the platform's
+    Postgres ledger) hashes the same bytes and one ``verify`` fits all.
+    """
     body = {k: v for k, v in entry.items() if k != "hash"}
     return hashlib.sha256(
         json.dumps(body, sort_keys=True, separators=(",", ":")).encode()
@@ -66,7 +71,7 @@ class Ledger:
             "data": data,
             "prev": previous["hash"] if previous else GENESIS,
         }
-        entry["hash"] = _digest(entry)
+        entry["hash"] = entry_hash(entry)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.path.open("a", encoding="utf-8") as fh:
             fh.write(json.dumps(entry, sort_keys=True) + "\n")
@@ -74,13 +79,18 @@ class Ledger:
 
     def verify(self) -> int | None:
         """Return the sequence number of the first broken entry, or ``None``."""
-        prev = GENESIS
-        for expected, entry in enumerate(self.entries()):
-            if (
-                entry.get("seq") != expected
-                or entry.get("prev") != prev
-                or _digest(entry) != entry.get("hash")
-            ):
-                return expected
-            prev = entry["hash"]
-        return None
+        return verify_entries(self.entries())
+
+
+def verify_entries(entries: Iterable[dict[str, Any]]) -> int | None:
+    """The sequence number of the first broken entry in a chain, or ``None``."""
+    prev = GENESIS
+    for expected, entry in enumerate(entries):
+        if (
+            entry.get("seq") != expected
+            or entry.get("prev") != prev
+            or entry_hash(entry) != entry.get("hash")
+        ):
+            return expected
+        prev = entry["hash"]
+    return None

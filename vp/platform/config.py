@@ -21,6 +21,13 @@ binds; the service refuses to start otherwise. `VP_MIGRATION_DATABASE_URL`
 is the owner's, needed only by `vp db migrate`, so the web process never
 holds a credential that bypasses tenancy.
 
+The object store is a URL: `file:<path>` (the default, under the data
+root) or `s3://<bucket>` with an endpoint and keys, which is how MinIO
+stands in locally for the cloud's object storage (flag F16). The S3 keys,
+the platform's model API key, the master key that wraps workspace keys and
+the metrics token are secrets like the database URLs: out of the repr, no
+defaults, and a feature whose secret is absent is off rather than guessed.
+
 Production refuses two development conveniences outright: a public URL
 that is not HTTPS, since session cookies must be `Secure`, and the
 development mail outbox, since a sign-in link written to a file on the
@@ -54,6 +61,14 @@ class MailMode(StrEnum):
     """
 
     OUTBOX = "outbox"
+
+
+class Telemetry(StrEnum):
+    """Where traces go: nowhere, the log, or an OTLP collector."""
+
+    NONE = "none"
+    CONSOLE = "console"
+    OTLP = "otlp"
 
 
 class Environment(StrEnum):
@@ -91,6 +106,27 @@ class Settings:
     public_url: str = "http://127.0.0.1:8000"
     migration_database_url: str | None = field(default=None, repr=False)
     mail_mode: MailMode = MailMode.OUTBOX
+    store_url: str = ""
+    s3_endpoint: str | None = None
+    s3_region: str = "us-east-1"
+    s3_access_key: str | None = field(default=None, repr=False)
+    s3_secret_key: str | None = field(default=None, repr=False)
+    cache_dir: Path | None = None
+    anthropic_api_key: str | None = field(default=None, repr=False)
+    master_key: str | None = field(default=None, repr=False)
+    telemetry: Telemetry = Telemetry.NONE
+    otlp_endpoint: str | None = None
+    metrics_token: str | None = field(default=None, repr=False)
+
+    @property
+    def store(self) -> str:
+        """The object store URL, defaulting to a directory under the data root."""
+        return self.store_url or f"file:{self.data_root / 'store'}"
+
+    @property
+    def cache(self) -> Path:
+        """Where object-store files are cached on local disk."""
+        return self.cache_dir or self.data_root / "cache"
 
     @property
     def secure_cookies(self) -> bool:
@@ -143,7 +179,27 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
             source.get(PREFIX + "MIGRATION_DATABASE_URL", "").strip() or None
         ),
         mail_mode=mail_mode,
+        store_url=_optional(source, "STORE") or "",
+        s3_endpoint=_optional(source, "S3_ENDPOINT"),
+        s3_region=_optional(source, "S3_REGION") or "us-east-1",
+        s3_access_key=_optional(source, "S3_ACCESS_KEY"),
+        s3_secret_key=_optional(source, "S3_SECRET_KEY"),
+        cache_dir=Path(c) if (c := _optional(source, "CACHE_DIR")) else None,
+        anthropic_api_key=_optional(source, "ANTHROPIC_API_KEY"),
+        master_key=_optional(source, "MASTER_KEY"),
+        telemetry=_telemetry(source),
+        otlp_endpoint=_optional(source, "OTLP_ENDPOINT"),
+        metrics_token=_optional(source, "METRICS_TOKEN"),
     )
+    if settings.store.startswith("s3://") and not (
+        settings.s3_access_key and settings.s3_secret_key
+    ):
+        raise ConfigError(
+            f"{PREFIX}STORE is s3:// but {PREFIX}S3_ACCESS_KEY or "
+            f"{PREFIX}S3_SECRET_KEY is missing"
+        )
+    if not settings.store.startswith(("s3://", "file:")):
+        raise ConfigError(f"{PREFIX}STORE must start with file: or s3://")
     if settings.is_production:
         if not settings.secure_cookies:
             raise ConfigError(f"{PREFIX}PUBLIC_URL must be https:// in production")
@@ -153,6 +209,21 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
                 "a mail provider is chosen with the deploy (flag F3)"
             )
     return settings
+
+
+def _optional(env: Mapping[str, str], name: str) -> str | None:
+    """Return an optional setting, or None when unset or blank."""
+    return env.get(PREFIX + name, "").strip() or None
+
+
+def _telemetry(env: Mapping[str, str]) -> Telemetry:
+    raw = (env.get(PREFIX + "TELEMETRY", "") or "none").strip().lower()
+    try:
+        return Telemetry(raw)
+    except ValueError:
+        raise ConfigError(
+            f"{PREFIX}TELEMETRY must be none, console or otlp; got {raw!r}"
+        ) from None
 
 
 def _require(env: Mapping[str, str], name: str) -> str:
