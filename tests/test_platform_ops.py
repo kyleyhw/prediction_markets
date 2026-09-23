@@ -94,3 +94,22 @@ def test_a_data_refresh_does_what_the_daily_build_does(pg_owner) -> None:
     pg_owner.execute("delete from jobs where id = %s", (ids[0],))
     pg_owner.execute("delete from schedules where name = 'dataset-testland'")
     assert payload["history_limit"] == 7
+
+
+def test_a_job_scheduled_for_later_is_not_waiting(
+    app_pool, pg_owner, two_workspaces
+) -> None:
+    from datetime import UTC, datetime, timedelta
+
+    ada = two_workspaces["a"]
+    later = enqueue(
+        app_pool,
+        ada,
+        "leakage",
+        {},
+        run_after=datetime.now(tz=UTC) + timedelta(hours=1),
+    )
+    rows = {(k, s): (n, age) for k, s, n, age in ops.queue_depth(pg_owner)}
+    pg_owner.execute("delete from jobs where id = %s", (later,))
+    assert rows[("leakage", "queued")][0] >= 1
+    assert rows[("leakage", "queued")][1] is None  # nothing ready is waiting

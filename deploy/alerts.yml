@@ -23,11 +23,20 @@ groups:
           summary: "Resolutions are taking over fifteen minutes to become labels"
           runbook: "docs/runbook.md#resolutions-late"
       - alert: QueueBacklog
-        expr: max by (kind) (vp_queue_oldest_seconds) > 600
+        expr: max by (kind) (vp_queue_oldest_seconds{kind!="dataset"}) > 600
         for: 5m
         labels: {severity: page}
         annotations:
           summary: "A job kind has waited more than ten minutes to start"
+          runbook: "docs/runbook.md#queue-backlog"
+      # A dataset build runs for hours and the next one waits its turn, so
+      # only a day-scale wait means the pool is stuck.
+      - alert: DatasetBacklog
+        expr: max(vp_queue_oldest_seconds{kind="dataset"}) > 21600
+        for: 15m
+        labels: {severity: ticket}
+        annotations:
+          summary: "A dataset build has waited more than six hours to start"
           runbook: "docs/runbook.md#queue-backlog"
       - alert: DeadJobs
         expr: sum by (kind) (vp_queue_depth{state="dead"}) > 0

@@ -104,12 +104,9 @@ def set_drain(conn: psycopg.Connection, kind: str, drained: bool) -> None:
 
 
 def queue_depth(conn: psycopg.Connection) -> list[tuple[str, str, int, float | None]]:
-    """(kind, state, count, age of the oldest in seconds) for live jobs."""
-    return conn.execute(
-        "select kind, state, count(*), "
-        "extract(epoch from now() - min(created_at))::float8 from jobs "
-        "where state in ('queued', 'running', 'dead') group by 1, 2 order by 1, 2"
-    ).fetchall()
+    """(kind, state, count, seconds the oldest ready job has waited) for live
+    jobs: the same figures the queue metrics report."""
+    return conn.execute("select * from vp_queue_stats() order by 1, 2").fetchall()
 
 
 # --------------------------------------------------------------------- halts

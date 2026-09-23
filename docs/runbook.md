@@ -50,11 +50,15 @@ but never makes one wrong.
 
 ## Queue backlog
 
-A job kind has waited more than ten minutes to start. `vp jobs stats` shows
-depth and age by kind and state.
+A job kind has waited more than ten minutes to start, or a dataset build
+more than six hours (`DatasetBacklog`: builds run for hours, and the next
+waits its turn). `vp jobs stats` shows depth and age by kind and state; a
+job scheduled for later is not counted as waiting.
 
-- Is the pool for that kind running? Compose runs three: interactive
-  (backtest, leakage), paper (paper_cycle, settle), platform (the rest).
+- Is the pool for that kind running? Compose runs five: interactive
+  (backtest, leakage), paper (paper_cycle, settle), platform (scheduler,
+  partitions, sweep), capture (snapshot, evidence, reconcile) and data
+  (dataset).
 - Is the kind drained (`vp jobs drain`)? Undrain it with `vp jobs undrain`.
 - Is the platform halted, or the workspace paused? `vp admin halts`.
 - Otherwise the pool is too small for the load: raise its `--concurrency`
