@@ -12,6 +12,8 @@ Subcommands:
 * ``vp paper run|settle|leakage``: one forward paper-trading cycle, the
   settlement pass over open positions, and the forward-versus-backtest
   leakage check, all recorded in a hash-chained ledger.
+* ``vp signals list|check|bench``: the signal library, its gates, and each
+  signal against the market on a domain (docs/signals.md).
 * ``vp strategy check|diff|preview|backtest``: a strategy spec (a JSON
   file): its problems, plain-language rendering and hash; what changed
   between two versions; what it would touch and cost; its backtest on each
@@ -126,6 +128,19 @@ def main() -> None:
     back.add_argument(
         "--out", type=Path, default=None, help="report directory (default: under root)"
     )
+
+    sig = sub.add_parser("signals", help="the signal library")
+    sig_sub = sig.add_subparsers(dest="signals_command", required=True)
+    sig_sub.add_parser("list", help="every signal with its metadata and hash")
+    scheck = sig_sub.add_parser("check", help="the purity and cutoff gates")
+    scheck.add_argument("ids", nargs="*", help="signals to check (default: all)")
+    sbench = sig_sub.add_parser("bench", help="every signal against the market")
+    sbench.add_argument("--domain", required=True, choices=sorted(DOMAINS))
+    sbench.add_argument("--root", type=Path, default=Path("data"))
+    sbench.add_argument("--hours", type=float, default=24.0)
+    sbench.add_argument("--window", default=None, help="YYYY-MM..YYYY-MM")
+    sbench.add_argument("--max-markets", type=int, default=2000)
+    sbench.add_argument("--seed", type=int, default=0)
 
     strat = sub.add_parser("strategy", help="a strategy spec (JSON)")
     strat_sub = strat.add_subparsers(dest="strategy_command", required=True)
@@ -314,6 +329,9 @@ def main() -> None:
                 print(f"{name}: {counts}")
         return
 
+    if args.command == "signals":
+        _signals(args)
+        return
     if args.command == "strategy":
         _strategy(args)
         return
@@ -401,3 +419,46 @@ def _strategy(args: argparse.Namespace) -> None:
         for domain, result in results.items():
             print(f"{domain}: {result.common} markets scored; {out / domain}")
             print((out / domain / "summary.md").read_text())
+
+
+def _signals(args: argparse.Namespace) -> None:
+    import tempfile
+
+    from vp.signals import gates, registry
+
+    if args.signals_command == "list":
+        print(json.dumps(registry.manifest(), indent=1))
+        return
+    if args.signals_command == "check":
+        failed = False
+        with tempfile.TemporaryDirectory() as tmp:
+            plain, guarded = gates.fixtures(Path(tmp))
+            for signal_id in args.ids or registry.ids():
+                make = lambda i=signal_id: registry.load(i)  # noqa: E731
+                problems = gates.purity(make()) + gates.cutoff_sentinel(
+                    make, plain, guarded
+                )
+                failed |= bool(problems)
+                print(
+                    f"{signal_id}: {'passes' if not problems else '; '.join(problems)}"
+                )
+        raise SystemExit(1 if failed else 0)
+    from vp.signals.bench import bench
+
+    window = tuple(args.window.split("..")) if args.window else None
+    out = bench(
+        args.root,
+        args.domain,
+        hours=args.hours,
+        window=window,  # type: ignore[arg-type]
+        max_markets=args.max_markets,
+        seed=args.seed,
+    )
+    path = args.root / "signals" / "bench" / f"{args.domain}.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(out, indent=1))
+    for signal_id, r in out["signals"].items():
+        adv = r.get("advantage")
+        span = f"[{adv['low']:+.4f}, {adv['high']:+.4f}]" if adv else ""
+        print(f"{signal_id:18} n={r['n']:5} {r['verdict']:8} {span}")
+    print(f"written to {path}")

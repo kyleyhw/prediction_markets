@@ -166,7 +166,7 @@ def run_cycle(
         for m in captured
         if m.parsed.get("kind") and where(m) and _within(m, now, window_hours)
     ]
-    evidence = Evidence(now, root)
+    evidence = Evidence(now, root, live=captured)
     registry = Registry(root / "paper" / "forecasts.jsonl")
     accounts = replay(ledger, initial_cash)
     counts = {

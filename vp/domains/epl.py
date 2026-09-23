@@ -107,4 +107,5 @@ EPL = Domain(
         "season_winner": ("team", "season"),
     },
     props=tuple(PROP_KINDS),
+    home_first=True,
 )

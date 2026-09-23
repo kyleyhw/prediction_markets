@@ -39,6 +39,9 @@ class Domain:
     kinds: dict[str, tuple[str, ...]] = field(default_factory=dict)
     # The kinds of `vp.domains.props` its match events carry.
     props: tuple[str, ...] = ()
+    # Whether a match's first-listed team plays at home (football fixtures),
+    # which the rating signals give a home advantage.
+    home_first: bool = False
 
     @property
     def all_kinds(self) -> dict[str, tuple[str, ...]]:

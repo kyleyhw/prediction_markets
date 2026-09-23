@@ -14,6 +14,13 @@ accessor filters what it returns to information known before $t$:
 * ``daily_highs``: realised daily maximum temperatures at a city for dates
   before $t$, read from resolved daily-temperature markets: exactly one
   bucket of each event resolves Yes, and its bounds are the observation.
+* ``scores``: final scores of football matches settled before $t$, read the
+  same way from resolved exact-score markets (Phase 16).
+* ``event_prices``: the other markets of the market's event with their
+  prices at $t$ and every label removed (Phase 16).
+* ``settled_prices``: for markets settled before $t$, the price each had a
+  fixed time before its own settlement, and its label: what a calibration
+  of the market price is fitted on (Phase 16).
 
 Using the dataset as its own evidence source is a deliberate choice for the
 backtest: it is complete for every market in the set, it is free, and it
@@ -25,8 +32,8 @@ bucket resolution (a temperature is known to the bucket, not the degree).
 from __future__ import annotations
 
 from bisect import bisect_left
-from dataclasses import dataclass
-from datetime import date, datetime, timezone
+from dataclasses import dataclass, replace
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -104,6 +111,17 @@ class MatchResult:
 
 
 @dataclass(frozen=True)
+class MatchScore:
+    """A settled football match's final score, home side first."""
+
+    settled: datetime
+    team_a: str
+    team_b: str
+    goals_a: int
+    goals_b: int
+
+
+@dataclass(frozen=True)
 class Observation:
     """A realised daily maximum temperature known to its bucket."""
 
@@ -159,6 +177,7 @@ class Evidence:
         *,
         markets: dict[str, list[BinaryMarket]] | None = None,
         cache: dict[str, Any] | None = None,
+        live: list[BinaryMarket] | None = None,
     ) -> None:
         if cutoff.tzinfo is None:
             raise ValueError("cutoff must be timezone-aware")
@@ -171,18 +190,14 @@ class Evidence:
         self._highs: dict[str, dict[str, list[Observation]]] = cache.setdefault(
             "highs", {}
         )
+        self._cache = cache
+        # Markets trading now (the paper loop's capture): their prices are
+        # the present, so they answer `event_prices` for open events.
+        self._live = live or []
 
     def at(self, cutoff: datetime) -> Evidence:
         """A new view at another cutoff sharing this object's loaded indexes."""
-        return Evidence(
-            cutoff,
-            self.root,
-            cache={
-                "markets": self._markets,
-                "results": self._results,
-                "highs": self._highs,
-            },
-        )
+        return Evidence(cutoff, self.root, cache=self._cache, live=self._live)
 
     def _resolved(self, domain: str) -> list[BinaryMarket]:
         if domain not in self._markets:
@@ -190,27 +205,113 @@ class Evidence:
             self._markets[domain] = read_markets(path) if path.exists() else []
         return self._markets[domain]
 
+    def _history(self, domain: str, market_id: str) -> list[tuple[datetime, float]]:
+        """A market's stored price series, read once per process view."""
+        cache = self._cache.setdefault("histories", {})
+        key = f"{domain}/{market_id}"
+        if key not in cache:
+            path = self.root / "histories" / domain / f"{market_id}.parquet"
+            points = []
+            if path.exists():
+                for row in read_history(path):
+                    stamp = parse_time(row["timestamp"])
+                    if stamp is not None:
+                        points.append((stamp, row["implied_probability"]))
+            cache[key] = points
+        return cache[key]
+
+    def _price_before(
+        self, domain: str, market_id: str, when: datetime
+    ) -> float | None:
+        price = None
+        for stamp, p in self._history(domain, market_id):
+            if stamp > when:
+                break
+            price = p
+        return price
+
     def price_at(self, market: BinaryMarket) -> float | None:
         """Last stored price of the first outcome at or before the cutoff."""
         if market.domain is None or market.market_id is None:
             return None
-        path = self.root / "histories" / market.domain / f"{market.market_id}.parquet"
-        if not path.exists():
-            return None
-        price = None
-        for row in read_history(path):
-            stamp = parse_time(row["timestamp"])
-            if stamp is None or stamp > self.cutoff:
-                break
-            price = row["implied_probability"]
-        return price
+        return self._price_before(market.domain, market.market_id, self.cutoff)
 
-    def results(self, domain: str) -> list[MatchResult]:
-        """Settled match results in ``domain`` known before the cutoff, in order."""
-        if domain not in self._results:
+    def event_prices(
+        self, market: BinaryMarket
+    ) -> list[tuple[BinaryMarket, float | None]]:
+        """The market's event, itself included, each with its price at the
+        cutoff; the labels are removed, since a sibling's outcome is later."""
+        if market.event_id is None or market.domain is None:
+            return []
+        live = [m for m in self._live if m.event_id == market.event_id]
+        if live:
+            return [(_unlabelled(m), m.p_yes) for m in live]
+        siblings = [
+            m for m in self._resolved(market.domain) if m.event_id == market.event_id
+        ]
+        return [(_unlabelled(m), self.price_at(m)) for m in siblings]
+
+    def settled_prices(
+        self, domain: str, hours: float
+    ) -> list[tuple[datetime, float, int]]:
+        """(settled, price ``hours`` before settling, label) for the domain's
+        markets settled before the cutoff that had a price then."""
+        cache = self._cache.setdefault("settled_prices", {})
+        key = (domain, hours)
+        if key not in cache:
+            rows = []
+            for m in self._resolved(domain):
+                when = settled_at(m)
+                if when is None or m.resolved_outcome is None or m.market_id is None:
+                    continue
+                q = self._price_before(
+                    domain, m.market_id, when - timedelta(hours=hours)
+                )
+                if q is not None:
+                    rows.append((when, q, m.resolved_outcome))
+            rows.sort(key=lambda r: r[0])
+            cache[key] = rows
+        rows = cache[key]
+        return rows[: bisect_left([r[0] for r in rows], self.cutoff)]
+
+    def scores(self, domain: str) -> list[MatchScore]:
+        """Final scores of matches settled before the cutoff, from the
+        venue's resolved exact-score markets, in order."""
+        cache = self._cache.setdefault("scores", {})
+        if domain not in cache:
+            from vp.domains import DOMAINS
+
+            reader = DOMAINS.get(domain)
+            seen: dict[tuple[str, str, str], MatchScore] = {}
+            for m in self._resolved(domain):
+                if m.resolved_outcome != 1:
+                    continue
+                p = m.parsed
+                if p.get("kind") != "exact_score" and reader is not None:
+                    p = reader.read(m.question, m.event_title) or {}
+                if p.get("kind") != "exact_score" or p.get("period") != "full":
+                    continue
+                score = p.get("score", "")
+                when = settled_at(m)
+                if "-" not in score or when is None:
+                    continue
+                goals_a, goals_b = (int(x) for x in score.split("-"))
+                a, b = canonical(p["team_a"]), canonical(p["team_b"])
+                seen[(a, b, when.date().isoformat())] = MatchScore(
+                    when, a, b, goals_a, goals_b
+                )
+            cache[domain] = sorted(seen.values(), key=lambda s: s.settled)
+        rows = cache[domain]
+        return rows[: bisect_left([s.settled for s in rows], self.cutoff)]
+
+    def results(self, domain: str, *, maps: bool = False) -> list[MatchResult]:
+        """Settled match results in ``domain`` known before the cutoff, in
+        order: whole matches, or with ``maps`` single maps only."""
+        key = f"{domain}:maps" if maps else domain
+        if key not in self._results:
             out: list[MatchResult] = []
             for m in self._resolved(domain):
-                if m.parsed.get("kind") != "match" or "map" in m.parsed:
+                if m.parsed.get("kind") != "match" or ("map" in m.parsed) != maps:
                     continue
                 when = settled_at(m)
                 if when is None or m.resolved_outcome is None:
@@ -228,8 +329,8 @@ class Evidence:
                     )
                 )
             out.sort(key=lambda r: r.settled)
-            self._results[domain] = out
-        rows = self._results[domain]
+            self._results[key] = out
+        rows = self._results[key]
         return rows[: bisect_left([r.settled for r in rows], self.cutoff)]
 
     def daily_highs(self, city: str, statistic: str = "highest") -> list[Observation]:
@@ -255,6 +356,12 @@ class Evidence:
                 )
             cities[key] = sorted(seen.values(), key=lambda o: o.day)
         return [o for o in cities[key] if o.day < self.cutoff.date()]
+
+
+def _unlabelled(m: BinaryMarket) -> BinaryMarket:
+    return replace(
+        m, resolved_outcome=None, winning_outcome=None, resolution_state="unknown"
+    )
 
 
 def _winner(m: BinaryMarket) -> str | None:

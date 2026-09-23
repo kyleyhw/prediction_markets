@@ -163,9 +163,9 @@ def validate(
 ) -> list[str]:
     """What is wrong with the spec, as plain sentences; empty when it may run."""
     if forecasters is None:
-        from vp.forecast import FORECASTER_NAMES
+        from vp.forecast import forecaster_names
 
-        forecasters = FORECASTER_NAMES
+        forecasters = forecaster_names()
     known = set(forecasters)
     problems: list[str] = []
     sel, belief, rule, sizing = spec.selector, spec.belief, spec.rule, spec.sizing
@@ -293,6 +293,19 @@ FORECASTER_NAMES_PLAIN = {
     "llm": "an AI model reading the evidence",
 }
 
+
+def plain_name(forecaster: str) -> str:
+    """A forecaster's name in words: a signal by its title."""
+    if forecaster.startswith("signal:"):
+        from vp.signals.registry import load
+
+        try:
+            return f"the signal “{load(forecaster.removeprefix('signal:')).meta.title}”"
+        except ValueError:
+            return forecaster
+    return FORECASTER_NAMES_PLAIN.get(forecaster, forecaster)
+
+
 _OPS = {
     "is": "is",
     "is_not": "is not",
@@ -379,7 +392,7 @@ def _render_belief(spec: Spec) -> str:
     b = spec.belief
     if spec.rule.kind == "follow":
         return "Belief: none. It follows the market's own prices and makes no forecast."
-    text = "Belief: " + FORECASTER_NAMES_PLAIN.get(b.forecaster, b.forecaster)
+    text = "Belief: " + plain_name(b.forecaster)
     if b.forecaster != "llm":
         return text + "."
     from vp.forecast.llm import TIERS

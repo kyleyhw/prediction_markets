@@ -26,11 +26,11 @@ from vp.domains import DOMAINS, Domain
 from vp.domains.pack import load as load_pack
 from vp.forecast.llm import usage_usd
 from vp.strategy.spec import (
-    FORECASTER_NAMES_PLAIN,
     KIND_NAMES,
     Caps,
     Spec,
     diff,
+    plain_name,
     render,
     validate,
 )
@@ -167,7 +167,7 @@ def _context(
         if fields:
             parts.append(fields)
     parts.append("\nForecasters:")
-    parts += [f"- {n}: {FORECASTER_NAMES_PLAIN.get(n, n)}" for n in forecasters]
+    parts += [f"- {n}: {plain_name(n)}" for n in forecasters]
     parts.append(
         "\nDefaults: "
         + Spec.model_validate(
@@ -243,9 +243,9 @@ def compile_spec(
     a workspace's own pack texts by domain.
     """
     if forecasters is None:
-        from vp.forecast import FORECASTER_NAMES
+        from vp.forecast import forecaster_names
 
-        forecasters = FORECASTER_NAMES
+        forecasters = forecaster_names()
     names = list(forecasters)
     system = (
         SYSTEM + "\n" + _context(domains, names, caps, memory, current, packs or {})

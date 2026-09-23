@@ -17,8 +17,21 @@ from vp.forecast.stats import Elo
 FORECASTER_NAMES = ("market", "constant", "climatology", "elo", "llm")
 
 
+def forecaster_names() -> tuple[str, ...]:
+    """Every name a belief may use: the forecasters above and each
+    registered signal as ``signal:<id>`` (docs/signals.md)."""
+    from vp.signals.registry import ids
+
+    return FORECASTER_NAMES + tuple(f"signal:{i}" for i in ids())
+
+
 def make_forecaster(name: str, domain: str, **options: Any) -> Forecaster:
     """Build a forecaster by name for a domain; ``llm`` options pass through."""
+    if name.startswith("signal:"):
+        from vp.signals.base import SignalForecaster
+        from vp.signals.registry import load
+
+        return SignalForecaster(load(name.removeprefix("signal:")))
     if name == "market":
         return MarketPrice()
     if name == "constant":
@@ -26,7 +39,10 @@ def make_forecaster(name: str, domain: str, **options: Any) -> Forecaster:
     if name == "climatology":
         return Climatology()
     if name == "elo":
-        return Elo(domain, home=60.0 if domain == "epl" else 0.0)
+        from vp.domains import DOMAINS
+
+        home = DOMAINS[domain].home_first if domain in DOMAINS else False
+        return Elo(domain, home=60.0 if home else 0.0)
     if name == "llm":
         from vp.forecast.llm import LLMForecaster
 
@@ -36,6 +52,7 @@ def make_forecaster(name: str, domain: str, **options: Any) -> Forecaster:
 
 __all__ = [
     "FORECASTER_NAMES",
+    "forecaster_names",
     "Evidence",
     "Forecast",
     "Forecaster",
