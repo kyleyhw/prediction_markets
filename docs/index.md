@@ -38,6 +38,8 @@ Polymarket, scored by backtest and paper trading before any live execution. The
 - [Interface](interface.md): the browser app for everyone: guided start,
   home, market cards, strategies, backtests, Learn and Settings in Simple
   and Detailed reading levels; words, formats and accessibility.
+- [Usability sessions](usability.md): the protocol for watching people
+  new to prediction markets use the app (Phase 14, task 49).
 - [Browser dashboard](ui.md): the Phase 12 page the interface grew from,
   and `vp ui`, the developer's local view over a data root.
 - [Security design](security.md): the proposed design for live execution

@@ -647,8 +647,13 @@ interval. One backend, two reading levels.
       a palette measured at AA. The axe-core audit (WCAG 2.0 to 2.2, A and
       AA) found no violations on 78 page renders in both levels, both
       themes and both servers (`docs/interface.md`, "Verified").
+    - Landed later that day: an automated stand-in for the screen reader,
+      the accessibility tree and keyboard order of every view in both
+      levels, read through; it found Home's main figure outside the
+      heading outline and a 1,236-row table on Detailed Strategies, both
+      fixed (`tests/reports/phase14_friendly.md`).
     - Outstanding: a pass with a real screen reader, which an automated
-      audit does not replace.
+      audit does not replace; it is part of the usability sessions (49).
 48. [completed] Terms of use, age gate, jurisdiction notice, privacy notice
     (export and delete per workspace), and the first-screen statement that
     this is a tool for building and testing strategies, not advice.
@@ -657,10 +662,13 @@ interval. One backend, two reading levels.
       ticked before a sign-in link is spent, a consent screen when the
       terms change, account deletion that reaches the object store and the
       archived months. The texts are drafts until legal review (flag F18).
-49. [pending] Usability sessions with at least three people who have never
+49. [pending, needs the deploy] Usability sessions with at least three people who have never
     used a prediction market, the fixes they produce, and the Phase 14
     report (task completion, time to first strategy watched, words that
     confused).
+    - Ready 2026-09-23: the protocol, fixed in advance (`docs/usability.md`);
+      the Phase 14 report covers everything else and gains the sessions'
+      section when they run.
 
 ## Phase 15: Research sessions and strategies from conversation
 Design: `docs/strategies.md`, written and agreed before any code; it fixes
