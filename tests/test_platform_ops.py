@@ -78,3 +78,19 @@ def test_a_dead_job_can_be_retried_and_a_kind_drained(
     ops.set_drain(pg_owner, "leakage", False)
     assert worker.run_once()
     assert (ops.show_job(pg_owner, job) or {}).get("state") == "succeeded"
+
+
+def test_a_data_refresh_does_what_the_daily_build_does(pg_owner) -> None:
+    pg_owner.execute(
+        "insert into schedules (name, kind, payload, cron, timezone, next_run_at) "
+        "values ('dataset-testland', 'dataset', "
+        "'{\"domain\": \"testland\", \"history_limit\": 7}', '0 4 * * *', "
+        "'UTC', now() + interval '1 day')"
+    )
+    ids = ops.refresh(pg_owner, "testland", ("dataset",))
+    payload = pg_owner.execute(
+        "select payload from jobs where id = %s", (ids[0],)
+    ).fetchone()[0]
+    pg_owner.execute("delete from jobs where id = %s", (ids[0],))
+    pg_owner.execute("delete from schedules where name = 'dataset-testland'")
+    assert payload["history_limit"] == 7

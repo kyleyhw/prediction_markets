@@ -196,9 +196,15 @@ def refresh(
     stamp = datetime.now(tz=UTC).strftime("%Y%m%dT%H%M%S")
     ids = []
     for kind in kinds:
+        # A dataset refresh does what the domain's daily build does.
+        scheduled = conn.execute(
+            "select payload from schedules where workspace_id is null and name = %s",
+            (f"{kind}-{domain}",),
+        ).fetchone()
+        payload = scheduled[0] if scheduled else {"domain": domain}
         row = conn.execute(
             "select vp_jobs_enqueue_platform(%s, %s, %s, 50, now())",
-            (kind, Jsonb({"domain": domain}), f"admin:{kind}:{domain}:{stamp}"),
+            (kind, Jsonb(payload), f"admin:{kind}:{domain}:{stamp}"),
         ).fetchone()
         if row and row[0]:
             ids.append(row[0])
