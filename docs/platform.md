@@ -369,11 +369,12 @@ CLOB market WebSocket, 400 to a socket, with the custom-feature flag and a
 `PING` every ten seconds; new tokens fill existing sockets before new ones
 open, and a dropped socket reconnects with exponential backoff.
 
-Books are kept in memory. Once a minute every token whose best bid or ask
-moved is written to `quotes` (one row per token per minute, updated in
-place; a change of size alone, which most books see every minute, writes
-nothing); a
-market someone holds is written on every change of its top of book. Every
+Books are kept in memory. Every five minutes each market whose best bid or
+ask moved has its first outcome written to `quotes` (the second outcome
+trades on the same book, mirrored, and a change of size alone writes
+nothing); a market someone holds is written on every change of its top of
+book. Writing every token every minute, as first built, came to 26
+million rows a day for the 18,600 tokens tracked. Every
 fifteen minutes each domain's snapshot is written from memory in the
 engine's own format to the object store, and `NOTIFY vp_data` tells the
 web processes to refresh their caches. Resolutions come from the
