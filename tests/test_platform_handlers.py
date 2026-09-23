@@ -175,3 +175,20 @@ def test_platform_maintenance_jobs_run(app_pool, pg_owner, services: Services) -
         job_id = jobs.enqueue_platform(app_pool, kind, idempotency_key=f"test-{kind}")
         run_all(app_pool, services, (kind,))
         assert job_row(pg_owner, job_id)["state"] == "succeeded"
+
+
+def test_a_dataset_build_keeps_each_history_and_never_fetches_one_twice(
+    app_pool, pg_owner, services: Services
+) -> None:
+    pg_owner.execute("delete from jobs where idempotency_key like 'test-%%'")
+    added = []
+    for n in (1, 2):
+        job_id = jobs.enqueue_platform(
+            app_pool, "dataset", {"domain": "epl"}, idempotency_key=f"test-ds-{n}"
+        )
+        run_all(app_pool, services, ("dataset",))
+        row = job_row(pg_owner, job_id)
+        assert row["state"] == "succeeded", row["error"]
+        added.append(row["result"]["histories_added"])
+    assert added[0] > 0 and added[1] == 0
+    assert len(services.store.keys("shared/histories/epl/")) >= added[0]

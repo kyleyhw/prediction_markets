@@ -14,6 +14,9 @@ name: vibe-predict
 x-app: &app
   image: ${VP_IMAGE:-vibe-predict:dev}
   restart: unless-stopped
+  # A worker told to stop finishes its running jobs for up to its lease
+  # (60 s) before it exits; the default 10 s would cut every job short.
+  stop_grace_period: 90s
   environment: &env
     VP_ENV: development
     VP_DATABASE_URL: postgresql://vp_app:${VP_APP_PASSWORD:-vp-app-dev}@${VP_DB_HOST:-postgres}:${VP_DB_PORT:-5432}/vp  # pragma: allowlist secret

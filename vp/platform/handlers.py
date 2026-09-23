@@ -438,10 +438,22 @@ def dataset(ctx: JobContext) -> dict[str, Any]:
     domain = DOMAINS[str(ctx.job.payload["domain"])]
     from vp.markets.dataset import build_resolved_dataset
 
+    prefix = f"{SHARED}/histories/{domain.name}/"
+    stored = set(svc.store.keys(prefix))
+    added = 0
+
+    # Each history goes to the store as soon as it is written: a build cut
+    # short by a restart keeps what it fetched, and its retry skips those.
+    def keep(path: Path) -> None:
+        nonlocal added
+        svc.store.put_file(prefix + path.name, path)
+        added += 1
+        if added % 50 == 0:
+            ctx.progress(0.5, f"{added} price histories fetched")
+
     with tempfile.TemporaryDirectory(dir=svc.work_dir) as tmp:
         root = Path(tmp)
-        prefix = f"{SHARED}/histories/{domain.name}/"
-        stored = set(svc.store.keys(prefix))
+        ctx.progress(0.0, "finding settled markets")
         report = build_resolved_dataset(
             domain,
             svc.source(),
@@ -452,6 +464,7 @@ def dataset(ctx: JobContext) -> dict[str, Any]:
             have_history=frozenset(
                 k.removeprefix(prefix).removesuffix(".parquet") for k in stored
             ),
+            on_history=keep,
         )
         stamp = _stamp()
         publish_dataset(
@@ -460,12 +473,6 @@ def dataset(ctx: JobContext) -> dict[str, Any]:
             root / "markets" / domain.name / "resolved.parquet",
             stamp,
         )
-        added = 0
-        for path in sorted((root / "histories" / domain.name).glob("*.parquet")):
-            key = f"{SHARED}/histories/{domain.name}/{path.name}"
-            if key not in stored:
-                svc.store.put_file(key, path)
-                added += 1
     if svc.notify:
         svc.notify("vp_data", f"dataset:{domain.name}")
     return {"version": stamp, "histories_added": added, "summary": report.summary()}

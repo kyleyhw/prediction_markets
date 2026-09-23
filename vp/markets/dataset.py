@@ -16,6 +16,7 @@ Layout under the data root::
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -73,6 +74,7 @@ def build_resolved_dataset(
     with_history: bool = True,
     history_limit: int | None = None,
     have_history: frozenset[str] = frozenset(),
+    on_history: Callable[[Path], None] | None = None,
 ) -> BuildReport:
     """Discover closed markets in ``domain``, keep the labelled ones, persist.
 
@@ -88,6 +90,9 @@ def build_resolved_dataset(
             that ended most recently; ``None`` for all.
         have_history: Keys of markets whose history is already stored. A
             settled market's history no longer changes, so these are skipped.
+        on_history: Called with each history file as it is written, so a
+            caller can keep it before the build ends (a restarted build
+            then resumes rather than starts over).
     """
     report = BuildReport(domain=domain.name)
     labelled: list[BinaryMarket] = []
@@ -133,12 +138,15 @@ def build_resolved_dataset(
                 report.histories_empty += 1
             elif isinstance(bar, int):
                 report.histories_by_bar[bar] = report.histories_by_bar.get(bar, 0) + 1
+            path = root / "histories" / domain.name / f"{key}.parquet"
             write_history(
-                root / "histories" / domain.name / f"{key}.parquet",
+                path,
                 market_id=market.market_id,
                 clob_token_id=market.outcomes[0].clob_token_id,
                 outcome=market.outcomes[0].name,
                 points=points,
                 bar_minutes=bar if isinstance(bar, int) else None,
             )
+            if on_history is not None:
+                on_history(path)
     return report
