@@ -113,6 +113,7 @@ class Settings:
     s3_secret_key: str | None = field(default=None, repr=False)
     cache_dir: Path | None = None
     anthropic_api_key: str | None = field(default=None, repr=False)
+    open_meteo_key: str | None = field(default=None, repr=False)
     master_key: str | None = field(default=None, repr=False)
     telemetry: Telemetry = Telemetry.NONE
     otlp_endpoint: str | None = None
@@ -193,6 +194,7 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
         s3_secret_key=_optional(source, "S3_SECRET_KEY"),
         cache_dir=Path(c) if (c := _optional(source, "CACHE_DIR")) else None,
         anthropic_api_key=_optional(source, "ANTHROPIC_API_KEY"),
+        open_meteo_key=_optional(source, "OPEN_METEO_KEY"),
         master_key=_optional(source, "MASTER_KEY"),
         telemetry=_telemetry(source),
         otlp_endpoint=_optional(source, "OTLP_ENDPOINT"),

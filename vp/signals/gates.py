@@ -27,6 +27,7 @@ from pathlib import Path
 from typing import Any
 
 from vp.domains import DOMAINS
+from vp.forecast.archive import write_capture
 from vp.forecast.evidence import Evidence
 from vp.markets.schema import BinaryMarket, Outcome
 from vp.markets.store import write_history, write_markets
@@ -112,6 +113,7 @@ def metadata(signal: Signal) -> list[str]:
 # ------------------------------------------------------------------ fixtures
 
 CUTOFF = datetime(2026, 3, 1, tzinfo=UTC)
+STATION_URL = "https://www.weather.gov/wrh/timeseries?site=ktst"
 TEAMS = ("Alpha FC", "Bravo FC", "Charlie FC", "Delta FC")
 
 
@@ -341,6 +343,7 @@ def build(root: Path, *, sentinel: bool = False) -> Fixture:
             end_date=end,
             closed_time=end,
             resolved_outcome=1,
+            resolution_source=STATION_URL,
             parsed={
                 "kind": "daily_temperature",
                 "statistic": "highest",
@@ -362,6 +365,7 @@ def build(root: Path, *, sentinel: bool = False) -> Fixture:
                 domain=weather,
                 event_id="wtarget",
                 end_date=target_end,
+                resolution_source=STATION_URL,
                 status="active",
                 trading_closed=False,
                 resolution_state="unresolved",
@@ -411,7 +415,75 @@ def build(root: Path, *, sentinel: bool = False) -> Fixture:
             outcome="Yes",
             points=points,
         )
+    _archive(root, weather, sentinel)
     return Fixture(root, targets)
+
+
+def _archive(root: Path, weather: str, sentinel: bool) -> None:
+    """Archive captures: forecasts one degree below each observed day, as
+    their provider issued them; an ensemble and headlines captured just
+    before the cutoff. The sentinel adds forecasts and an ensemble at 40
+    degrees, and headlines, that became visible only after it."""
+    first = (CUTOFF - timedelta(days=250)).date()
+    runs = []
+    for k in range(252):
+        day = first + timedelta(days=k)
+        last = datetime(day.year, day.month, day.day, 23, tzinfo=UTC)
+        for lead in (1, 2, 3):
+            runs.append(
+                {
+                    "station": "KTST",
+                    "day": day.isoformat(),
+                    "lead_days": lead,
+                    "tmax": float(18 + k % 5 - 1) if day < CUTOFF.date() else 19.0,
+                    "tmin": 5.0,
+                    "available_at": (last - timedelta(days=lead, hours=-6)).isoformat(),
+                }
+            )
+    if sentinel:
+        runs += [
+            {
+                "station": "KTST",
+                "day": (CUTOFF.date() + timedelta(days=d)).isoformat(),
+                "lead_days": 0,
+                "tmax": 40.0,
+                "tmin": 30.0,
+                "available_at": (CUTOFF + timedelta(hours=d)).isoformat(),
+            }
+            for d in (1, 2)
+        ]
+    write_capture(
+        root, "open_meteo_runs", runs, provenance={}, now=CUTOFF + timedelta(days=30)
+    )
+    target = (CUTOFF.date() + timedelta(days=1)).isoformat()
+    for when, value in ((CUTOFF - timedelta(hours=2), 20.0),) + (
+        ((CUTOFF + timedelta(hours=1), 40.0),) if sentinel else ()
+    ):
+        members = [
+            {
+                "station": "KTST",
+                "day": target,
+                "member": i,
+                "tmax": value + i % 3,
+                "tmin": 5.0,
+            }
+            for i in range(20)
+        ]
+        write_capture(root, "open_meteo_ensemble", members, provenance={}, now=when)
+        write_capture(
+            root,
+            "gdelt",
+            [
+                {
+                    "domain": weather,
+                    "title": f"Heat at {value}",
+                    "url": "u",
+                    "source": "s",
+                }
+            ],
+            provenance={},
+            now=when,
+        )
 
 
 def fixtures(workdir: Path) -> tuple[Fixture, Fixture]:

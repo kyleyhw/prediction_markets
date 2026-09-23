@@ -21,6 +21,10 @@ accessor filters what it returns to information known before $t$:
 * ``settled_prices``: for markets settled before $t$, the price each had a
   fixed time before its own settlement, and its label: what a calibration
   of the market price is fitted on (Phase 16).
+* ``nwp``, ``ensemble``, ``headlines``: rows of the evidence archive
+  visible before $t$ (``vp.forecast.archive``, Phase 17): the point-in-time
+  weather forecasts and the ensemble members at the station a market names,
+  and the headlines captured for a domain.
 
 Using the dataset as its own evidence source is a deliberate choice for the
 backtest: it is complete for every market in the set, it is free, and it
@@ -37,6 +41,8 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
+from vp.domains.weather import station
+from vp.forecast.archive import Archive
 from vp.markets.schema import BinaryMarket
 from vp.markets.store import read_history, read_markets
 
@@ -122,6 +128,24 @@ class MatchScore:
 
 
 @dataclass(frozen=True)
+class NwpDay:
+    """A day's forecast extremes (°C) at a station, issued ``lead_days`` ahead."""
+
+    day: date
+    lead_days: int
+    tmax: float
+    tmin: float
+
+
+@dataclass(frozen=True)
+class Headline:
+    title: str
+    url: str
+    source: str
+    captured_at: datetime
+
+
+@dataclass(frozen=True)
 class Observation:
     """A realised daily maximum temperature known to its bucket."""
 
@@ -191,6 +215,7 @@ class Evidence:
             "highs", {}
         )
         self._cache = cache
+        self._archive: Archive = cache.setdefault("archive", Archive(root))
         # Markets trading now (the paper loop's capture): their prices are
         # the present, so they answer `event_prices` for open events.
         self._live = live or []
@@ -366,6 +391,49 @@ class Evidence:
                 )
             cities[key] = sorted(seen.values(), key=lambda o: o.day)
         return [o for o in cities[key] if o.day < self.cutoff.date()]
+
+    def nwp(self, market: BinaryMarket) -> list[NwpDay]:
+        """Point-in-time forecasts at the market's station, by day and lead."""
+        code = station(market.resolution_source)
+        if code is None:
+            return []
+        return [
+            NwpDay(date.fromisoformat(r["day"]), r["lead_days"], r["tmax"], r["tmin"])
+            for r in self._archive.rows("open_meteo_runs", self.cutoff)
+            if r["station"] == code
+        ]
+
+    def ensemble(self, market: BinaryMarket) -> list[tuple[float, float | None]]:
+        """The members (max, min °C) for the market's day from the newest
+        capture before the cutoff; empty if none covers it."""
+        code, day = station(market.resolution_source), market_date(market)
+        if code is None or day is None:
+            return []
+        rows = [
+            r
+            for r in self._archive.rows("open_meteo_ensemble", self.cutoff)
+            if r["station"] == code and r["day"] == day.isoformat()
+        ]
+        if not rows:
+            return []
+        newest = max(r["captured_at"] for r in rows)
+        return [(r["tmax"], r["tmin"]) for r in rows if r["captured_at"] == newest]
+
+    def headlines(self, domain: str, hours: float = 24.0) -> list[Headline]:
+        """Headlines captured for ``domain`` in the ``hours`` before the cutoff,
+        newest first, each title once."""
+        since = self.cutoff - timedelta(hours=hours)
+        seen: set[str] = set()
+        out = []
+        for r in reversed(self._archive.rows("gdelt", self.cutoff)):
+            if r["_visible"] < since:
+                break
+            if r.get("domain") == domain and r.get("title") not in seen:
+                seen.add(r["title"])
+                out.append(
+                    Headline(r["title"], r["url"], r.get("source") or "", r["_visible"])
+                )
+        return out
 
 
 def _unlabelled(m: BinaryMarket) -> BinaryMarket:

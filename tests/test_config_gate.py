@@ -27,7 +27,12 @@ CONFIG = PACKAGE / "platform" / "config.py"
 #: `run.py` writes `PROMETHEUS_MULTIPROC_DIR` for the web processes `vp
 #: serve --workers` starts; it reads nothing, and the children read the
 #: variable through `config.py` and prometheus_client.
+#:
+#: `cli.py` reads the Open-Meteo key for `vp evidence`, an engine command
+#: that must not load the platform; the platform reads the same variable
+#: through `config.py` (docs/evidence.md).
 ALLOWED = {
+    PACKAGE / "cli.py": 'os.environ.get("VP_OPEN_METEO_KEY")',
     PACKAGE / "venues" / "_http.py": "def positive_env_float",
     PACKAGE / "live" / "controls.py": "VP_STOP_FILE",
     PACKAGE / "platform" / "run.py": "os.environ[METRICS_DIR] = metrics",

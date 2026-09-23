@@ -71,6 +71,7 @@ class PolymarketSource:
                     event_title=title,
                     tags=tags,
                     fetched_at=fetched_at,
+                    resolution_source=event.get("resolution_source") or None,
                 )
             except ValueError as exc:
                 logger.debug("skipping market %s: %s", record.get("market_id"), exc)

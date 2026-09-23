@@ -30,6 +30,7 @@ x-app: &app
     VP_METRICS_TOKEN: ${VP_METRICS_TOKEN:-vp-metrics-dev}  # pragma: allowlist secret
     VP_MASTER_KEY: ${VP_MASTER_KEY:-}
     VP_ANTHROPIC_API_KEY: ${VP_ANTHROPIC_API_KEY:-}
+    VP_OPEN_METEO_KEY: ${VP_OPEN_METEO_KEY:-}
   volumes:
     - data:/data
   depends_on:

@@ -453,6 +453,9 @@ def normalize_market(raw: dict[str, Any]) -> dict[str, Any]:
         "one_day_probability_change": _to_float(raw.get("oneDayPriceChange")),
         "market_type": raw.get("sportsMarketType"),
         "description": raw.get("description"),
+        "resolution_source": raw.get("resolutionSource") or None,
+        "neg_risk": bool(raw.get("negRisk")),
+        "neg_risk_market_id": raw.get("negRiskMarketID") or None,
         **_fee_terms(raw),
     }
 

@@ -14,6 +14,9 @@ Subcommands:
   leakage check, all recorded in a hash-chained ledger.
 * ``vp signals list|check|bench``: the signal library, its gates, and each
   signal against the market on a domain (docs/signals.md).
+* ``vp evidence weather-runs|ensemble``: fill the evidence archive in the
+  data root from the point-in-time weather source, and capture the
+  ensemble for open markets (docs/evidence.md).
 * ``vp strategy check|diff|preview|backtest``: a strategy spec (a JSON
   file): its problems, plain-language rendering and hash; what changed
   between two versions; what it would touch and cost; its backtest on each
@@ -147,6 +150,19 @@ def main() -> None:
     sbench.add_argument(
         "--blend", action="append", default=[], help="a blend, e.g. elo+platt_market"
     )
+
+    evid = sub.add_parser("evidence", help="the evidence archive")
+    evid_sub = evid.add_subparsers(dest="evidence_command", required=True)
+    runs = evid_sub.add_parser(
+        "weather-runs", help="point-in-time forecasts at every named station"
+    )
+    runs.add_argument("--root", type=Path, default=Path("data"))
+    runs.add_argument("--domain", default="weather")
+    runs.add_argument("--station", action="append", default=None)
+    runs.add_argument("--lead-in", type=int, default=90)
+    ens = evid_sub.add_parser("ensemble", help="the ensemble for open markets")
+    ens.add_argument("--root", type=Path, default=Path("data"))
+    ens.add_argument("--domain", default="weather")
 
     strat = sub.add_parser("strategy", help="a strategy spec (JSON)")
     strat_sub = strat.add_subparsers(dest="strategy_command", required=True)
@@ -340,6 +356,25 @@ def main() -> None:
         return
     if args.command == "strategy":
         _strategy(args)
+        return
+    if args.command == "evidence":
+        import os
+
+        from vp.sources import backfill
+
+        # The paid plan's key, when there is one (docs/evidence.md, F9).
+        key = os.environ.get("VP_OPEN_METEO_KEY") or None
+        if args.evidence_command == "weather-runs":
+            out = backfill.weather_runs(
+                args.root,
+                args.domain,
+                key=key,
+                lead_in=args.lead_in,
+                only=args.station,
+            )
+        else:
+            out = backfill.ensembles(args.root, args.domain, key=key)
+        print(json.dumps(out, indent=1))
         return
     if args.command == "backtest":
         config = BacktestConfig(

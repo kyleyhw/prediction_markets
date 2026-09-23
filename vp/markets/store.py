@@ -61,6 +61,9 @@ MARKET_SCHEMA = pa.schema(
         ("fee_exponent", pa.float64()),
         ("market_type", pa.string()),
         ("description", pa.string()),
+        ("resolution_source", pa.string()),
+        ("neg_risk", pa.bool_()),
+        ("neg_risk_market_id", pa.string()),
     ]
 )
 
@@ -121,6 +124,9 @@ def market_to_row(market: BinaryMarket) -> dict[str, Any]:
         "fee_exponent": market.fee_exponent,
         "market_type": market.market_type,
         "description": market.description,
+        "resolution_source": market.resolution_source,
+        "neg_risk": market.neg_risk,
+        "neg_risk_market_id": market.neg_risk_market_id,
     }
 
 
@@ -167,6 +173,9 @@ def market_from_row(row: dict[str, Any]) -> BinaryMarket:
         fee_exponent=row.get("fee_exponent") or 1.0,
         market_type=row.get("market_type"),
         description=row.get("description"),
+        resolution_source=row.get("resolution_source"),
+        neg_risk=bool(row.get("neg_risk")),
+        neg_risk_market_id=row.get("neg_risk_market_id"),
     )
 
 

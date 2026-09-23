@@ -16,7 +16,7 @@ makes a cache that never revalidates correct:
     shared/markets/<domain>/LATEST                     the current version's stamp
     shared/histories/<domain>/<file>.parquet           a settled market's prices
     shared/snapshots/<domain>/<stamp>.parquet          one capture of open markets
-    shared/evidence/<source>/<YYYY-MM-DD>/<stamp>.parquet
+    shared/evidence/<source>/<YYYY-MM-DD>/<stamp>.parquet   and <stamp>.json
     workspaces/<id>/runs/<run>/<file>                  a run's artifacts
     archive/<table>/<YYYYMM>.parquet                   an archived partition
 
@@ -230,7 +230,13 @@ class SharedRoot:
         self.store = store
         self.root = cache / "root"
 
-    def refresh(self, domains: Iterable[str], *, snapshots: int | None = 60) -> int:
+    def refresh(
+        self,
+        domains: Iterable[str],
+        *,
+        snapshots: int | None = 60,
+        evidence: bool = True,
+    ) -> int:
         """Sync the cache; returns how many files were downloaded.
 
         Args:
@@ -238,8 +244,10 @@ class SharedRoot:
             snapshots: keep only this many newest snapshots per domain in the
                 cache (None keeps every one), since views and cycles read the
                 recent ones.
+            evidence: also bring the evidence archive up to date, which
+                every forecaster may read (docs/evidence.md).
         """
-        fetched = 0
+        fetched = self._mirror(f"{SHARED}/evidence/", None) if evidence else 0
         for domain in domains:
             fetched += self._dataset(domain)
             fetched += self._mirror(f"{SHARED}/histories/{domain}/", None)
@@ -276,7 +284,7 @@ class SharedRoot:
         """A fresh data root for one job: the shared files linked in, the
         rest of the directory the job's own to write."""
         directory.mkdir(parents=True, exist_ok=True)
-        for name in ("markets", "histories", "snapshots"):
+        for name in ("markets", "histories", "snapshots", "evidence"):
             (self.root / name).mkdir(parents=True, exist_ok=True)
             link = directory / name
             if not link.exists():

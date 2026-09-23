@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -85,7 +86,8 @@ def test_each_source_writes_a_capture_with_its_time(
         pg_owner.execute(
             "insert into tracked_markets (market_id, domain, question, tokens, record) values "
             "('w1', 'weather', 'Will the highest temperature in Jinan be 25°C?', '{}', "
-            """'{"parsed": [["kind", "daily_temperature"], ["city", "Jinan"]]}'), """
+            """'{"parsed": [["kind", "daily_temperature"], ["city", "Jinan"]], """
+            """"resolution_source": "https://www.weather.gov/wrh/timeseries?site=zspd"}'), """
             "('e1', 'epl', 'Arsenal vs Chelsea', '{}', '{}')"
         )
     calls: list[str] = []
@@ -95,9 +97,27 @@ def test_each_source_writes_a_capture_with_its_time(
         return CANNED[host]
 
     monkeypatch.setattr(evidence, "_get", fake_get)
+    site = {"station": "ZSPD", "latitude": 31.1, "longitude": 121.8}
+    monkeypatch.setattr(evidence.om, "stations", lambda codes: {"ZSPD": site})
+    member = {"station": "ZSPD", "day": "2026-09-24", "member": 0, "tmax": 25.0}
+    monkeypatch.setattr(evidence.om, "ensemble", lambda s, key: ([member], {}))
+    final = {"station": "ZSPD", "day": "2026-09-20", "available_at": "2026-09-20Z"}
+    later = {"station": "ZSPD", "day": "2026-09-22", "available_at": "2999-01-01Z"}
+    monkeypatch.setattr(
+        evidence.om, "previous_runs", lambda s, a, b, key: ([final, later], {})
+    )
     store = LocalStore(tmp_path / "store")
     assert evidence.weather_cities(app_pool) == ["Jinan"]
-    results = {name: fn(store, app_pool) for name, fn in evidence.SOURCES.items()}
+    every = evidence.SOURCES | evidence.DAILY
+    results = {name: fn(store, app_pool, None) for name, fn in every.items()}
+    assert results["open_meteo_ensemble"]["rows"] == 1
+    assert results["open_meteo_runs"]["rows"] == 1  # the later one is not final
+    manifest = json.loads(
+        (tmp_path / "store" / results["open_meteo_runs"]["key"])
+        .with_suffix(".json")
+        .read_text()
+    )
+    assert manifest["visibility"] == "available_at" and manifest["rows"] == 1
     assert results["open_meteo"]["rows"] == 2
     assert results["openfootball"]["rows"] == 3
     football = pq.read_table(tmp_path / "store" / results["openfootball"]["key"])
@@ -120,21 +140,23 @@ def test_each_source_writes_a_capture_with_its_time(
     evidence.open_meteo(store, app_pool)
     assert calls == ["open_meteo"]
     (n,) = pg_owner.execute("select count(*) from evidence_captures").fetchone()
-    assert n == 5
+    assert n == 7
 
 
 def test_a_failing_source_does_not_stop_the_others(monkeypatch) -> None:
     from types import SimpleNamespace
 
-    def boom(store, pool):
+    def boom(store, pool, key):
         raise RuntimeError("source down")
 
     monkeypatch.setattr(
-        evidence, "SOURCES", {"bad": boom, "good": lambda s, p: {"rows": 1}}
+        evidence, "SOURCES", {"bad": boom, "good": lambda s, p, k: {"rows": 1}}
     )
     ctx = SimpleNamespace(
         job=SimpleNamespace(payload={}),
-        services=SimpleNamespace(store=None),
+        services=SimpleNamespace(
+            store=None, settings=SimpleNamespace(open_meteo_key=None)
+        ),
         pool=None,
         progress=lambda *a: None,
     )

@@ -20,6 +20,15 @@ their terms (flag F9) are in `docs/evidence.md`; in short:
   itself lists for every tracked market, from our own registry.
 * `gdelt`: a headline set per domain from the GDELT DOC API, free and open
   with attribution, at most one request every five seconds.
+* `open_meteo_ensemble`: the ECMWF ensemble at every station an open
+  market names (Phase 17, `vp.sources.open_meteo`).
+* `open_meteo_runs`, daily: the point-in-time forecasts of the last three
+  days at the same stations, each row with the latest moment it can have
+  existed (`available_at`); rows not yet final are left for tomorrow.
+
+Every capture has a manifest beside it (`<stamp>.json`: source, time,
+rows, SHA-256, licence, the request made), which the engine checks before
+reading (`vp.forecast.archive`).
 
 A source that fails does not stop the others; the job's result lists each.
 """
@@ -30,7 +39,7 @@ import json
 import logging
 import tempfile
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -38,9 +47,12 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from vp.domains import DOMAINS, Domain
+from vp.domains.weather import station
+from vp.forecast.archive import POINT_IN_TIME, manifest, parse_when
 from vp.markets.schema import utc_now_iso
 from vp.platform.jobs import JobContext
 from vp.platform.storage import SHARED, ObjectStore
+from vp.sources import open_meteo as om
 from vp.venues._http import set_rate, throttled_get_json
 
 logger = logging.getLogger(__name__)
@@ -78,11 +90,15 @@ def _store(
     source: str,
     domain: str | None,
     rows: list[dict[str, Any]],
+    provenance: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Write one capture and index it; returns what was written."""
+    """Write one capture with its manifest and index it."""
+    now = datetime.now(tz=UTC)
+    if source in POINT_IN_TIME:  # a value not yet final waits for a later run
+        rows = [r for r in rows if parse_when(r.get("available_at") or now) <= now]
     if not rows:
         return {"rows": 0}
-    now = datetime.now(tz=UTC)
+    rows = [{"captured_at": now.isoformat(), **r} for r in rows]
     stamp = utc_now_iso().replace("-", "").replace(":", "")
     key = f"{SHARED}/evidence/{source}/{now:%Y-%m-%d}/{stamp}.parquet"
     with tempfile.TemporaryDirectory() as tmp:
@@ -90,6 +106,10 @@ def _store(
         pq.write_table(pa.Table.from_pylist(rows), path)
         size = path.stat().st_size
         store.put_file(key, path)
+        meta = manifest(source, path, len(rows), now, provenance or {})
+        store.put_bytes(
+            key.removesuffix(".parquet") + ".json", json.dumps(meta).encode()
+        )
     with pool.connection() as conn:
         conn.execute(
             "insert into evidence_captures (source, domain, subject, captured_at, "
@@ -103,12 +123,12 @@ def _store(
 
 
 def weather_cities(pool: Any) -> list[str]:
-    """Cities the open weather markets name, from the market registry."""
+    """Cities the open markets name, from the market registry."""
     with pool.connection() as conn:
         rows = conn.execute(
             "select distinct p.value ->> 1 from tracked_markets t, "
             "jsonb_array_elements(t.record -> 'parsed') p "
-            "where t.domain = 'weather' and not t.closed and p.value ->> 0 = 'city'"
+            "where not t.closed and p.value ->> 0 = 'city'"
         ).fetchall()
     return sorted(r[0] for r in rows if r[0])
 
@@ -268,22 +288,74 @@ def gdelt(store: ObjectStore, pool: Any) -> dict[str, Any]:
     return _store(store, pool, "gdelt", None, rows)
 
 
-SOURCES: dict[str, Callable[[ObjectStore, Any], dict[str, Any]]] = {
-    "open_meteo": open_meteo,
-    "openfootball": openfootball,
-    "venue_schedules": venue_schedules,
-    "gdelt": gdelt,
+STATIONS_KEY = f"{SHARED}/evidence/stations.json"
+
+
+def named_stations(store: ObjectStore, pool: Any) -> dict[str, dict[str, Any]]:
+    """The stations open markets resolve on, with coordinates, cached."""
+    with pool.connection() as conn:
+        found = conn.execute(
+            "select distinct record ->> 'resolution_source' from tracked_markets "
+            "where not closed and record ->> 'resolution_source' is not null"
+        ).fetchall()
+    codes = sorted({c for (s,) in found if (c := station(s))})
+    raw = store.get_bytes(STATIONS_KEY)
+    known: dict[str, dict[str, Any]] = json.loads(raw) if raw else {}
+    missing = [c for c in codes if c not in known]
+    if missing:
+        known.update(om.stations(missing))
+        store.put_bytes(STATIONS_KEY, json.dumps(known, sort_keys=True).encode())
+    return {c: known[c] for c in codes if c in known}
+
+
+def open_meteo_ensemble(store: ObjectStore, pool: Any, key: str | None) -> dict:
+    rows: list[dict[str, Any]] = []
+    requests = []
+    for site in named_stations(store, pool).values():
+        got, request = om.ensemble(site, key=key)
+        rows += got
+        requests.append(request)
+    return _store(
+        store, pool, "open_meteo_ensemble", None, rows, {"requests": requests}
+    )
+
+
+def open_meteo_runs(store: ObjectStore, pool: Any, key: str | None) -> dict:
+    today = datetime.now(tz=UTC).date()
+    rows: list[dict[str, Any]] = []
+    requests = []
+    for site in named_stations(store, pool).values():
+        got, request = om.previous_runs(
+            site, today - timedelta(days=3), today - timedelta(days=1), key=key
+        )
+        rows += got
+        requests.append(request)
+    return _store(store, pool, "open_meteo_runs", None, rows, {"requests": requests})
+
+
+Collector = Callable[[ObjectStore, Any, str | None], dict[str, Any]]
+
+# Run hourly by the `evidence` schedule; `DAILY` by `evidence-daily`.
+SOURCES: dict[str, Collector] = {
+    "open_meteo": lambda s, p, k: open_meteo(s, p),
+    "openfootball": lambda s, p, k: openfootball(s, p),
+    "venue_schedules": lambda s, p, k: venue_schedules(s, p),
+    "gdelt": lambda s, p, k: gdelt(s, p),
+    "open_meteo_ensemble": open_meteo_ensemble,
 }
+DAILY: dict[str, Collector] = {"open_meteo_runs": open_meteo_runs}
 
 
 def collect_evidence(ctx: JobContext) -> dict[str, Any]:
     """The `evidence` job: run each collector, each failing on its own."""
     names = ctx.job.payload.get("sources") or list(SOURCES)
+    every = SOURCES | DAILY
+    key = ctx.services.settings.open_meteo_key
     results: dict[str, Any] = {}
     for i, name in enumerate(names):
         ctx.progress(i / max(len(names), 1), name)
         try:
-            results[name] = SOURCES[name](ctx.services.store, ctx.pool)
+            results[name] = every[name](ctx.services.store, ctx.pool, key)
         except Exception as exc:  # noqa: BLE001 - one source's failure is reported
             logger.exception("evidence source %s failed", name)
             results[name] = {"error": f"{type(exc).__name__}: {exc}"}

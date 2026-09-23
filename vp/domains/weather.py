@@ -56,6 +56,26 @@ _ANOMALY = re.compile(
 )
 
 
+_SITE = re.compile(r"[?&]site=([A-Za-z0-9]{4})\b")
+_WUNDERGROUND = re.compile(r"wunderground\.com/\S*?/([A-Z][A-Z0-9]{3})(?:[/?#]|$)")
+
+
+def station(source: str | None) -> str | None:
+    """The ICAO code of the station a market's resolution source names.
+
+    NOAA's time series (``weather.gov/wrh/timeseries?site=eglc``) and
+    Weather Underground's history pages (``.../history/daily/gb/london/EGLC``)
+    are the two forms the venue uses.
+    """
+    if not source:
+        return None
+    if m := _SITE.search(source):
+        return m[1].upper()
+    if m := _WUNDERGROUND.search(source):
+        return m[1]
+    return None
+
+
 def _bucket(text: str) -> dict[str, str] | None:
     text = text.strip()
     if m := _BETWEEN.match(text):

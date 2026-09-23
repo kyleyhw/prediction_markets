@@ -30,6 +30,8 @@ def _factories() -> dict[str, Callable[[], Signal]]:
         "climatology": weather.ClimatologySignal,
         "persistence": weather.PersistenceSignal,
         "bucket_normalised": weather.BucketNormalisedSignal,
+        "nwp_forecast": weather.NwpForecastSignal,
+        "nwp_ensemble": weather.NwpEnsembleSignal,
         "platt_market": market.CalibratedMarket,
         "isotonic_market": market.isotonic_market,
     }

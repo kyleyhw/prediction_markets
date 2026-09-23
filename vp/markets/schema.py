@@ -86,6 +86,11 @@ class BinaryMarket:
     fee_exponent: float = 1.0
     market_type: str | None = None  # the venue's `sportsMarketType`, if any
     description: str | None = None  # the venue's resolution rules, verbatim
+    resolution_source: str | None = None  # the URL the rules name, if any
+    # Negative risk: the event's outcomes are mutually exclusive and share
+    # one collateral pool; the id names that pool (docs/data_layer.md).
+    neg_risk: bool = False
+    neg_risk_market_id: str | None = None
 
     @property
     def p_yes(self) -> float | None:
@@ -111,6 +116,7 @@ def market_from_record(
     tags: tuple[str, ...],
     fetched_at: str,
     domain: str | None = None,
+    resolution_source: str | None = None,
 ) -> BinaryMarket:
     """Build a :class:`BinaryMarket` from a normalised client market record.
 
@@ -175,4 +181,7 @@ def market_from_record(
         fee_exponent=record.get("fee_exponent") or 1.0,
         market_type=record.get("market_type"),
         description=record.get("description"),
+        resolution_source=record.get("resolution_source") or resolution_source,
+        neg_risk=bool(record.get("neg_risk")),
+        neg_risk_market_id=record.get("neg_risk_market_id"),
     )
