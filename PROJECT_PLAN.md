@@ -308,7 +308,33 @@ criteria, a platform proven under load) that makes doing so at scale
 defensible. Decided on 2026-09-19: live execution is hosted only, so a
 strategy trades while the user's computer is closed; no operator-machine
 path is built. Every phase below is pending; the order is the order of
-work, and each phase begins only after the user has agreed to it.
+work, except where the build order below says otherwise, and each phase
+begins only after the user has agreed to it.
+
+**Build order, decided 2026-09-23: the interface first.** The owner asked
+for the browser interface as early as possible. It depends on less than
+the task numbering suggests: the web service and sign-in, and nothing
+else, because the market cards, P&L charts and paper views can read the
+snapshot files and the hash-chained ledger the engine already writes. So
+the work runs in this order, with the task numbers unchanged:
+
+1. **The app in a browser:** 28 (web service), 29 (sign-in, sessions and
+   tokens), 37 (the existing views on the service, and fees in paper
+   trading).
+2. **The friendly interface, pulled forward from Phase 14:** 39 to 47,
+   built on what the engine already writes. The owner's request is the
+   go-ahead for these tasks to start ahead of the rest of Phase 13.
+3. **The rest of Phase 13 behind it:** 30 to 33, 35 and 36 (the remaining
+   storage, jobs, the market-data service, the evidence collectors,
+   budgets, observability). The interface moves onto each as it lands:
+   market cards from snapshot files to the market-data service, a backtest
+   started from the page from a direct call to a job with progress.
+4. **At the end of the build:** the cloud deploy of task 34 (flag F16), then
+   48 and 49, which need a public host and real people, and the
+   host-dependent measurements of task 38.
+
+Phase 15 onward keeps its order. Everything runs on the development
+machine until step 4.
 
 Principles that hold for everything below:
 
@@ -515,7 +541,8 @@ interval. One backend, two reading levels.
 41. [pending] Brokerage-style home: play-money balance, its chart, what
     changed today, one next step; Detailed adds per-strategy P&L, exposure,
     skill and settled counts.
-42. [pending] Market cards from the market-data service: the question in
+42. [pending] Market cards, from the snapshot files first and from the
+    market-data service once it lands (build order, step 3): the question in
     plain words, "62% chance", closes in two days, and in Detailed the
     quotes, depth, parsed fields, forecasts and history.
 43. [pending] A P&L chart wherever money is shown, with the market-following
@@ -1210,10 +1237,12 @@ called done.
   **The cost:** the evidence archive of task 33 only accumulates while a
   collector runs continuously, and a development container is ephemeral,
   so without an always-on machine nothing is captured between sessions and
-  those weeks are lost to every future backtest. Proposed: accept the gap
-  for now, or run the collectors alone on any always-on machine the owner
-  has (a home server, a laptop with cron), writing the same files; the
-  owner decides.
+  those weeks are lost to every future backtest. Decided the same day:
+  everything runs on the development machine until the end, collectors
+  included, so evidence is captured only while a session is running and
+  the gaps between sessions are accepted. Running the collectors alone on
+  an always-on machine remains available at any time and writes the same
+  files.
 - **F15 (resolved 2026-09-19). Live execution is hosted only, and
   built last.** The owner decided that trades must execute while the
   user's computer is closed, so the operator-machine path of Phase 11

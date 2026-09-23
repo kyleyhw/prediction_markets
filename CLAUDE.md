@@ -86,8 +86,13 @@ Database-backed tests skip unless `VP_TEST_DATABASE_URL` and
 the end (flag F16): build and verify on a local stand-in (Postgres 16, an
 S3-compatible store such as MinIO, the same image under Docker Compose).
 The deploy must happen before Phase 21 at the latest and before any real
-user; the evidence archive (task 33) captures nothing between sessions
-without an always-on machine, which is the owner's call. Earlier,
+user. Everything runs on the development machine until then, collectors
+included, and the evidence gaps between sessions are accepted. **Build
+order (2026-09-23): the interface first**: tasks 28, 29 and 37, then the
+Phase 14 interface tasks 39 to 47 pulled forward (the user's request is
+their go-ahead), then the rest of Phase 13, with the deploy, 48, 49 and
+the host measurements last. See the build-order block at the top of
+Phases 13 to 23 in the plan. Earlier,
 the decisions each phase needed were taken on 2026-09-19 as proposed
 (Fly.io with Amsterdam as the first region, magic-link sign-in, quarter
 Kelly with a 5% cap and a 0.03 minimum edge, fees shown, session keys for
