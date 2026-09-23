@@ -97,6 +97,7 @@ p { margin: 0 0 12px; }
 .card.link { display: block; color: inherit; text-decoration: none; }
 .card.link:hover { border-color: var(--axis); }
 .card .k { color: var(--muted); font-size: 13.5px; font-weight: 500; }
+h2.k { margin: 0; line-height: inherit; letter-spacing: normal; }
 .card .v { font-size: 30px; font-weight: 600; letter-spacing: -.02em; line-height: 1.2; margin: 2px 0 4px; }
 .card .v.sm { font-size: 22px; }
 .hero { padding: 22px 24px; }

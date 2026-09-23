@@ -12,7 +12,11 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
+import subprocess
 from pathlib import Path
+
+import pytest
 
 APP = Path(__file__).resolve().parent.parent / "vp" / "ui" / "static" / "app"
 CATALOGUE = json.loads((APP / "locales" / "en.json").read_text())
@@ -92,3 +96,18 @@ def test_every_module_the_page_imports_exists() -> None:
     for path, text in SOURCES.items():
         for target in re.findall(r"from '(\.[^']+)'", text):
             assert (path.parent / target).resolve().is_file(), (path.name, target)
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="needs node")
+def test_every_module_parses() -> None:
+    """The page has no build step, so a syntax error reaches the browser;
+    parsing every module as a module catches it here (a plain `node
+    --check` reads the files as scripts and misses some)."""
+    for path in sorted(APP.rglob("*.js")):
+        parsed = subprocess.run(
+            ["node", "--input-type=module", "--check"],
+            input=path.read_text(),
+            capture_output=True,
+            text=True,
+        )
+        assert parsed.returncode == 0, f"{path.name}: {parsed.stderr[:400]}"

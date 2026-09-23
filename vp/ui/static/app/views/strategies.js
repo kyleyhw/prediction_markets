@@ -9,6 +9,7 @@ import { after, detailed, empty, esc, fmt, head, raw, signed, strategyName, stra
 import { balanceChart } from './home.js';
 
 const SHOWN = 5;
+const OPEN_SHOWN = 50;
 
 function position(o) {
   const side = o.side === 'yes' ? t('strategies.side_yes') : t('strategies.side_no');
@@ -39,12 +40,16 @@ function full(p) {
     { caption: t('home.all_caption', { start: fmt.money(p.start_cash) }) });
   const chart = balanceChart(p.accounts.filter((a) => a.settled), p.start_cash, { title: tp('home.all_chart') });
   if (chart) h += `<div class="card" style="margin-top:14px">${chart}</div>`;
-  const open = p.accounts.flatMap((a) => a.open.map((o) => [strategyName(a.forecaster), `<span class="wrapc">${esc(o.question)}</span>`, esc(o.side),
+  // The largest stakes first, and no more than a table can be read through
+  // (a screen reader heard 1,236 rows here); the ledger holds them all.
+  const all = p.accounts.flatMap((a) => a.open.map((o) => [a, o])).sort((x, y) => y[1].stake - x[1].stake);
+  const open = all.slice(0, OPEN_SHOWN).map(([a, o]) => [strategyName(a.forecaster), `<span class="wrapc">${esc(o.question)}</span>`, esc(o.side),
     esc(fmt.num(o.q, 3)), esc(fmt.num(o.p_hat, 3)), esc(fmt.num(o.price, 4)), esc(fmt.num(o.shares, 1)), esc(fmt.money(o.stake)),
-    o.fee == null ? `<span class="muted">${t('strategies.fee_unrecorded')}</span>` : `${esc(fmt.money(o.fee, 4))}${o.fee_source === 'assumed' ? ` <span class="muted">(${t('strategies.assumed')})</span>` : ''}`]));
+    o.fee == null ? `<span class="muted">${t('strategies.fee_unrecorded')}</span>` : `${esc(fmt.money(o.fee, 4))}${o.fee_source === 'assumed' ? ` <span class="muted">(${t('strategies.assumed')})</span>` : ''}`]);
   h += `<h2>${t('strategies.open_title')}</h2>`;
+  if (all.length > OPEN_SHOWN) h += `<p class="cap">${t('strategies.open_shown', { shown: fmt.int(OPEN_SHOWN), n: fmt.int(all.length) })}</p>`;
   h += open.length ? table([t('col.strategy'), t('col.market'), term('side', tp('glossary.side.name')), term('q', 'q'), term('phat', 'p̂'), term('price', tp('glossary.price.name')),
-    term('shares', tp('glossary.shares.name')), term('stake', tp('glossary.stake.name')), term('fee', tp('glossary.fee.name'))], open, { numFrom: 3 }) : `<p class="muted">${t('strategies.none_open')}</p>`;
+    term('shares', tp('glossary.shares.name')), term('stake', tp('glossary.stake.name')), term('fee', tp('glossary.fee.name'))], open, { numFrom: 3, caption: t('strategies.open_caption') }) : `<p class="muted">${t('strategies.none_open')}</p>`;
   h += `<h2>${t('strategies.settled_title')}</h2>`;
   h += p.settlements.length ? table([t('col.at'), t('col.strategy'), t('col.market'), term('label', tp('glossary.label.name')), term('pnl', tp('glossary.pnl.name')), term('brier', tp('glossary.brier.name')), t('col.market_brier')],
     p.settlements.slice().reverse().map((s) => [esc(fmt.dateTime(s.at)), strategyName(s.forecaster), esc(s.market_id), esc(s.label), signed(s.pnl, esc(fmt.signedMoney(s.pnl))), esc(fmt.num(s.brier, 4)), esc(fmt.num(s.brier_market, 4))]),

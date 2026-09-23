@@ -196,7 +196,9 @@
       "one": "1 entry, newest first; open one for its full record.",
       "other": "{n} entries, newest first; open one for its full record."
     },
-    "chain_broken_pill": "chain broken"
+    "chain_broken_pill": "chain broken",
+    "open_shown": "The {shown} largest of {n} open positions; the ledger download has them all.",
+    "open_caption": "Each open position: the market, the side bought, the market’s chance and the strategy’s, the price paid, the shares, the stake and the fee."
   },
   "bt": {
     "title": "Backtests",

@@ -80,7 +80,7 @@ export default async function home() {
   }
   const a = followed(accounts);
   const change = a.bankroll - start;
-  h += `<div class="card hero"><div class="k">${t('home.play_money_of', { name: raw(strategyName(a.forecaster)) })}</div>
+  h += `<div class="card hero"><h2 class="k">${t('home.play_money_of', { name: raw(strategyName(a.forecaster)) })}</h2>
     <div class="v num">${esc(fmt.money(a.bankroll))}</div>
     <p>${t('home.since_start', { change: raw(signed(change, esc(fmt.signedMoney(change)))), pct: fmt.signedPct(change / start), start: fmt.money(start) })} ${comparison(a, start)}</p>
     <p class="muted small">${esc(strategySentence(a.forecaster))} ${a.open_count ? t('home.open', { n: a.open_count, stake: fmt.money(a.exposure) }) : ''} ${a.fees ? t('home.fees_paid', { fees: fmt.money(a.fees) }) : ''}</p>
