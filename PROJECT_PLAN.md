@@ -380,8 +380,16 @@ Started 2026-09-21; what is built is recorded in `docs/platform.md`.
     - Landed: the configuration module, sole reader of the environment,
       with no default for any secret, redaction of the database URL, and
       `tests/test_config_gate.py` proving no second reader exists.
-    - Outstanding: the FastAPI application, the endpoints and the
-      OpenAPI page.
+    - Landed 2026-09-23: the FastAPI application (`vp serve`), health and
+      readiness, the OpenAPI page, JSON errors, security headers, the
+      access-log filter that keeps sign-in tokens out of logs, and the
+      dashboard's read endpoints behind sign-in; `vp db migrate`. The
+      service refuses to start as any role row-level security does not
+      bind. Verified by driving Chromium through the whole flow, which
+      found two faults the request tests could not (`docs/platform.md`).
+    - Outstanding: the endpoints mirroring the CLI's write commands
+      (build, snapshot, backtest, paper run, settle, leakage), which
+      arrive as jobs with task 31.
     - FastAPI application with a request principal on every route, health
       and readiness endpoints, the OpenAPI page as the technical user's API
       reference, JSON errors, structured logs through the redaction filter.
@@ -397,7 +405,15 @@ Started 2026-09-21; what is built is recorded in `docs/platform.md`.
       forgets its filter returns nothing, that naming another workspace
       explicitly returns nothing, and that a context cannot outlive its
       transaction.
-    - Outstanding: magic-link sign-in, sessions, API tokens.
+    - Landed 2026-09-23: email magic-link sign-in with a confirm page (so
+      mail scanners cannot spend the link), sessions, API tokens with read
+      and write scopes, cross-site request checks, and a personal
+      workspace on first sign-in. Migration 0002 crosses the tenancy
+      boundary only through five narrow `SECURITY DEFINER` functions, so
+      the web process never holds the owner's credentials.
+    - Outstanding: OpenID Connect (prepared for, not needed yet); a
+      per-address-and-IP request limit with task 36; the expiry sweep with
+      task 31.
     - `Principal` with `subject`, `auth_method`, `attributable` (derived,
       never caller-set), `workspace`, `roles`; email magic-link sign-in;
       OpenID Connect prepared but not shipped; HTTP-only session cookies;

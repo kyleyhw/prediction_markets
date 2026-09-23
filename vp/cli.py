@@ -13,6 +13,12 @@ Subcommands:
   settlement pass over open positions, and the forward-versus-backtest
   leakage check, all recorded in a hash-chained ledger.
 * ``vp ui``: a local, read-only browser dashboard over the data root.
+* ``vp serve``: the platform web service, with sign-in, over Postgres.
+* ``vp db migrate``: apply the platform's pending database migrations.
+
+The two platform commands import ``vp.platform`` lazily, inside their own
+branches: this module is the composition root, and the engine commands
+never load the platform.
 """
 
 from __future__ import annotations
@@ -131,6 +137,14 @@ def main() -> None:
     ui.add_argument("--host", default="127.0.0.1")
     ui.add_argument("--port", type=int, default=8765)
 
+    srv = sub.add_parser("serve", help="run the platform web service (Postgres)")
+    srv.add_argument("--host", default="127.0.0.1")
+    srv.add_argument("--port", type=int, default=8000)
+
+    dbp = sub.add_parser("db", help="the platform database")
+    db_sub = dbp.add_subparsers(dest="db_command", required=True)
+    db_sub.add_parser("migrate", help="apply pending migrations as the owner")
+
     args = parser.parse_args()
     logging.basicConfig(
         level=logging.DEBUG if args.verbose else logging.INFO,
@@ -140,6 +154,19 @@ def main() -> None:
         from vp.ui.server import serve
 
         serve(args.root, args.host, args.port)
+        return
+
+    if args.command == "serve":
+        from vp.platform.run import serve as serve_platform
+
+        serve_platform(args.host, args.port)
+        return
+
+    if args.command == "db":
+        from vp.platform.run import migrate_database
+
+        applied = migrate_database()
+        print("applied: " + ", ".join(applied) if applied else "up to date")
         return
 
     if args.command == "paper":

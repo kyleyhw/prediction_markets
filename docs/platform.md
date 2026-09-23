@@ -6,11 +6,22 @@ once. This page records what is built and why; the design it implements is
 tenancy, storage and capacity decisions. The engine under `vp/` is
 unchanged and knows nothing about any of it.
 
-**Status.** Phase 13 is in progress. Built: configuration, the principal,
-the database foundation and the tenancy boundary. Not built: the web
-service, sign-in, the job queue, the market-data service, the evidence
-collectors, deployment, budgets, observability. Each is a numbered task in
-[the plan](../PROJECT_PLAN.md).
+**Status.** Phase 13 is in progress, interface first (the plan's build
+order). Built: configuration, the principal, the tenancy boundary, the web
+service with email sign-in, sessions and API tokens, and the dashboard's
+views behind sign-in, all verified in a real browser. Not built: the job
+queue, the market-data service, the evidence collectors, budgets,
+observability, per-workspace paper accounts, and the deploy, which comes
+last (flag F16). Each is a numbered task in [the plan](../PROJECT_PLAN.md).
+
+```bash
+uv run vp db migrate          # as the owner: VP_MIGRATION_DATABASE_URL
+uv run vp serve               # as vp_app: VP_DATABASE_URL, on :8000
+```
+
+In a web session the start-up hook starts Postgres, sets both URLs and
+migrates, so `vp serve` works at once; sign-in links land in
+`data/outbox/`.
 
 ## The Division
 
@@ -54,9 +65,20 @@ Two rules the types cannot express:
 
 | Variable | Required | Default | Meaning |
 | :--- | :--- | :--- | :--- |
-| `VP_DATABASE_URL` | yes | none | libpq connection string for the platform database |
+| `VP_DATABASE_URL` | yes | none | the service's own connection, as `vp_app` |
 | `VP_ENV` | no | `development` | `development`, `staging` or `production` |
 | `VP_DATA_ROOT` | no | `data` | where the engine's Parquet files live |
+| `VP_PUBLIC_URL` | in production | `http://127.0.0.1:8000` | the origin people reach the service at; must be `https://` in production |
+| `VP_MIGRATION_DATABASE_URL` | for `vp db migrate` | none | the owner's connection string, for migrations only |
+| `VP_MAIL` | no | `outbox` | where sign-in emails go; production refuses `outbox` |
+
+`VP_DATABASE_URL` is the service's own connection and must be `vp_app`.
+Keeping the owner's URL in a separate variable, used only by
+`vp db migrate`, means the web process never holds a credential that
+bypasses tenancy. Production refuses plain HTTP, because session cookies
+must be `Secure`, and refuses the outbox, because a link written to a file
+on the server reaches nobody; so no production configuration can load
+until a mail provider is chosen (flag F3).
 
 ## The Principal
 
@@ -97,10 +119,11 @@ failure direction is closed.
 
 Two database roles, and the guarantee depends on the difference:
 
-- **The owner** runs migrations and the sign-up path. It owns the tables,
-  so the policies do not apply to it. This is deliberate: creating a user,
-  a workspace and that first membership all happen before any workspace
-  context exists. Nothing else may use this connection.
+- **The owner** runs migrations and nothing else. It owns the tables, so
+  the policies do not apply to it. The service never connects as the
+  owner: signing up, which must create a user, a workspace and a
+  membership before any workspace context exists, happens inside five
+  narrow database functions instead (see Sign-in and the Web Service).
 - **`vp_app`** owns nothing and is subject to every policy. Everything
   else connects as this role. It must never be a superuser, which bypasses
   row-level security unconditionally; the test fixture asserts both.
@@ -146,10 +169,113 @@ policies, and the `vp_app` role. Role creation is idempotent and raises a
 message naming the manual step if the connection may not create roles, as
 on a managed host where the operator provisions roles out of band.
 
+## Sign-in and the Web Service
+
+`vp serve` runs one FastAPI application over the unchanged engine
+(`vp/platform/web.py`). Every request resolves to a `Principal`, from a
+session cookie or a bearer token, and every route that reads anything
+requires one that names a person.
+
+### Crossing the tenancy boundary, narrowly
+
+Signing in has to create rows before any workspace exists, which the
+policies refuse. The obvious fix, giving the web process the owner's
+credentials for that step, would put a role that bypasses tenancy inside
+the process most exposed to the internet. Instead, migration 0002 defines
+five `SECURITY DEFINER` functions, which run as their owner and are the
+only code that crosses the boundary:
+
+| Function | Does |
+| :--- | :--- |
+| `vp_auth_request_sign_in` | records a sign-in token for an address, at most five per address per fifteen minutes |
+| `vp_auth_sign_in` | exchanges an unused, unexpired token for a thirty-day session, creating the user and a personal workspace on first use |
+| `vp_auth_resolve_session` | who a session belongs to, only while its membership exists |
+| `vp_auth_end_session` | revokes a session |
+| `vp_auth_resolve_token` | who an API token belongs to, only while its membership exists |
+
+Two properties follow. **No function makes a session for a named user**:
+the only way to one is a token that was sent to that user's address. And
+**every limit is fixed in the function**, not passed in, so a caller cannot
+lengthen a session or loosen the rate. Each function sets its own
+`search_path` and uses no dynamic SQL. The sign-in and session tables have
+row-level security with no policy and no grants to `vp_app`, so the
+functions are the only way in. Removing a membership ends every session
+and token in that workspace at once, because resolution joins on it.
+
+### Secrets
+
+The link's token, the session cookie and an API token are each 256 random
+bits, given to the person once and stored as a SHA-256. A plain hash is
+right here, not a slow password hash: these are random values, not
+passwords a person chose, so there is nothing to guess. The session
+cookie is `HttpOnly`, `SameSite=Lax`, and `Secure` whenever the public URL
+is HTTPS.
+
+### Five rules the service enforces
+
+1. **It connects only as a role row-level security binds.** At start it
+   refuses a superuser, a role that may bypass row-level security, or the
+   tables' owner. The tenancy suite proves isolation for `vp_app`; running
+   as anything else would make it prove nothing.
+2. **State changes come from its own pages.** A request that changes
+   anything and is not bearer-authenticated must carry
+   `Sec-Fetch-Site: same-origin` or a matching `Origin`. Without this,
+   another site could post a form that signs a visitor out, or signs them
+   into an account the attacker controls. Bearer requests are exempt,
+   since browsers never add that header themselves.
+3. **Opening a link does not sign in.** The emailed link opens a page with
+   one button; only the button's `POST` spends the token. Mail scanners
+   fetch every link in a message, and a link that signed in on `GET`
+   would be spent before the person clicked.
+4. **Secrets stay out of logs and referrers.** A log filter replaces every
+   `token=` value in the access log, and `Referrer-Policy: same-origin`
+   keeps the link's URL from being sent to any other site.
+5. **Nothing personal stays in the browser's cache.** Every response
+   except the fonts carries `Cache-Control: no-store`.
+
+API tokens are managed only from a signed-in browser, so a leaked token
+cannot mint more. A read token acts as a viewer; a write token acts with
+its owner's role, never more.
+
+### What the browser found
+
+The request tests drive the service with `TestClient`, which sends
+whatever headers a test chooses. Driving a real Chromium through the
+whole flow found two faults they could not:
+
+- **`Referrer-Policy: no-referrer` broke sign-in.** Under that policy
+  Chromium sends `Origin: null` on the page's own form posts, which rule 2
+  refused. The policy is now `same-origin`, and the check trusts
+  `Sec-Fetch-Site: same-origin` first, which browsers always send and
+  pages cannot forge.
+- **The dashboard outlived sign-out.** Without a cache directive, Chromium
+  served the dashboard page from its cache after sign-out without asking
+  the server. The data calls were refused, so nothing leaked, but a shared
+  computer showed a signed-in page. Rule 5 came from this.
+
+The walk-through (sign-in page, emailed link, confirm button, dashboard
+with the account panel, sign-out, and back to sign-in on revisiting)
+passes, and the access log carries the token only as `[redacted]`.
+
+### Known gaps, all scheduled
+
+- **The data root is shared.** The views read the same data root for
+  everyone signed in. On a development machine with one person that is
+  harmless; per-workspace paper accounts and runs land with tasks 30 and
+  37, before anyone else uses the service.
+- **The page still speaks to developers.** Its empty states say to run
+  `vp` commands, and its footer shows the server's data path. Replacing
+  these is the friendly-interface work that comes next (tasks 39 to 47).
+- **No per-address-and-IP rate limit** beyond five links per address per
+  fifteen minutes; request limits come with observability (task 36).
+- **No sweep of expired tokens and sessions** yet; it becomes a scheduled
+  job when the queue exists (task 31).
+
 ## Running the Database Tests
 
 The suite stays offline by default; the database tests skip unless both
-connection strings are set. The first must own the tables, the second must
+connection strings are set. In a web session the start-up hook sets them,
+so `uv run pytest -q` runs everything. The first must own the tables, the second must
 be `vp_app`. Pointing both at the same role would make every assertion
 pass for the wrong reason, so the fixture checks they differ and that the
 second is not a superuser.

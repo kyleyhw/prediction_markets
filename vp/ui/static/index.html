@@ -54,6 +54,10 @@
   .theme { display: flex; gap: 2px; padding: 2px; border: 1px solid var(--ring); border-radius: 8px; margin: 10px 10px 12px; }
   .theme button { flex: 1; border: 0; background: transparent; color: var(--muted); border-radius: 6px; padding: 5px 0; font: inherit; font-size: 12px; cursor: pointer; }
   .theme button.on { background: var(--wash); color: var(--ink); }
+  .account { margin: 0 10px 12px; font-size: 12px; color: var(--ink-2); display: flex; align-items: center; gap: 8px; }
+  .account .who { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .account button { border: 1px solid var(--ring); background: transparent; color: var(--ink-2); border-radius: 6px; padding: 4px 8px; font: inherit; font-size: 12px; cursor: pointer; }
+  .account button:hover { background: var(--wash); color: var(--ink); }
   main { padding: 28px 36px 64px; max-width: 1240px; width: 100%; }
   .page-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 20px; }
   .page-head h1 { margin: 0; font-size: 24px; font-weight: 600; letter-spacing: -.01em; }
@@ -147,6 +151,10 @@
     </nav>
     <div class="theme" id="theme">
       <button data-t="system">System</button><button data-t="light">Light</button><button data-t="dark">Dark</button>
+    </div>
+    <div class="account" id="account" hidden>
+      <span class="who"></span>
+      <form method="post" action="/auth/sign-out"><button type="submit">Sign out</button></form>
     </div>
     <div class="foot" id="root"></div>
   </aside>
@@ -246,7 +254,25 @@ const num = (v, d = 3) => (v === null || v === undefined || v === '' || Number.i
 const int = (v) => (v ?? 0).toLocaleString();
 const pct = (v, d = 1) => (v === null || v === undefined) ? '–' : (100 * v).toFixed(d) + '%';
 const signed = (v, text) => v === 0 || v === null || v === undefined ? esc(text) : `<span class="${v > 0 ? 'good' : 'bad'}">${esc(text)}</span>`;
-const api = async (p) => { const r = await fetch('/api/' + p); if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); };
+const api = async (p) => {
+  const r = await fetch('/api/' + p);
+  // Under `vp serve` the views need a session; `vp ui` never answers 401.
+  if (r.status === 401) { location.href = '/sign-in'; return new Promise(() => {}); }
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return r.json();
+};
+// Who is signed in, when served by `vp serve`. `vp ui` has no accounts and
+// answers every unknown path with this page, so only JSON counts.
+(async () => {
+  try {
+    const r = await fetch('/auth/me');
+    if (!r.ok || !(r.headers.get('content-type') || '').includes('json')) return;
+    const me = await r.json();
+    const box = document.getElementById('account');
+    box.querySelector('.who').textContent = me.email || '';
+    box.hidden = false;
+  } catch (e) { /* no account panel */ }
+})();
 const table = (head, rows, numFrom = 1, extra = '') => `<div class="wrap"><table${extra}><thead><tr>${
   head.map((h, i) => `<th class="${i >= numFrom ? 'num' : ''}">${h}</th>`).join('')}</tr></thead><tbody>${
   rows.map(r => `<tr>${r.map((c, i) => `<td class="${i >= numFrom ? 'num' : ''}">${c}</td>`).join('')}</tr>`).join('')

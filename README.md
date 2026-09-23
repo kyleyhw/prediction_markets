@@ -18,10 +18,12 @@ strategy has to clear, not a result the project is trying to explain away.
   dataset, backtest forecasters against the market, paper trade against the
   real order book, read it all in a local dashboard. That is what
   [Using it](#using-it) walks through, and it needs Python and a terminal.
-- **The hosted web app is next.** An account, a browser, strategies described
-  in conversation and no terminal anywhere: that is Phase 13 onward of
-  [the plan](PROJECT_PLAN.md), designed in [docs/product.md](docs/product.md)
-  and not built yet. When it exists it is how most people will use this, and
+- **The hosted web app is being built.** An account, a browser, strategies
+  described in conversation and no terminal anywhere: that is Phase 13 onward
+  of [the plan](PROJECT_PLAN.md), designed in [docs/product.md](docs/product.md).
+  Email sign-in and the dashboard behind it already run on a development
+  machine with `vp serve` ([docs/platform.md](docs/platform.md)); it is not
+  deployed anywhere yet. When it is, it is how most people will use this, and
   this page will point at it.
 - **Live execution is last, and gated.** Nothing in this repository can sign
   or send a real order, and nothing will until the hosted security design is

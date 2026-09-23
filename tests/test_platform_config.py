@@ -32,7 +32,11 @@ def test_database_url_is_required_and_has_no_default() -> None:
 
 
 def test_environment_parses_and_rejects_anything_else() -> None:
-    assert load_settings(MINIMAL | {"VP_ENV": "production"}).is_production
+    # Production parses; it then refuses plain HTTP and the development
+    # outbox, so no production configuration can load until a mail
+    # provider exists (flag F3). The error naming HTTPS shows it parsed.
+    with pytest.raises(ConfigError, match="https"):
+        load_settings(MINIMAL | {"VP_ENV": "production"})
     assert (
         load_settings(MINIMAL | {"VP_ENV": " Staging "}).environment
         is Environment.STAGING

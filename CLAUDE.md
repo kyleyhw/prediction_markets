@@ -40,9 +40,12 @@ The original `prediction_markets` project is archived unchanged under
   and the non-infringement rules.
 - `vp/platform/`: the hosted platform around the engine (Phase 13, in
   progress): `config.py` (the only reader of the environment),
-  `principal.py`, `db.py` (migrations, `tenant_session`) and
-  `migrations/*.sql`. Reasoning in `docs/platform.md`. The engine must
-  never import it.
+  `principal.py`, `db.py` (migrations, `tenant_session`), `auth.py`
+  (sign-in, sessions, API tokens), `mail.py` (the development outbox),
+  `web.py` (the FastAPI service), `run.py` (`vp serve`, `vp db migrate`)
+  and `migrations/*.sql`. Reasoning in `docs/platform.md`. The engine must
+  never import it (`tests/test_platform_boundary.py`); `vp/cli.py`, the
+  composition root, imports it only inside `serve` and `db`.
 - `vp/`: the engine. `venues/polymarket.py` (read-only client with the
   closed-is-not-resolved evidence ladder), `domains/` (cs2, weather, epl),
   `markets/` (record, source, Parquet store, dataset, snapshot),
@@ -80,8 +83,17 @@ alternatives to trial later). Phase 13 **started on 2026-09-21**; the configurat
 principal, the database foundation and the tenancy boundary are built and
 tested (`docs/platform.md`), and the web service, sign-in, jobs, the
 market-data service, deploy, budgets and observability are not.
-Database-backed tests skip unless `VP_TEST_DATABASE_URL` and
-`VP_TEST_APP_DATABASE_URL` are set; `docs/platform.md` says how. On
+On 2026-09-23 the web service with email sign-in, sessions, API tokens
+and the dashboard behind sign-in landed and was verified in a real
+browser. The session-start hook now starts Postgres
+(`.claude/hooks/postgres.sh`), exports `VP_DATABASE_URL` (as `vp_app`),
+`VP_MIGRATION_DATABASE_URL` (owner) and the two test URLs, and runs
+`vp db migrate`, so `uv run pytest -q` runs the database tests too and
+`uv run vp serve` works at once; sign-in links land in `data/outbox/`.
+Outside a web session, database-backed tests skip unless the test URLs
+are set; `docs/platform.md` says how. Also found that day: the
+`*.html` rule in `.gitignore` had silently kept the dashboard page out
+of git since it was written; it is now excepted and committed. On
 2026-09-23 the user deferred the Fly.io account and the cloud deploy to
 the end (flag F16): build and verify on a local stand-in (Postgres 16, an
 S3-compatible store such as MinIO, the same image under Docker Compose).
@@ -151,6 +163,10 @@ Things a future session should know:
 - The SessionStart hook refreshes `uv` (the container's is too old for the
   pinned Python 3.14.7) and sets the git identity to the repository owner.
   Commits carry that identity and no assistant attribution.
+- Checking the platform visually: start `vp serve` from a script file,
+  then drive Chromium as below through sign-in (read the link from
+  `<data root>/outbox/`). Real-browser runs have found faults request tests
+  cannot, such as `Origin: null` under a strict referrer policy.
 - Checking the dashboard visually: run `vp ui` on a data root, then
   Playwright with the preinstalled Chromium
   (`executable_path="/opt/pw-browsers/chromium"`, `args=["--no-proxy-server"]`,
