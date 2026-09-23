@@ -80,7 +80,7 @@ export default async function home() {
     <p>${t('home.since_start', { change: raw(signed(change, esc(fmt.signedMoney(change)))), pct: fmt.signedPct(change / start), start: fmt.money(start) })} ${comparison(a, start)}</p>
     <p class="muted small">${esc(strategySentence(a.forecaster))} ${a.open.length ? t('home.open', { n: a.open.length, stake: fmt.money(a.exposure) }) : ''} ${a.fees ? t('home.fees_paid', { fees: fmt.money(a.fees) }) : ''}</p>
     ${a.settled ? balanceChart([a], start) : `<p class="muted small">${t('home.chart_later')}</p>`}
-    <p class="small"><a href="#settings">${t('home.follow_other')}</a></p></div>`;
+    <p class="small" style="margin:6px 0 0"><a class="target" href="#settings">${t('home.follow_other')}</a></p></div>`;
   h += `<div class="grid cols-2" style="margin-top:14px">
     <section class="card"><h2 style="margin-top:0">${t('home.today_title')}</h2>${today(paper)}</section>
     <section class="card"><h2 style="margin-top:0">${t('home.next_title')}</h2><p class="muted">${t('home.next_text')}</p>${nextStep(accounts)}</section></div>`;

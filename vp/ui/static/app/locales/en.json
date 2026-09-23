@@ -129,6 +129,7 @@
     "chance_of": "{pct} chance: {outcome}",
     "no_price": "No price yet",
     "closes": "Closes {when}",
+    "overdue": "Was due to close {when}; not settled yet",
     "no_close": "No closing date given",
     "no_book": "No one is offering to trade right now"
   },
@@ -138,6 +139,7 @@
     "missing_text": "It may have closed, or the link may be old. The markets page shows what is open now.",
     "explain": "Traders price “{outcome}” at {pct}: a share that pays $1 if it happens costs about that many cents.",
     "closes": "Closes {when} ({date})",
+    "overdue": "Was due to close {when} ({date}); not settled yet",
     "history_title": "Chance over time",
     "series": "Chance of {outcome}",
     "history_summary": "The chance across {n} captures, from {first} to {last}.",
@@ -158,6 +160,7 @@
     "unknown": "The venue does not state a fee for this market.",
     "none": "No fee to buy.",
     "simple": "Fee to buy: about {cents} a share.",
+    "tiny": "Fee to buy: under 0.1¢ a share.",
     "detailed": "At rate {rate}, a share bought at the ask of {ask} pays a fee of {fee}; the effective price is the ask plus the fee. Only takers pay."
   },
   "strategies": {

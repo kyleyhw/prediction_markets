@@ -97,8 +97,8 @@ export const feePerShare = (p, rate, exponent = 1) => (rate == null || p == null
 export function feeSentence(m) {
   if (m.fee_rate == null) return t('fees.unknown');
   if (m.fee_rate === 0) return t('fees.none');
-  const price = m.ask ?? m.p_yes;
-  return t('fees.simple', { cents: fmt.cents(feePerShare(price, m.fee_rate, m.fee_exponent)) });
+  const fee = feePerShare(m.ask ?? m.p_yes, m.fee_rate, m.fee_exponent);
+  return fee < 0.0005 ? t('fees.tiny') : t('fees.simple', { cents: fmt.cents(fee) });
 }
 
 // "62% chance" for Yes/No, "62% chance: Spirit" when the outcomes are named.

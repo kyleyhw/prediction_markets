@@ -83,8 +83,11 @@ together, and the ledger's integrity.
 **Markets (task 42).** Cards for the open markets of one interest, from
 the latest snapshot, interests first: the question, the chance with a
 bar, when it closes in relative words, the fee to buy, and a note when no
-one is offering to trade. Search filters in place; markets without a book
-are hidden unless asked for. A market's page adds the chance over time,
+one is offering to trade. Soonest to close comes first; a market past
+its closing date that the venue still lists says it was due to close and
+has not settled, and comes after the rest (the live capture had dozens).
+Search filters in place; markets without a book are hidden unless asked
+for. A market's page adds the chance over time,
 drawn from the market's price in each recent snapshot (the only history
 an open market has until the market-data service lands, build order step
 3), and what the sample strategies forecast for it; Detailed adds the
@@ -215,8 +218,28 @@ fee terms.
 
 ## Verified
 
-Recorded in the Phase 14 report when it is written (task 49); the browser
-run of 2026-09-23 is summarised in the plan under task 47.
+On 2026-09-23, in Chromium, against a data root built that day from the
+live venue (120 Premier League markets with histories, 400 each of
+Counter-Strike and weather, a backtest scoring 64 markets, and a paper
+cycle of 360 captured markets and 36 orders, each paying its market's own
+fee at rate 0.05), under both `vp ui` and `vp serve` (signed in through the
+mail outbox):
+
+- the guided start end to end, every screen in both reading levels, a
+  third of them again in the dark theme, and three at phone width;
+- axe-core's WCAG 2.0, 2.1 and 2.2 A and AA rules on 78 page renders: no
+  violations (the one it found on the way, a link below the 24 px target
+  size, was fixed);
+- no console errors and no failed requests; no horizontal scroll at
+  390 px; the skip link reaches `<main>`; a glossary term opens with
+  Enter and Escape returns focus to it.
+
+Balance charts were checked on a scratch copy of that root in which half
+the open positions were settled with outcomes drawn at the market's own
+price, since no real position had settled yet. The script lives outside
+the repository, as the earlier browser checks did; `CLAUDE.md` says how
+to repeat it. The words themselves wait for the usability sessions of
+task 49.
 
 ## Known Gaps
 

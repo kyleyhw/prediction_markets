@@ -20,7 +20,8 @@ export function orderedDomains(domains) {
 }
 
 export function marketCard(m, domain) {
-  const closes = m.end_date ? t('markets.closes', { when: fmt.relative(m.end_date) }) : t('markets.no_close');
+  const overdue = m.end_date && new Date(m.end_date).getTime() < Date.now();
+  const closes = !m.end_date ? t('markets.no_close') : t(overdue ? 'markets.overdue' : 'markets.closes', { when: fmt.relative(m.end_date) });
   const facts = [closes, feeSentence(m)];
   if (!m.has_book) facts.push(t('markets.no_book'));
   if (detailed()) {
@@ -31,7 +32,7 @@ export function marketCard(m, domain) {
   return `<article class="card mcard">
     <h3 class="q"><a href="#market/${encodeURIComponent(domain)}/${encodeURIComponent(m.market_id)}">${esc(m.question)}</a></h3>
     ${m.event && m.event !== m.question ? `<div class="ev">${esc(m.event)}</div>` : ''}
-    <div class="chance"><b class="num">${chance(m)}</b></div>
+    <div class="chance"><b>${chance(m)}</b></div>
     <div class="meter" aria-hidden="true"><i style="width:${width}%"></i></div>
     <div class="facts">${facts.map((f) => `<span>${f}</span>`).join('')}</div></article>`;
 }
@@ -50,6 +51,10 @@ export default async function markets([wanted] = []) {
     return h + empty(t('markets.empty_title', { title: info.title }), t('markets.empty_text'), [['#learn/markets', t('learn.topics.markets.title')]], 'vp snapshot --domain ' + domain);
   }
   const traded = snap.markets.filter((m) => m.has_book).length;
+  // Soonest to close first; markets past their closing date but not yet
+  // settled after those, then markets with no date.
+  const now = Date.now(), rank = (m) => (!m.end_date ? 2 : new Date(m.end_date).getTime() < now ? 1 : 0);
+  snap.markets.sort((a, b) => (b.has_book - a.has_book) || (rank(a) - rank(b)) || String(a.end_date).localeCompare(String(b.end_date)));
   h += `<div class="row"><label for="q" class="sr-only">${t('markets.search_label')}</label>
     <input type="search" id="q" placeholder="${tp('markets.search_placeholder')}" autocomplete="off">
     <label class="check"><input type="checkbox" id="dead"> <span>${t('markets.show_untraded', { n: snap.markets.length - traded })}</span></label></div>

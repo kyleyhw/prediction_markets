@@ -104,7 +104,18 @@ order (2026-09-23): the interface first**: tasks 28, 29 and 37, then the
 Phase 14 interface tasks 39 to 47 pulled forward (the user's request is
 their go-ahead), then the rest of Phase 13, with the deploy, 48, 49 and
 the host measurements last. See the build-order block at the top of
-Phases 13 to 23 in the plan. Earlier,
+Phases 13 to 23 in the plan. Also on 2026-09-23: paper orders now pay each
+market's own taker fee, read from `feeSchedule` (F5, task 37), and the
+friendly interface landed (tasks 39 to 47, `docs/interface.md`): a
+build-free ES-module app in `vp/ui/static/app/` served by both `vp serve`
+and `vp ui`, with Simple and Detailed reading levels, a guided start,
+home, market cards, Learn and per-person settings (migration 0003); every
+word in `app/locales/en.json`; zero axe-core violations at WCAG 2.2 AA.
+What is left of step 2: a real screen-reader pass (47), the settings that
+wait on later tasks (46). Next is build-order step 3, the rest of Phase 13
+(tasks 30 to 33, 35, 36), starting with task 30, per-workspace storage,
+since everyone on one `vp serve` still sees the same sample strategies.
+Earlier,
 the decisions each phase needed were taken on 2026-09-19 as proposed
 (Fly.io with Amsterdam as the first region, magic-link sign-in, quarter
 Kelly with a 5% cap and a 0.03 minimum edge, fees shown, session keys for
@@ -131,10 +142,11 @@ climatology, Elo, and the LLM forecaster on the official Anthropic SDK);
 scoring, sizing, the fill simulator and `vp backtest` (`vp/backtest`,
 which also writes `results.json` per run); paper trading on a hash-chained
 ledger with settlement and the leakage check (`vp/paper`); the live safety
-layer (`vp/live`); and the dashboard (`vp ui`: standard-library server, one
-hand-written page, vendored Instrument Sans and JetBrains Mono, charts
-drawn in the page, a glossary that makes every term clickable; read-only by
-design, see `docs/ui.md`).
+layer (`vp/live`); and the interface (`vp ui` locally, `vp serve` behind
+sign-in: ES modules without a build step, the "paper" palette, vendored
+Instrument Sans and JetBrains Mono, charts drawn in the page with a
+table of their numbers, a glossary behind every term in Detailed mode;
+see `docs/interface.md`).
 
 Things a future session should know:
 
@@ -167,7 +179,11 @@ Things a future session should know:
   then drive Chromium as below through sign-in (read the link from
   `<data root>/outbox/`). Real-browser runs have found faults request tests
   cannot, such as `Origin: null` under a strict referrer policy.
-- Checking the dashboard visually: run `vp ui` on a data root, then
+- The interface's words are all in `vp/ui/static/app/locales/en.json`;
+  `tests/test_ui_catalogue.py` fails if the code uses a key the catalogue
+  lacks. Messages are trusted text; values are escaped by `t()` unless
+  wrapped in `raw()`, and `tp()` gives plain text for attributes.
+- Checking the interface visually: run `vp ui` on a data root, then
   Playwright with the preinstalled Chromium
   (`executable_path="/opt/pw-browsers/chromium"`, `args=["--no-proxy-server"]`,
   because the container's proxy otherwise breaks localhost subresources),

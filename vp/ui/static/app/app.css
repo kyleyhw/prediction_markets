@@ -35,10 +35,12 @@ body { margin: 0; background: var(--bg); color: var(--ink);
        font: 16px/1.55 "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif; }
 .mono, .num, .axis text, code, pre { font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace; }
 .num, td.num, th.num { font-variant-numeric: tabular-nums; }
-td.num, th.num { font-size: .92em; }
+td.num { font-size: .92em; }
+th.num { font-family: inherit; }
 a { color: var(--accent); }
 a, button, input, select, summary { transition: color 120ms, background-color 120ms, border-color 120ms; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.target { display: inline-flex; align-items: center; min-height: 32px; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 .skip { position: absolute; left: 12px; top: -48px; z-index: 20; background: var(--accent); color: var(--on-accent);
         padding: 8px 12px; border-radius: 6px; text-decoration: none; font-weight: 600; }

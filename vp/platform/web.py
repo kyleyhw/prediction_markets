@@ -672,6 +672,7 @@ def _page(title: str, body: str, status: int = 200) -> HTMLResponse:
     return HTMLResponse(
         "<!doctype html><html lang=en><head><meta charset=utf-8>"
         '<meta name=viewport content="width=device-width, initial-scale=1">'
+        '<link rel=icon href="data:,">'
         f"<title>{html.escape(title)} · vibe-predict</title>"
         f"<style>{_STYLE}</style></head><body><main>"
         f"<div class=brand>vibe-predict</div>{body}</main></body></html>",

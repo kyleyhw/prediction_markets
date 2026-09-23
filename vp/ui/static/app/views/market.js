@@ -12,10 +12,10 @@ export default async function market([domain, id] = []) {
   if (!m) return back + head(t('market.missing_title'), t('market.missing_text'));
   let h = back + head(esc(m.question), m.event && m.event !== m.question ? esc(m.event) : '');
   const width = m.p_yes == null ? 0 : Math.round(100 * m.p_yes);
-  h += `<div class="card hero"><div class="chance"><b class="num" style="font-size:34px">${chance(m)}</b></div>
+  h += `<div class="card hero"><div class="chance"><b style="font-size:34px">${chance(m)}</b></div>
     <div class="meter" aria-hidden="true" style="margin:8px 0 12px"><i style="width:${width}%"></i></div>
     <p>${t('market.explain', { outcome: m.outcomes[0], pct: fmt.pct(m.p_yes) })}</p>
-    <div class="facts"><span>${m.end_date ? t('market.closes', { when: fmt.relative(m.end_date), date: fmt.dateTime(m.end_date) }) : t('markets.no_close')}</span>
+    <div class="facts"><span>${m.end_date ? t(new Date(m.end_date).getTime() < Date.now() ? 'market.overdue' : 'market.closes', { when: fmt.relative(m.end_date), date: fmt.dateTime(m.end_date) }) : t('markets.no_close')}</span>
     <span>${feeSentence(m)}</span>${m.has_book ? '' : `<span>${t('markets.no_book')}</span>`}</div></div>`;
 
   const points = m.series.map((s) => [new Date(s.at).getTime(), s.p_yes]);

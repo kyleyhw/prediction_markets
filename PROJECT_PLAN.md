@@ -619,7 +619,8 @@ interval. One backend, two reading levels.
       exists. Accessibility: skip link, landmarks, focus to the heading on
       navigation, keyboard glossary, chart descriptions and number tables,
       a palette measured at AA. The axe-core audit (WCAG 2.0 to 2.2, A and
-      AA) found no violations on any page in either level, theme or server.
+      AA) found no violations on 78 page renders in both levels, both
+      themes and both servers (`docs/interface.md`, "Verified").
     - Outstanding: a pass with a real screen reader, which an automated
       audit does not replace.
 48. [pending] Terms of use, age gate, jurisdiction notice, privacy notice
