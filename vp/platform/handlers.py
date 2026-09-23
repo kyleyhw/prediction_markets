@@ -308,16 +308,19 @@ def paper_cycle(ctx: JobContext) -> dict[str, Any]:
             # when the prices traded against were seen, never later than now.
             # Every account trading this capture then asks the same question,
             # so the statistical forecasts are shared through the memo.
-            counts[domain] = run_cycle(
-                DOMAINS[domain],
-                forecasters,
-                None,
-                root,
-                ledger,
-                initial_cash=account["cash"],
-                snapshot=root / "snapshots" / domain / snaps[-1].name,
-                now=_captured_at(snaps[-1].stem),
-            )
+            # One transaction per domain's cycle. The cycle makes no network
+            # call (it trades the capture), so the transaction stays short.
+            with ledger.batch():
+                counts[domain] = run_cycle(
+                    DOMAINS[domain],
+                    forecasters,
+                    None,
+                    root,
+                    ledger,
+                    initial_cash=account["cash"],
+                    snapshot=root / "snapshots" / domain / snaps[-1].name,
+                    now=_captured_at(snaps[-1].stem),
+                )
             _store_forecasts(
                 ctx, root / "paper" / "forecasts.jsonl", domain, account["id"]
             )
@@ -331,12 +334,16 @@ def _store_forecasts(
         return
     svc: Services = ctx.services
     rows = [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
-    with svc.pool.connection() as conn, tenant_session(conn, ctx.principal):
-        for r in rows:
-            conn.execute(
-                "insert into forecasts (workspace_id, account_id, job_id, forecaster, "
-                "market_id, domain, p_hat, cutoff, cost_usd, record) "
-                "values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+    with (
+        svc.pool.connection() as conn,
+        tenant_session(conn, ctx.principal),
+        conn.cursor() as cur,
+    ):
+        cur.executemany(
+            "insert into forecasts (workspace_id, account_id, job_id, forecaster, "
+            "market_id, domain, p_hat, cutoff, cost_usd, record) "
+            "values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+            [
                 (
                     ctx.principal.workspace,
                     account_id,
@@ -348,8 +355,10 @@ def _store_forecasts(
                     r["cutoff"],
                     r.get("cost_usd", 0.0),
                     Jsonb(r),
-                ),
-            )
+                )
+                for r in rows
+            ],
+        )
 
 
 class ResolvedFirst:

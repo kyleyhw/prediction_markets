@@ -32,9 +32,25 @@ bankroll after).
    collector as the data layer, so the snapshot series keeps accumulating.
 2. **Evidence at now.** The resolved sets give results and observations up
    to the present; nothing after it exists, so the forward loop cannot look
-   ahead by construction.
-3. **Forecast** every parsed market with each forecaster; append to the
-   paper registry and the ledger.
+   ahead by construction. On the hosted platform the cutoff is the capture's
+   time rather than the moment the job runs: that is when the prices traded
+   against were seen, it is never later than now, and every account trading
+   one capture then asks the same question, so statistical forecasts are
+   computed once and shared (`docs/platform.md`).
+3. **Forecast** every parsed market with each forecaster. A forecast is
+   appended to the paper registry and the ledger when it is the
+   forecaster's first on that market, when it has moved by at least 0.005
+   (`FORECAST_STEP`) since the last one recorded, or when it cost money;
+   otherwise the recorded one still stands and nothing is written. Until
+   2026-09-23 every cycle wrote every forecast again: on the hosted
+   platform that was about 11,500 entries per person per hourly cycle,
+   most of them unchanged statistical forecasts, and it made each cycle's
+   replay of the ledger grow without bound. The standing forecast at any
+   moment is still the last `forecast` entry before it, and the scores are
+   unaffected: forward scores come from settlements, which carry the
+   $\hat p$ of the order. The step is well under the smallest edge a
+   position needs, so no order is sized on a forecast that differs from the
+   recorded one by anything that matters.
 4. **Order** against the real touch: buy the first outcome at its best ask,
    or the complementary share at one minus the best bid, sized by fractional
    Kelly on the forecaster's own paper bankroll, filled for at most the

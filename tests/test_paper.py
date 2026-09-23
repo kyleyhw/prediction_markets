@@ -67,7 +67,13 @@ def test_cycle_orders_at_the_touch_and_settles(tmp_path: Path) -> None:
     )
     # The market baseline forecasts the snapshot price (0.5) and never orders;
     # the constant forecasts and orders.
-    assert counts == {"snapshot": 1, "parsed": 1, "forecasts": 2, "orders": 1}
+    assert counts == {
+        "snapshot": 1,
+        "parsed": 1,
+        "forecasts": 2,
+        "recorded": 2,
+        "orders": 1,
+    }
     accounts = replay(ledger, 100.0)
     order = accounts["sure"].open["6"]
     # Kelly on 0.9 at ask 0.51 exceeds the 5% cap: stake 5 = 9.8 shares, but the
@@ -84,11 +90,13 @@ def test_cycle_orders_at_the_touch_and_settles(tmp_path: Path) -> None:
     ]
 
     # Second cycle: the market baseline forecasts again (it never holds a
-    # position); the constant's position is open, so no new order.
+    # position), but the price has not moved, so nothing new is recorded;
+    # the constant's position is open, so no new order.
     counts = run_cycle(
         CS2, forecasters, source, tmp_path, ledger, depth=1, initial_cash=100.0, now=NOW
     )
     assert counts["orders"] == 0 and counts["forecasts"] == 1
+    assert counts["recorded"] == 0 and len(list(ledger.entries())) == 5
 
     # Settlement: pending first, then resolved Yes.
     assert settle(source, ledger, initial_cash=100.0) == {
@@ -160,3 +168,19 @@ def test_leakage_gap(tmp_path: Path) -> None:
     assert g.gap == pytest.approx(0.25 - 0.02)
     assert g.gap_low > 0, "a gap this large excludes zero"
     assert "| sure | 4 | 0.0200 | 4 | 0.2500 |" in leakage.summary(rows)
+
+
+def test_a_forecast_is_recorded_again_only_when_it_moves(tmp_path: Path) -> None:
+    ledger = Ledger(tmp_path / "paper" / "ledger.jsonl")
+    source = make_source([resolved_record("pending", None)])
+    recorded = []
+    # Close to the market, so it never finds an edge and never holds a position.
+    for p in (0.5, 0.503, 0.51):
+        counts = run_cycle(
+            CS2, [Constant(p, name="drift")], source, tmp_path, ledger, depth=1, now=NOW
+        )
+        assert counts["forecasts"] == 1 and counts["orders"] == 0
+        recorded.append(counts["recorded"])
+    assert recorded == [1, 0, 1]
+    said = [e["data"]["p_hat"] for e in ledger.entries() if e["kind"] == "forecast"]
+    assert said == [0.5, 0.51]

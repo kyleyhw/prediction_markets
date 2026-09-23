@@ -9,8 +9,13 @@ One cycle of :func:`run_cycle`:
    forward loop cannot look ahead by construction. Its scores are therefore
    the honest counterpart of the backtest's; Phase 10's leakage check
    compares the two.
-3. Ask each forecaster for every parsed market it accepts; append the
-   forecast to the run's registry and a ``forecast`` entry to the ledger.
+3. Ask each forecaster for every parsed market it accepts. A forecast that
+   is the forecaster's first on the market, or has moved by at least
+   ``FORECAST_STEP`` since the last one recorded, or cost money, goes to
+   the run's registry and as a ``forecast`` entry to the ledger; an
+   unchanged one is not written again, so the ledger holds each
+   forecaster's standing forecast over time without a copy per market per
+   cycle (docs/paper_trading.md).
 4. Size a position against the **real** touch of the book (best ask of the
    first outcome, or the complementary share at one minus the best bid), fill
    it at that price for at most the resting size at the touch, and record an
@@ -31,7 +36,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Protocol
@@ -50,6 +55,11 @@ from vp.paper.ledger import ChainLedger
 
 logger = logging.getLogger(__name__)
 
+# The smallest change in a forecast worth recording again; well below the
+# minimum edge a position needs, so no order is ever sized on an unrecorded
+# forecast that differs from the recorded one by anything that matters.
+FORECAST_STEP = 0.005
+
 
 @dataclass
 class Account:
@@ -57,6 +67,7 @@ class Account:
 
     bankroll: float
     open: dict[str, dict[str, Any]]  # market_id -> order data
+    said: dict[str, float] = field(default_factory=dict)  # market_id -> p_hat
 
 
 class MarketLookup(Protocol):
@@ -74,7 +85,9 @@ def replay(ledger: ChainLedger, initial_cash: float) -> dict[str, Account]:
         if name is None:
             continue
         account = accounts.setdefault(name, Account(initial_cash, {}))
-        if entry["kind"] == "order":
+        if entry["kind"] == "forecast":
+            account.said[data["market_id"]] = data["p_hat"]
+        elif entry["kind"] == "order":
             account.open[data["market_id"]] = data
         elif entry["kind"] == "settlement":
             account.open.pop(data["market_id"], None)
@@ -136,7 +149,13 @@ def run_cycle(
     evidence = Evidence(now, root)
     registry = Registry(root / "paper" / "forecasts.jsonl")
     accounts = replay(ledger, initial_cash)
-    counts = {"snapshot": count, "parsed": len(markets), "forecasts": 0, "orders": 0}
+    counts = {
+        "snapshot": count,
+        "parsed": len(markets),
+        "forecasts": 0,
+        "recorded": 0,
+        "orders": 0,
+    }
     ledger.append(
         "cycle",
         {
@@ -158,18 +177,26 @@ def run_cycle(
             forecast = forecaster.forecast(market, evidence)
             if forecast is None:
                 continue
-            registry.append(forecast)
             counts["forecasts"] += 1
-            ledger.append(
-                "forecast",
-                {
-                    "forecaster": forecaster.name,
-                    "market_id": market.market_id,
-                    "p_hat": forecast.p_hat,
-                    "cost_usd": forecast.cost_usd,
-                    "q": market.p_yes,
-                },
-            )
+            said = account.said.get(market.market_id)
+            if (
+                said is None
+                or abs(forecast.p_hat - said) >= FORECAST_STEP
+                or forecast.cost_usd  # a paid forecast is always on the record
+            ):
+                registry.append(forecast)
+                ledger.append(
+                    "forecast",
+                    {
+                        "forecaster": forecaster.name,
+                        "market_id": market.market_id,
+                        "p_hat": forecast.p_hat,
+                        "cost_usd": forecast.cost_usd,
+                        "q": market.p_yes,
+                    },
+                )
+                account.said[market.market_id] = forecast.p_hat
+                counts["recorded"] += 1
             if quote is None or forecaster.name == "market":
                 continue
             bid, ask, bid_size, ask_size = quote

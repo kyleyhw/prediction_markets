@@ -173,3 +173,24 @@ def test_an_archived_month_leaves_postgres_and_the_chain_still_verifies(
     assert [e["seq"] for e in PgLedger(app_pool, ada, account).entries()] == [2]
     assert [e["seq"] for e in ledger.entries()] == [0, 1, 2]
     assert ledger.verify() is None
+
+
+def test_a_batch_chains_as_single_appends_do_and_lands_whole(
+    app_pool, two_workspaces
+) -> None:
+    ada = two_workspaces["a"]
+    ledger = PgLedger(app_pool, ada, open_account(app_pool, ada))
+    ledger.append("cycle", {"domain": "cs2"})
+    with ledger.batch():
+        for i in range(50):
+            ledger.append("forecast", {"i": i})
+        assert len(list(ledger.entries())) == 1  # not visible until it ends
+    ledger.append("cycle", {"domain": "epl"})
+    entries = list(ledger.entries())
+    assert [e["seq"] for e in entries] == list(range(52)) and ledger.verify() is None
+    # A batch that raises writes nothing, and the chain carries on from its head.
+    with pytest.raises(RuntimeError, match="halfway"), ledger.batch():
+        ledger.append("forecast", {"i": "lost"})
+        raise RuntimeError("halfway")
+    ledger.append("cycle", {"domain": "weather"})
+    assert len(list(ledger.entries())) == 53 and ledger.verify() is None
