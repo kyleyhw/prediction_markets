@@ -51,6 +51,14 @@ CANNED = {
                 "score": {"ft": [1, 0]},
             },
             {"round": "Matchday 6", "date": "2026-09-27", "team1": "C", "team2": "D"},
+            # Some matches in the live file carry the bare full-time pair.
+            {
+                "round": "Matchday 3",
+                "date": "2026-09-05",
+                "team1": "E",
+                "team2": "F",
+                "score": [2, 2],
+            },
         ],
     },
     "gdelt": {
@@ -91,7 +99,13 @@ def test_each_source_writes_a_capture_with_its_time(
     assert evidence.weather_cities(app_pool) == ["Jinan"]
     results = {name: fn(store, app_pool) for name, fn in evidence.SOURCES.items()}
     assert results["open_meteo"]["rows"] == 2
-    assert results["openfootball"]["rows"] == 2
+    assert results["openfootball"]["rows"] == 3
+    football = pq.read_table(tmp_path / "store" / results["openfootball"]["key"])
+    assert [(r["goals1"], r["goals2"]) for r in football.to_pylist()] == [
+        (1, 0),
+        (None, None),
+        (2, 2),
+    ]
     assert results["venue_schedules"]["rows"] == 2
     assert results["gdelt"]["rows"] == 3  # one canned article per domain query
     table = pq.read_table(tmp_path / "store" / results["open_meteo"]["key"])

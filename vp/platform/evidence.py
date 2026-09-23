@@ -191,7 +191,13 @@ def openfootball(store: ObjectStore, pool: Any) -> dict[str, Any]:
     captured = utc_now_iso()
     rows = []
     for m in data.get("matches") or []:
-        ft = (m.get("score") or {}).get("ft") or [None, None]
+        # The file gives a score as {"ht": [..], "ft": [..]}, or for some
+        # matches as the bare full-time pair [home, away].
+        score = m.get("score")
+        ft = (score if isinstance(score, list) else (score or {}).get("ft")) or [
+            None,
+            None,
+        ]
         rows.append(
             {
                 "captured_at": captured,
