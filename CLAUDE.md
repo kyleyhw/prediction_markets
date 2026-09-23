@@ -52,6 +52,9 @@ The original `prediction_markets` project is archived unchanged under
   alerts in `docs/runbook.md`, deploy files in `deploy/`. The engine must
   never import it (`tests/test_platform_boundary.py`); `vp/cli.py`, the
   composition root, imports it only inside its platform commands.
+- `vp/sources/`: evidence sources shared by the command line and the
+  platform's collectors (Open-Meteo runs and ensembles, stations,
+  openfootball) and the backfill (Phase 17, `docs/evidence.md`).
 - `vp/signals/`: the signal library, gates, bench, blends, committees and
   the benchmark's arithmetic (Phase 16, `docs/signals.md`).
 - `vp/`: the engine. `venues/polymarket.py` (read-only client with the
@@ -156,7 +159,21 @@ accounting (no model cutoff recorded yet, so every model result counts as
 contaminated), and the weekly benchmark with sealed forecasts (migration
 0018, `vp/platform/signals.py`, the Signals page). Nothing is alive on any
 domain; report in `tests/reports/phase16_signals.md`. Week 2026-W39 is
-frozen on the stand-in and waits for its questions to resolve. Earlier,
+frozen on the stand-in and waits for its questions to resolve.
+**Phase 17 followed the same evening** (`docs/evidence.md`,
+`docs/domains.md`): the archive reader with manifests and point-in-time
+visibility (`vp/forecast/archive.py`), weather forecasts as issued at each
+market's own station (`vp/sources/`, `vp evidence weather-runs`, 53
+stations backfilled from 2024-10), the `nwp_forecast` signal (the first
+weather signal level with the market a day out; its backtest is promising
+and unproven, see the report), football results as dated facts with a
+derived table, archive tools for the LLM forecaster, fee-aware Phase 9
+baselines (report amended, one earlier claim corrected), the venue's v2
+history and resolution shapes fixed, and the domain kit with a boundary
+test (`tests/test_domain_boundary.py`: no code outside `vp/domains/` names
+a domain). Report in `tests/reports/phase17_evidence.md`. Waiting: the
+Open-Meteo paid plan (F9), an LPDB key for Liquipedia, a licensed
+football feed, GDELT (429 here). Earlier,
 the decisions each phase needed were taken on 2026-09-19 as proposed
 (Fly.io with Amsterdam as the first region, magic-link sign-in, quarter
 Kelly with a 5% cap and a 0.03 minimum edge, fees shown, session keys for

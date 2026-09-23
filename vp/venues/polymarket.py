@@ -975,8 +975,9 @@ def fetch_resolution(condition_id: str) -> dict[str, Any] | None:
     split payout (no single winner) leaves ``winner_index`` as ``None``.
     Measured on 2026-09-23 the record carries no ``payouts`` but the
     oracle's answer as ``price`` in 18-decimal fixed point: 1 means the
-    first outcome won, 0 the second, one half a split (eight settled markets
-    checked against the CLOB ``winner`` flags agreed).
+    first outcome won, 0 the second, and one half is read as a split (not
+    seen live). Of eight settled markets checked, seven agree with the CLOB
+    ``winner`` flags and the eighth has none.
     """
     payload = _get_json(
         _DATA_RESOLUTIONS_URL,

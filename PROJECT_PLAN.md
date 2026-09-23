@@ -868,41 +868,41 @@ and where leakage hides. The archive makes the cutoff enforceable for
 sources that do not keep their own history, and the domain kit makes opening
 a new domain a documented procedure rather than a rewrite.
 
-72. [pending] Archive design: append-only captures keyed by source and
+72. [done 2026-09-23, `vp/forecast/archive.py`; manifests with SHA-256, point-in-time visibility, accessors on `Evidence`] Archive design: append-only captures keyed by source and
     capture time, Parquet in object storage with a manifest per capture,
     provenance and licence per source, retention rules; readers serve only
     captures with `capture_time <= cutoff`; an evidence accessor per source
     added to `Evidence` without touching any forecaster.
-73. [pending] Weather: every Open-Meteo model run for every city that has
+73. [done 2026-09-23, `vp/sources/open_meteo.py`; 53 stations from the markets' own resolution sources, point-in-time forecasts backfilled from 2024-10, the ensemble captured forward, the key route decided (paid plan, `VP_OPEN_METEO_KEY`), signals `nwp_forecast` and `nwp_ensemble`] Weather: every Open-Meteo model run for every city that has
     had a market, captured at issue time with ensemble members, so the
     forecast as it stood before the cutoff is known; observations for
     labels and climatology (post-cutoff use only); the resolution source
     each market names, recorded; the rate-limit problem of 2026-09-13 solved
     by a keyed or self-hosted route decided here.
-74. [pending] Football: fixtures, results, line-ups and injuries from a
+74. [done 2026-09-23 for results: openfootball seasons as dated facts and a derived table; line-ups and injuries have no source whose terms were confirmed and wait on a licensed feed (F9)] Football: fixtures, results, line-ups and injuries from a
     licensed or open source (candidates evaluated on licence, coverage and
     point-in-time semantics), daily; league tables derived, never fetched
     after the fact.
-75. [pending] CS2: schedules, results, rosters and map vetoes from sources
+75. [evaluated 2026-09-23, `docs/evidence.md`; the LPDB key and its terms wait on the owner, so nothing from Liquipedia is collected] CS2: schedules, results, rosters and map vetoes from sources
     whose terms permit it (Liquipedia's API under its attribution licence;
     a paid feed optional); scrape-hostile sources are not used and the
     page says which.
-76. [pending] Headlines: a daily capture of headline sets per domain from
+76. [done 2026-09-23: `headlines` accessor and LLM tool; GDELT answers 429 from this container, so no capture exists here yet] Headlines: a daily capture of headline sets per domain from
     feeds whose terms permit it, stored with capture time, so an LLM
     forecaster in a backtest reads only what was printed before the cutoff;
     web search at forecast time is allowed only in the forward loop and is
     logged as such.
-77. [pending] Fee schedules: the per-market `feeSchedule` and its history
+77. [done 2026-09-23: datasets carry each market's rate, `vp backtest --market-fees`, the Phase 9 report amended] Fee schedules: the per-market `feeSchedule` and its history
     captured with every snapshot; the resolved datasets gain the fee rate
     in force when each market traded; the Phase 9 baselines re-run fee-aware
     and the report amended, since the zero-fee default understated the cost
     of every bet.
-78. [pending] Data layer refresh against the venue's 2026 API: Data API v2
+78. [done 2026-09-23: every endpoint re-read live; the v2 history and resolution shapes fixed; negative-risk fields and the resolution source on the record] Data layer refresh against the venue's 2026 API: Data API v2
     for histories, resolutions and analytics; keyset pagination; the closed
     default on the markets endpoint; negative-risk and combinatorial fields
     recorded on the market record; the client's endpoint table re-verified
     line by line.
-79. [pending] Domain onboarding kit: a new domain is membership rules, a
+79. [done 2026-09-23, `docs/domains.md`; boundary and kit tests; candidates ranked from the venue's counts, opening one is the owner's decision] Domain onboarding kit: a new domain is membership rules, a
     parser with recorded questions, an evidence pack, signals, a domain
     pack page and tests; nothing in the platform enumerates the domains.
     Candidates ranked by data availability and market count (other
@@ -910,7 +910,7 @@ a new domain a documented procedure rather than a rewrite.
     venue's sports feed, other esports titles, politics with care); the
     short-horizon crypto price markets are noted and not pursued (fee 0.07,
     a 50 ms taker delay, no evidence an LLM can add).
-80. [pending] Phase 17 report: coverage and freshness per source, the
+80. [done 2026-09-23, `tests/reports/phase17_evidence.md`] Phase 17 report: coverage and freshness per source, the
     leakage audit (forward against backtest per forecaster with the archive
     in use), and the fee-aware baseline table.
 

@@ -120,8 +120,8 @@ book, market (`tokens[].winner`) and price history. New or changed:
   a whole life in one request, stays the first choice.
 - Data API v2 resolutions carry no `payouts`: the oracle's answer is
   `price` in 18-decimal fixed point, 1 for the first outcome and 0 for the
-  second (eight settled markets checked against the CLOB `winner` flags,
-  all agreeing, and one the CLOB had no flag for). The client read no
+  second (of eight settled markets checked, seven agree with the CLOB
+  `winner` flags and the eighth has no CLOB flag). The client read no
   winner from any live record; it now reads `price`, and the market-data
   service asks again about records it stored without an answer.
 - Data API v2 trades (`{"data", "pagination"}`, snake case) and holders
