@@ -114,7 +114,7 @@ def test_each_source_writes_a_capture_with_its_time(
     )
     store = LocalStore(tmp_path / "store")
     assert evidence.weather_cities(app_pool) == ["Jinan"]
-    every = evidence.SOURCES | evidence.DAILY
+    every = evidence.SOURCES
     results = {name: fn(store, app_pool, None) for name, fn in every.items()}
     assert results["open_meteo_ensemble"]["rows"] == 1
     assert results["open_meteo_runs"]["rows"] == 1  # the later one is not final

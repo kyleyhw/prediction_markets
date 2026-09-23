@@ -25,11 +25,11 @@ football line-ups deferred, the domain ranking) were taken as proposed.
 | `ruff check .`, `ruff format --check .` | passed | < 1 s |
 | `ty check` | passed, 0 diagnostics | 1 s |
 | `pre-commit run --all-files` | all hooks passed | 3 s |
-| `pytest -q` | 319 passed (308 before the phase) | 25.6 s |
+| `pytest -q` | 320 passed (308 before the phase) | 26 s |
 
 | File | Tests | What |
 | :--- | ---: | :--- |
-| `test_archive.py` | 7 | rows are served only once visible, and a point-in-time row by its issue bound, not its fetch time; only a point-in-time source may carry that bound; a capture whose file does not match its manifest is not read; weather markets name their station; hourly runs become local days with the right bound across a clock change; the weather-model signals read what was issued before the cutoff; the LLM tools read the archive; the table counts only results known before the cutoff |
+| `test_archive.py` | 8 | rows are served only once visible, a backfilled row only an hour after its bound unless captured sooner, and a point-in-time row by its issue bound, not its fetch time; only a point-in-time source may carry that bound; a capture whose file does not match its manifest is not read; weather markets name their station; hourly runs become local days with the right bound across a clock change; the weather-model signals read what was issued before the cutoff; the LLM tools read the archive; the table counts only results known before the cutoff |
 | `test_domain_boundary.py` | 1 | no code outside `vp/domains/` names a domain (Python and the interface's scripts) |
 | `test_domain_kit.py` | 1 | a domain defined only by its adapter reaches the strategy spec, the signals and the evidence |
 | `test_signals.py` | +2 | the two new signals pass purity, metadata and the cutoff sentinel, whose fixtures now include archive captures after the cutoff |
@@ -60,6 +60,7 @@ market, never per city.
 | `stations` (NOAA) | 53 of 53 codes | static | not timed |
 | `open_meteo_runs` backfill | 53 stations, 32,203 rows (day and lead), 2024-10-24 to 2026-09-24 | tomorrow two days ahead for all 53 at 20:51 UTC; one day ahead as each becomes final | 745 s, then 77 s for the forward pass |
 | `openfootball` | 3 seasons, 1,140 matches | results from kick-off plus three hours | not timed |
+| `open_meteo_ensemble` | 47 stations with an open market, 16,779 member rows (51 members, 7 days) | forward only, first capture 2026-09-23 21:33 UTC | 71 s |
 
 The Previous Runs API answered 429 and timed out through the evening
 (the container shares its address); the backfill paused and resumed, two
@@ -70,35 +71,36 @@ none changed.
 ## The Weather Model Against the Market
 
 `vp signals bench --domain weather` on the Phase 9 sample, 24 hours before
-settlement:
+settlement, with the archive's final visibility rule (below):
 
 | Signal | n | Brier | Market | Skill | Advantage [95%] | Verdict | Reliability |
 | :--- | ---: | ---: | ---: | ---: | :--- | :--- | ---: |
-| `nwp_forecast` | 273 | 0.0670 | 0.0688 | +0.027 | +0.0018 [−0.0081, +0.0115] | par | 0.0029 |
-| blend: `nwp_forecast` | 170 | 0.0722 | 0.0757 | +0.047 | +0.0035 [−0.0063, +0.0127] | par | 0.0044 |
+| `nwp_forecast` | 271 | 0.0683 | 0.0691 | +0.012 | +0.0008 [−0.0095, +0.0110] | par | 0.0033 |
+| blend: `nwp_forecast` | 169 | 0.0732 | 0.0762 | +0.039 | +0.0030 [−0.0066, +0.0124] | par | 0.0039 |
 | `climatology` | 348 | 0.0788 | 0.0665 | −0.185 | −0.0123 [−0.0264, +0.0002] | par | 0.0143 |
 
 The numerical forecast is the first weather signal level with the market
-a day out; climatology was well behind it. It is also the best calibrated
-of the three (reliability 0.0029 against the market's 0.0058 on the same
-markets). Telling its advantage from zero would take about 17,000 markets.
-Six hours out the market, which by then has most of the day's readings,
-is far ahead (Brier 0.0256 against 0.0660).
+a day out; climatology was well behind it. It is also better calibrated
+than the market on the same markets (reliability 0.0033 against 0.0057).
+An advantage that small could not be told from zero on fewer than about
+80,000 markets. Six hours out the market, which by then has most of the
+day's readings, is far ahead (Brier 0.0256 against 0.0661).
 
 As a strategy, `vp backtest --forecasters market signal:nwp_forecast
---min-edge 0.05 --market-fees`, 24 hours out: 96 bets, +181%, win rate
-51%, per-bet Sharpe 0.135 with a bootstrap interval of [−0.121, 0.248],
-$P(\text{Sharpe} > 0) = 0.93$. Six hours out: 119 bets, −94%.
+--min-edge 0.05 --market-fees`, 24 hours out: 97 bets, +123%, win rate
+49%, per-bet Sharpe 0.122 with a bootstrap interval of [−0.160, 0.233],
+$P(\text{Sharpe} > 0) = 0.90$. Six hours out: 121 bets, −94%.
 
-**How far to trust the day-out result.** The median forecast used became
-visible 19.6 hours before its cutoff, but the shortest margin was six
-minutes, so the run was repeated with every forecast made visible twelve
-hours later than its bound: 252 scored, skill +0.022, 93 bets, +180%,
-$P(\text{Sharpe} > 0) = 0.92$. The result does not rest on the delivery
-allowance. It is still not established: the Sharpe interval includes zero,
-the simulator fills at the last price plus one cent, and weather books are
-thin. It is the first candidate the platform has for its forward test:
-paper trading at the real book.
+**How far to trust the day-out result.** The first run, before the
+fetch-latency rule, gave skill +0.027 and +181%; the rule moved some
+markets from the forecast issued a day ahead to the one issued two days
+ahead and cut both. Made stricter still, every forecast visible twelve
+hours after its bound, the signal is no worse (249 scored, skill +0.026,
+91 bets, +190%, $P(\text{Sharpe} > 0) = 0.93$), so the result does not
+rest on the timing allowance. It is still not established: every Sharpe
+interval includes zero, the simulator fills at the last price plus one
+cent, and weather books are thin. It is the first candidate the platform
+has for its forward test, paper trading at the real book.
 
 ## Football, CS2, Headlines (tasks 74 to 76)
 
@@ -147,10 +149,30 @@ American leagues; opening any is the owner's decision.
 
 - The cutoff sentinel covers both new signals with archive captures after
   its cutoff: unchanged values.
-- `recheck`: 3,162 point-in-time rows read again, none changed.
+- `recheck`: 3,162 point-in-time rows read again, none changed; across
+  the evening's captures 475 rows were read more than once, none with a
+  different value.
+- **Forward against recomputed.** Forecasts for the 2,882 open weather
+  markets were made at 21:34 UTC from the archive as it stood (1,639 from
+  the model forecast, 2,497 from the ensemble), then recomputed at the same
+  cutoff after one more capture. 296 of 4,136 differed. The cause: 15
+  forecasts for the next day became final between the captures, their
+  bound was before the cutoff, and the recomputation used them, although
+  a forward run at 21:34 had not yet fetched them. That is backtest
+  optimism, not future information, and it is fixed by the fetch-latency
+  rule (`docs/evidence.md`): a backfilled row is visible an hour after its
+  bound, a row captured sooner from its capture, and the weather collector
+  runs hourly. Repeated under the rule, forecasts made at 21:58 and
+  recomputed after a further capture of runs and ensemble: 4,136 of 4,136
+  identical.
 - The twelve-hour stricter re-run above.
 
 ## Found and Fixed
+
+- A backtest could see point-in-time rows before a forward run would have
+  fetched them (the leakage audit above); fixed by the fetch-latency rule.
+- One station's network failure ended the whole ensemble capture, in the
+  command and in the platform collector; each station now fails alone.
 
 - The v2 history fallback and v2 resolution parsing (above).
 - The daily collector read only the last three days, so it would never
@@ -166,7 +188,7 @@ American leagues; opening any is the owner's decision.
 
 - The ensemble signal has no bench: the provider keeps no ensemble
   history, so it can be scored only on markets that settle after the first
-  captures.
+  capture (2026-09-23, 47 stations).
 - GDELT headlines and Liquipedia: blocked here (429) and waiting on the
   owner's key, respectively.
 - Line-ups and injuries: waiting on a licensed feed.

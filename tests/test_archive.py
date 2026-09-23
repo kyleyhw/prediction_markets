@@ -154,3 +154,33 @@ def test_the_table_counts_only_results_known_before_the_cutoff(tmp_path) -> None
     second = Evidence(datetime(2025, 8, 24, tzinfo=UTC), tmp_path)
     (a, b) = second.table("lg")
     assert (a.team, a.played, a.points, b.points) == ("a", 2, 4, 1)
+
+
+def test_a_backfilled_row_is_visible_only_once_a_forward_run_could_hold_it(
+    tmp_path,
+) -> None:
+    """Measured 2026-09-23: without a fetch latency, 15 forecasts that became
+    final between two captures changed 296 of 4,136 forward forecasts when
+    recomputed at the same cutoff."""
+    from vp.forecast.archive import LATENCY
+
+    c = gates.CUTOFF
+    bound = c - timedelta(minutes=30)
+    write_capture(
+        tmp_path,
+        "open_meteo_runs",
+        [{"day": "late", "available_at": bound.isoformat()}],
+        provenance={},
+        now=c + timedelta(days=1),  # fetched after the cutoff
+    )
+    write_capture(
+        tmp_path,
+        "open_meteo_runs",
+        [{"day": "prompt", "available_at": bound.isoformat()}],
+        provenance={},
+        now=bound + timedelta(minutes=5),  # fetched as soon as it was final
+    )
+    archive = Archive(tmp_path)
+    assert [r["day"] for r in archive.rows("open_meteo_runs", c)] == ["prompt"]
+    later = archive.rows("open_meteo_runs", bound + LATENCY + timedelta(seconds=1))
+    assert sorted(r["day"] for r in later) == ["late", "prompt"]

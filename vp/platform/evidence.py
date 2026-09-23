@@ -22,7 +22,7 @@ their terms (flag F9) are in `docs/evidence.md`; in short:
   with attribution, at most one request every five seconds.
 * `open_meteo_ensemble`: the ECMWF ensemble at every station an open
   market names (Phase 17, `vp.sources.open_meteo`).
-* `open_meteo_runs`, daily: the point-in-time forecasts from three days
+* `open_meteo_runs`, hourly: the point-in-time forecasts from three days
   ago to tomorrow at the same stations, each row with the latest moment it
   can have existed (`available_at`); rows not yet final are left for the
   next run.
@@ -287,50 +287,63 @@ def named_stations(store: ObjectStore, pool: Any) -> dict[str, dict[str, Any]]:
     return {c: known[c] for c in codes if c in known}
 
 
-def open_meteo_ensemble(store: ObjectStore, pool: Any, key: str | None) -> dict:
+def _each_station(
+    store: ObjectStore, pool: Any, source: str, fetch: Callable[[dict], Any]
+) -> dict[str, Any]:
+    """Fetch every named station, one failing alone, and store one capture."""
     rows: list[dict[str, Any]] = []
     requests = []
-    for site in named_stations(store, pool).values():
-        got, request = om.ensemble(site, key=key)
+    failed: dict[str, str] = {}
+    for code, site in named_stations(store, pool).items():
+        try:
+            got, request = fetch(site)
+        except Exception as exc:  # noqa: BLE001 - one station's failure is reported
+            failed[code] = om.fetch_error(exc)
+            continue
         rows += got
         requests.append(request)
-    return _store(
-        store, pool, "open_meteo_ensemble", None, rows, {"requests": requests}
+    out = _store(store, pool, source, None, rows, {"requests": requests})
+    return out | ({"failed": failed} if failed else {})
+
+
+def open_meteo_ensemble(store: ObjectStore, pool: Any, key: str | None) -> dict:
+    return _each_station(
+        store, pool, "open_meteo_ensemble", lambda site: om.ensemble(site, key=key)
     )
 
 
 def open_meteo_runs(store: ObjectStore, pool: Any, key: str | None) -> dict:
     today = datetime.now(tz=UTC).date()
-    rows: list[dict[str, Any]] = []
-    requests = []
-    for site in named_stations(store, pool).values():
-        # Through tomorrow: a forecast for tomorrow issued two days ahead is
-        # final by this morning, and `_store` drops what is not yet.
-        got, request = om.previous_runs(
+    # Through tomorrow: a forecast for tomorrow issued two days ahead is final
+    # by this morning, and `_store` drops what is not yet.
+    return _each_station(
+        store,
+        pool,
+        "open_meteo_runs",
+        lambda site: om.previous_runs(
             site, today - timedelta(days=3), today + timedelta(days=1), key=key
-        )
-        rows += got
-        requests.append(request)
-    return _store(store, pool, "open_meteo_runs", None, rows, {"requests": requests})
+        ),
+    )
 
 
 Collector = Callable[[ObjectStore, Any, str | None], dict[str, Any]]
 
-# Run hourly by the `evidence` schedule; `DAILY` by `evidence-daily`.
+# Run hourly by the `evidence` schedule.
 SOURCES: dict[str, Collector] = {
     "open_meteo": lambda s, p, k: open_meteo(s, p),
     "openfootball": lambda s, p, k: openfootball(s, p),
     "venue_schedules": lambda s, p, k: venue_schedules(s, p),
     "gdelt": lambda s, p, k: gdelt(s, p),
     "open_meteo_ensemble": open_meteo_ensemble,
+    # Hourly, like the rest: the archive's `LATENCY` assumes it.
+    "open_meteo_runs": open_meteo_runs,
 }
-DAILY: dict[str, Collector] = {"open_meteo_runs": open_meteo_runs}
 
 
 def collect_evidence(ctx: JobContext) -> dict[str, Any]:
     """The `evidence` job: run each collector, each failing on its own."""
     names = ctx.job.payload.get("sources") or list(SOURCES)
-    every = SOURCES | DAILY
+    every = SOURCES
     key = ctx.services.settings.open_meteo_key
     results: dict[str, Any] = {}
     for i, name in enumerate(names):

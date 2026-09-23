@@ -64,6 +64,15 @@ it directly (`vp/forecast/archive.py`).
   the fact's date, never an earlier guess; a row whose moment has not yet
   come is not written. Two sources qualify: `open_meteo_runs` and
   `openfootball` (`POINT_IN_TIME` in `vp/forecast/archive.py`).
+- **Fetch latency.** A value that existed is not yet a value a forward run
+  holds: it has it only once a collector has fetched it. So a backfilled
+  row is visible from its bound plus the collectors' cadence (`LATENCY`,
+  one hour), and a row captured sooner than that from its capture. Without
+  this, on 2026-09-23, forecasts made forward at 21:34 and recomputed at
+  the same cutoff after one more capture differed in 296 of 4,136 cases:
+  15 forecasts for the next day had become final between the two captures,
+  and the recomputation used them. The collector of point-in-time weather
+  therefore runs hourly with the others (migration 0020).
 - **Checking the claim.** `vp evidence recheck` reads the last month of
   every archived station again and compares each station, day and lead
   with what the archive holds; a point-in-time provider must return the
@@ -97,7 +106,8 @@ market, not at a geocoded city centre.
   for delivery, so a day's maximum or minimum from `previous_dayN` has
   `available_at` = the last hour of the local day $- 24N + 6$ hours. The
   backfill (`vp evidence weather-runs`) reads days one and two for every
-  station a market has named; the daily collector reads from three days back to tomorrow, and keeps a row only once its moment has passed.
+  station a market has named; the hourly collector reads from three days
+  back to tomorrow, and keeps a row only once its moment has passed.
 - **`open_meteo_ensemble`, forward only.** The Ensemble API's members
   (ECMWF IFS, 51 members) for the next days at each station, captured
   hourly with `available_at = captured_at`, since the provider keeps no

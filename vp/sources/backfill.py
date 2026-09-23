@@ -136,12 +136,17 @@ def ensembles(
     }
     rows: list[dict[str, Any]] = []
     requests = []
+    failed: dict[str, str] = {}
     for code in sorted(c for c in open_days if c in known):
-        got, request = open_meteo.ensemble(known[code], key=key)
+        try:
+            got, request = open_meteo.ensemble(known[code], key=key)
+        except Exception as exc:  # noqa: BLE001 - one station's failure is reported
+            failed[code] = open_meteo.fetch_error(exc)
+            continue
         rows += got
         requests.append(request)
     write_capture(root, "open_meteo_ensemble", rows, provenance={"requests": requests})
-    return {"stations": len(requests), "rows": len(rows)}
+    return {"stations": len(requests), "rows": len(rows), "failed": failed}
 
 
 def football(root: Path, seasons: list[str]) -> dict[str, Any]:

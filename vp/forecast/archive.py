@@ -5,8 +5,9 @@ Captures live under ``<root>/evidence/<source>/<YYYY-MM-DD>/``, one Parquet
 file and one JSON manifest per capture, the layout the platform's
 collectors write under ``shared/evidence/``. Every row has ``captured_at``;
 a row from a point-in-time provider also has ``available_at``, the latest
-moment the value can have existed. A reader sees a row only if that moment
-(``available_at``, else ``captured_at``) is before its cutoff, and reads a
+moment the value can have existed. A reader sees a row only once a forward
+run would have held it: from its capture, or from ``available_at`` plus
+the collectors' cadence (``LATENCY``) if that is sooner; and it reads a
 capture only if the file's hash matches its manifest.
 """
 
@@ -16,7 +17,7 @@ import hashlib
 import json
 import logging
 from bisect import bisect_left
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -37,6 +38,12 @@ LICENCES = {
 }
 # Sources whose rows may carry an `available_at` before their capture.
 POINT_IN_TIME = {"open_meteo_runs", "openfootball"}
+# A forward run holds a row only once it has been fetched, so a backfilled
+# row is visible from its bound plus the collectors' cadence, not from the
+# bound itself; a row captured sooner is visible from its capture. Without
+# this a backtest sees values a forward run at the same cutoff had not yet
+# fetched (measured 2026-09-23; docs/evidence.md).
+LATENCY = timedelta(hours=1)
 
 
 def _stamp(when: datetime) -> str:
@@ -113,8 +120,11 @@ class Archive:
                     continue
             point = source in POINT_IN_TIME
             for r in pq.read_table(path).to_pylist():
-                seen = r.get("available_at") if point else None
-                r["_visible"] = parse_when(seen or r["captured_at"])
+                captured = parse_when(r["captured_at"])
+                bound = r.get("available_at") if point else None
+                r["_visible"] = (
+                    min(captured, parse_when(bound) + LATENCY) if bound else captured
+                )
                 rows.append(r)
         rows.sort(key=lambda r: r["_visible"])
         self._rows[source] = ([r["_visible"] for r in rows], rows)
