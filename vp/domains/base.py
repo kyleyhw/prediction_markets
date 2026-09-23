@@ -37,18 +37,20 @@ class Domain:
     # The parsed kinds of its main contracts and the fields each carries; a
     # strategy's selector is checked against these (docs/strategies.md).
     kinds: dict[str, tuple[str, ...]] = field(default_factory=dict)
-    # Whether its match events carry the sports props of `vp.domains.props`.
-    has_props: bool = False
+    # The kinds of `vp.domains.props` its match events carry.
+    props: tuple[str, ...] = ()
 
     @property
     def all_kinds(self) -> dict[str, tuple[str, ...]]:
         """Every kind a market of this domain can parse to, props included."""
-        return {**self.kinds, **(props.PROP_KINDS if self.has_props else {})}
+        return {**self.kinds, **{k: props.PROP_KINDS[k] for k in self.props}}
 
     def read(self, question: str, event_title: str | None) -> dict[str, str] | None:
         """The parsed fields of a member market: a prop form, else the domain's."""
-        found = props.parse(question, event_title) if self.has_props else None
-        return found or self.parse(question, event_title)
+        found = props.parse(question, event_title) if self.props else None
+        if found is not None and found["kind"] in self.props:
+            return found
+        return self.parse(question, event_title)
 
     def matches(
         self, question: str, event_title: str | None, tags: tuple[str, ...]

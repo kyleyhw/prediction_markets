@@ -271,9 +271,12 @@ picked per month (the backtest's universe), five example questions, the
 estimated cost of a backtest and of a month of paper (zero unless the
 belief is the LLM, then `estimate_usd` on the counts), and the power
 statement: how many settled markets the selector provides a month against
-how many an edge of a given size needs to be told from zero
-($n \approx (z_{\alpha/2} + z_\beta)^2 \sigma^2 / \delta^2$ with the Brier
-differences' spread from the domain's baseline run).
+how many settled bets an edge of the spec's minimum size needs to be told
+from zero at the 5% level with 80% power, $n \approx (1.96 + 0.84)^2\,
+p(1-p)/\delta^2$ at price $p$ (about 2,200 bets for 3 points at 50¢;
+derivation in `vp/strategy/preview.py`). An LLM belief's paper cost counts
+one forecast per cycle while a market is in its window, since the loop asks
+again each cycle until it holds a position.
 
 ## The Number Gate (Task 54)
 

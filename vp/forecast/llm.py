@@ -155,6 +155,20 @@ def estimate_usd(
     return usd * (BATCH_DISCOUNT if batch else 1.0)
 
 
+def usage_usd(usage: Any, model: str, batched: bool = False) -> float:
+    """What one response cost, from its usage at the recorded prices."""
+    price_in, price_out = PRICES[model]
+    cache_read = getattr(usage, "cache_read_input_tokens", None) or 0
+    cache_write = getattr(usage, "cache_creation_input_tokens", None) or 0
+    usd = (
+        usage.input_tokens * price_in
+        + cache_write * price_in * CACHE_WRITE
+        + cache_read * price_in * CACHE_READ
+        + usage.output_tokens * price_out
+    ) / 1e6
+    return usd * BATCH_DISCOUNT if batched else usd
+
+
 def run_tool(
     name: str, args: dict[str, Any], market: BinaryMarket, ev: Evidence
 ) -> str:
@@ -441,17 +455,9 @@ class LLMForecaster:
         self, response: Any, market: BinaryMarket, batched: bool = False
     ) -> float:
         usage = response.usage
-        price_in, price_out = PRICES[self.model]
         cache_read = getattr(usage, "cache_read_input_tokens", None) or 0
         cache_write = getattr(usage, "cache_creation_input_tokens", None) or 0
-        usd = (
-            usage.input_tokens * price_in
-            + cache_write * price_in * CACHE_WRITE
-            + cache_read * price_in * CACHE_READ
-            + usage.output_tokens * price_out
-        ) / 1e6
-        if batched:
-            usd *= BATCH_DISCOUNT
+        usd = usage_usd(usage, self.model, batched)
         self.calls.append(
             {
                 "market_id": market.market_id,

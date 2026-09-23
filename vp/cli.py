@@ -12,9 +12,10 @@ Subcommands:
 * ``vp paper run|settle|leakage``: one forward paper-trading cycle, the
   settlement pass over open positions, and the forward-versus-backtest
   leakage check, all recorded in a hash-chained ledger.
-* ``vp strategy check|diff|backtest``: a strategy spec (a JSON file): its
-  problems, plain-language rendering and hash; what changed between two
-  versions; its backtest on each of its domains.
+* ``vp strategy check|diff|preview|backtest``: a strategy spec (a JSON
+  file): its problems, plain-language rendering and hash; what changed
+  between two versions; what it would touch and cost; its backtest on each
+  of its domains.
 * ``vp ui``: a local, read-only browser dashboard over the data root.
 * ``vp serve``: the platform web service, with sign-in, over Postgres.
 * ``vp db migrate``: apply the platform's pending database migrations.
@@ -30,6 +31,7 @@ never load the platform.
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 from importlib.metadata import version
 from pathlib import Path
@@ -132,6 +134,9 @@ def main() -> None:
     sdiff = strat_sub.add_parser("diff", help="what changed between two versions")
     sdiff.add_argument("old", type=Path)
     sdiff.add_argument("new", type=Path)
+    sprev = strat_sub.add_parser("preview", help="what a spec would touch")
+    sprev.add_argument("spec", type=Path)
+    sprev.add_argument("--root", type=Path, default=Path("data"))
     sback = strat_sub.add_parser("backtest", help="backtest a spec")
     sback.add_argument("spec", type=Path)
     sback.add_argument("--root", type=Path, default=Path("data"))
@@ -367,6 +372,10 @@ def _strategy(args: argparse.Namespace) -> None:
         print(f"problem: {problem}")
     if problems:
         raise SystemExit(1)
+    if args.strategy_command == "preview":
+        from vp.strategy.preview import preview
+
+        print(json.dumps(preview(spec, args.root).as_json(), indent=1))
     if args.strategy_command == "backtest":
         out = args.out or args.root / "strategies" / spec_hash(spec)[:12]
         results = run.backtest(spec, args.root, out, max_markets=args.max_markets)

@@ -28,6 +28,7 @@ from __future__ import annotations
 import re
 
 from vp.domains.base import Domain
+from vp.domains.props import PROP_KINDS
 
 _SEASON = re.compile(
     r"^Will (?P<team>.+?) win the (?:(?P<season>\d{4}[–-]\d{2,4}) )?(?:English )?"
@@ -105,5 +106,5 @@ EPL = Domain(
         "match": ("team_a", "team_b", "side", "date"),
         "season_winner": ("team", "season"),
     },
-    has_props=True,
+    props=tuple(PROP_KINDS),
 )

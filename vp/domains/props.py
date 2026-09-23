@@ -11,8 +11,9 @@ them with the venue's label, and the tests check the two agree):
 * team totals: ``A vs. B: A O/U 0.5``, ``A vs. B: A 2nd Half O/U 0.5``,
   ``A vs. B: A O/U 2.5 Corners``
 * spreads and handicaps: ``Spread: A (-1.5)``, ``1st Half Spread: A
-  (-2.5)``, ``Map Handicap: PLD (-1.5) vs your end (+1.5)``, ``Map 1 Rounds
-  Handicap: A (-6.5) vs B (+6.5)``
+  (-2.5)``, ``Map Handicap: PLD (-1.5) vs your end (+1.5)`` (``Map
+  Handicap: MOUZ (-1.5)`` before 2026), ``Map 1 Rounds Handicap: A (-6.5)
+  vs B (+6.5)``, and ``Total Rounds Over/Under 52.5`` for a whole series
 * ``Exact Score: A 0 - 0 B?``, ``1st Half Exact Score: Any Other Score?``
 * ``A leading at halftime?``, ``A vs. B: Draw at halftime?``,
   ``A to win the second half?``, ``A vs. B: Second half draw?``
@@ -92,7 +93,7 @@ _FORMS: list[tuple[str, re.Pattern[str]]] = [
         re.compile(
             r"^(?:Map (?P<map>\d+) (?P<rounds>Rounds) |Map )Handicap: (?P<team>.+?) \("
             + _NUM
-            + r"\) vs .+$",
+            + r"\)(?: vs .+)?$",
             re.I,
         ),
     ),
@@ -101,6 +102,10 @@ _FORMS: list[tuple[str, re.Pattern[str]]] = [
         re.compile(r"^Map (?P<map>\d+) Total Rounds: Over/Under " + _NUM + r"$", re.I),
     ),
     ("total", re.compile(r"^Games Total: O/U " + _NUM + r"$", re.I)),
+    (
+        "total",
+        re.compile(r"^Total (?P<rounds>Rounds) Over/Under " + _NUM + r"$", re.I),
+    ),
     (
         "odd_even",
         re.compile(

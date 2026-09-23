@@ -89,11 +89,13 @@ CS2 = Domain(
         "pgl ",
         "starladder",
     ),
-    exclude=("simulator", "skin", "case opening"),
+    # Dota 2 series share tournament names and team names (found in the
+    # resolved set, 2026-09-23).
+    exclude=("simulator", "skin", "case opening", "dota"),
     parse=parse,
     kinds={
         "match": ("team_a", "team_b", "format", "map", "stage"),
         "tournament_winner": ("team", "tournament"),
     },
-    has_props=True,
+    props=("total", "spread", "odd_even"),
 )
