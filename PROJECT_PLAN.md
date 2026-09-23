@@ -789,7 +789,7 @@ role forecasters; and a public benchmark that commits forecasts before the
 cutoff. This phase is where "does anything beat the market" gets its
 systematic answer, and where the Research Lab (Phase 23) gets its material.
 
-63. [pending] Signal contract and gates.
+63. [done 2026-09-23, `vp/signals/base.py`, `gates.py`, `registry.py`] Signal contract and gates.
     - `Signal.compute(market, evidence) -> float | None` with metadata: id,
       domains, kinds, evidence accessors required, cutoff semantics, warm-up
       (results or days needed), references, licence note.
@@ -799,7 +799,7 @@ systematic answer, and where the Research Lab (Phase 23) gets its material.
       post-cutoff rows into fixtures and requires the output unchanged, and
       a test that moving the cutoff later never changes an earlier value).
     - A registry with lazy loading and a manifest export.
-64. [pending] The initial library, written from the literature with
+64. [partly done 2026-09-23: eleven signals (Elo, map Elo, Glicko-2, Bradley-Terry, Poisson, Dixon-Coles, climatology, persistence, bucket-sum consistency, Platt and isotonic calibration of the market), each benched; pi-ratings, rest days, roster flags and the microstructure signals wait, and the forecast-ensemble signal waits on the Phase 17 archive] The initial library, written from the literature with
     citations, each with its bench result before it is listed.
     - Match sports: Elo with margin and map-specific ratings for CS2;
       Glicko-2; pi-ratings; Bradley-Terry with home advantage; Poisson and
@@ -818,17 +818,17 @@ systematic answer, and where the Research Lab (Phase 23) gets its material.
     - Calibration layers (Platt and isotonic) fitted only on pre-cutoff
       settled markets with rolling refits, so a calibrated signal is still
       cutoff-safe.
-65. [pending] `vp signals bench --domain <d> --window <from>..<to>`: paired
+65. [done 2026-09-23, `tests/reports/phase16_signals.md`; weekly `signal_bench` job and the Signals page] `vp signals bench --domain <d> --window <from>..<to>`: paired
     skill against the market on the same markets with a bootstrap interval,
     calibration, classification as alive (interval above zero), at par, or
     anti (below zero), the power statement, and rolling windows to show
     decay; results stored as data and rendered on a Signals page; one
     command reproduces any published number.
-66. [pending] Blends: logistic and stacked blends of signals with the market
+66. [done 2026-09-23, `vp/signals/blend.py`; every blend benched is at par] Blends: logistic and stacked blends of signals with the market
     price, fitted walk-forward on pre-cutoff windows, reported out of sample
     only; the honest statistical route to beating the market, and the
     strongest baseline a committee must beat.
-67. [pending] Forecast committees.
+67. [built 2026-09-23, `vp/signals/committee.py`, `committees/standard.yaml`; the evaluation against single elicitation and the best blend waits on an API key, as task 60 does, so no committee is offered as a default] Forecast committees.
     - Role forecasters (base-rate analyst, evidence analyst, market analyst,
       red team, aggregator) as a DAG behind the `Forecaster` interface;
       presets in YAML, platform copies versioned, workspace copies editable;
@@ -842,19 +842,19 @@ systematic answer, and where the Research Lab (Phase 23) gets its material.
       literature's findings (ensembles across three to seven runs, base
       rates, similar resolved questions, capping, more retrieval) are the
       hypotheses tested, not assumptions adopted.
-68. [pending] Contamination accounting: every forecaster configuration
+68. [done 2026-09-23, `TRAINING_CUTOFFS` in `vp/forecast/llm.py`; no cutoff is recorded yet, so every model-backed result counts as contaminated] Contamination accounting: every forecaster configuration
     records the training cutoff of any model it uses; benches and run cards
     split results at that date and count only the later window as skill.
-69. [pending] The public benchmark: a weekly frozen question set drawn from
+69. [built 2026-09-23, `vp/signals/benchmark.py`, `vp/platform/signals.py`; week 2026-W39 frozen and sealed on the stand-in, scoring waits for its questions to resolve] The public benchmark: a weekly frozen question set drawn from
     open markets across domains, forecasts committed as hashes before the
     cutoff and revealed at resolution, scored by Brier, log score and skill
     against the market with intervals, for platform configurations and
     opt-in user strategies; power-aware display (no ranking below a minimum
     settled count).
-70. [pending] Signal contribution checklist for workspaces and, later, the
+70. [done 2026-09-23, `vp signals check`; all eleven signals pass] Signal contribution checklist for workspaces and, later, the
     community: purity gate, cutoff gate, metadata, citation, licence note,
     bench attached.
-71. [pending] Phase 16 report: the bench tables per domain, which signals
+71. [done 2026-09-23, `tests/reports/phase16_signals.md`; the committee comparison waits on task 67's evaluation] Phase 16 report: the bench tables per domain, which signals
     and blends are alive and over which windows, committee against single
     elicitation with cost, and the first benchmark week.
 

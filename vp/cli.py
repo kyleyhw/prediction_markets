@@ -132,8 +132,11 @@ def main() -> None:
     sig = sub.add_parser("signals", help="the signal library")
     sig_sub = sig.add_subparsers(dest="signals_command", required=True)
     sig_sub.add_parser("list", help="every signal with its metadata and hash")
-    scheck = sig_sub.add_parser("check", help="the purity and cutoff gates")
+    scheck = sig_sub.add_parser("check", help="the contribution checklist")
     scheck.add_argument("ids", nargs="*", help="signals to check (default: all)")
+    scheck.add_argument(
+        "--root", type=Path, default=Path("data"), help="where the benches are"
+    )
     sbench = sig_sub.add_parser("bench", help="every signal against the market")
     sbench.add_argument("--domain", required=True, choices=sorted(DOMAINS))
     sbench.add_argument("--root", type=Path, default=Path("data"))
@@ -434,12 +437,20 @@ def _signals(args: argparse.Namespace) -> None:
         return
     if args.signals_command == "check":
         failed = False
+        benched = {
+            k
+            for f in (args.root / "signals" / "bench").glob("*.json")
+            for k in json.loads(f.read_text())["signals"]
+        }
         with tempfile.TemporaryDirectory() as tmp:
             plain, guarded = gates.fixtures(Path(tmp))
             for signal_id in args.ids or registry.ids():
                 make = lambda i=signal_id: registry.load(i)  # noqa: E731
-                problems = gates.purity(make()) + gates.cutoff_sentinel(
-                    make, plain, guarded
+                problems = (
+                    gates.purity(make())
+                    + gates.metadata(make())
+                    + gates.cutoff_sentinel(make, plain, guarded)
+                    + ([] if signal_id in benched else ["no bench on any domain"])
                 )
                 failed |= bool(problems)
                 print(

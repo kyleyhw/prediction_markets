@@ -251,7 +251,22 @@ Hosted only (`vp ui` explains that the assistant needs the service):
 - **Settings** gains "What the assistant remembers": the person's notes,
   added and deleted there.
 
-## Endpoints Added
+## Signals (Phase 16)
+
+**Signals** (`#signals`, in the menu under both servers) shows, per
+domain, the latest bench: in Simple one sentence ("0 of 10 signals beat
+the market, 10 cannot be told apart from it, ...") and in Detailed the
+table (markets, Brier, the market's Brier, the advantage with its
+interval, the verdict, the markets an edge that size needs). Below it the
+benchmark weeks, each with its questions and its sealed commitments (the
+forecasts and scores once revealed), and in Detailed the library with
+each signal's references and fingerprint. Under `vp ui` the benches are
+read from `<root>/signals/bench/` and there is no benchmark.
+
+A table wider than the screen scrolls inside its frame; the page makes
+any such frame focusable and names it after the table's caption, so the
+keyboard can scroll it (axe's scrollable-region rule).
+
 
 | Path | Returns |
 | :--- | :--- |
@@ -268,6 +283,8 @@ Hosted only (`vp ui` explains that the assistant needs the service):
 | `GET /api/strategies/<id>/paper` | the newest account's paper view |
 | `GET`, `POST /api/memory`, `DELETE /api/memory/<id>` | the person's memory notes |
 | `GET`, `PUT`, `DELETE /api/packs/<domain>` | the platform's pack and the workspace's copy |
+| `GET /api/signals` | the latest bench per domain and the library's manifest |
+| `GET /api/benchmark` | recent benchmark weeks; commitments only until revealed |
 
 `/api/overview` now carries each domain's title and summary (from the
 engine's `Domain`, so a new domain brings its own words) and, under `vp

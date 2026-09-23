@@ -29,7 +29,10 @@ strategy has to clear, not a result the project is trying to explain away.
   metrics and alerts; and strategies of one's own, described in a
   sentence, read back exactly as they will run, previewed, backtested and
   paper traded, with a research assistant that states no figure it did not
-  look up ([docs/strategies.md](docs/strategies.md)) ([docs/platform.md](docs/platform.md),
+  look up ([docs/strategies.md](docs/strategies.md)); and a library of
+  tested signals, each benched against the market, with a weekly
+  benchmark whose forecasts are sealed before the questions resolve
+  ([docs/signals.md](docs/signals.md)) ([docs/platform.md](docs/platform.md),
   [docs/interface.md](docs/interface.md), measured in
   [the Phase 13 report](tests/reports/phase13_platform.md)). It is not
   deployed anywhere yet. When it is, it is how most people will use this,

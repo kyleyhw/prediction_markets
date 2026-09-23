@@ -169,12 +169,60 @@ ranking is shown below 50 settled questions for a configuration.
 
 ## Contribution Checklist (task 70)
 
-`vp signals check <module>` runs what a new signal must pass before it is
-listed: the purity gate, the cutoff sentinel, complete metadata (every
-field above), a reference for the method, a licence note for any data it
-needs, and a bench result on at least one domain attached to the proposal.
-The same checklist serves workspaces now and the community later (Phase 18,
-with the Developer Certificate of Origin, F11).
+`vp signals check [ids] --root <data root>` runs the whole checklist and
+exits non-zero if any item fails, so it can gate a merge:
+
+1. **Purity** (`gates.purity`): the module imports only the evidence
+   types, numpy and the standard mathematics; no `open`, `eval`, `exec`,
+   `getattr` and the like, and no clock.
+2. **Metadata** (`gates.metadata`): an id, a title, the cutoff semantics,
+   the warm-up, a licence note, at least one reference for the method, and
+   the evidence accessors it reads (or `uses_price`).
+3. **Cutoff** (`gates.cutoff_sentinel`): its values are unchanged when
+   rows after the cutoff are added to the fixtures, and moving the cutoff
+   later never changes an earlier value.
+4. **Bench attached**: a bench under `<root>/signals/bench/` names it, on
+   at least one domain; `vp signals bench` writes one, and the proposal
+   carries that file (its command reproduces it).
+
+A proposal adds the module under `vp/signals/`, a line in
+`registry._factories` and nothing else. The same checklist serves
+workspaces now and the community later (Phase 18, with the Developer
+Certificate of Origin, F11). On 2026-09-23 all eleven signals passed it
+against the full-data benches.
+
+## On the Platform
+
+Three platform jobs (`vp/platform/signals.py`, migration 0018):
+
+- `signal_bench`, weekly (Sunday 03:30 UTC), in the data pool: the bench of
+  every domain on the shared data, kept as the latest result per domain
+  (`signal_bench`) and drawn on the Signals page.
+- `benchmark_freeze`, Monday 00:05 UTC, in the platform pool: the week's
+  questions from the newest captures, seeded from the first four bytes of
+  the SHA-256 of the week's name (`2026-W39`), so anyone can redraw the same set from the same
+  captures; then the forecasts of the market (its price at freezing) and of
+  every signal that answers at least one question, each sealed with its own
+  salt. The rows are `benchmark_weeks` and `benchmark_entries`; a trigger
+  refuses any change to a commitment, salt or payload.
+- `benchmark_score`, daily at 06:15 UTC: labels from the venue's own
+  settlement records (closed is not resolved). When every question has
+  settled, or three days after the last scheduled end, each entry is
+  revealed, checked against its commitment and scored; questions still
+  unsettled then are left out and counted.
+
+`GET /api/signals` returns the latest benches and the library's manifest;
+`GET /api/benchmark` the last twelve weeks, with each entry's commitment
+only until the week is revealed, and then the salt, forecasts and score.
+The Signals page (`#signals`) says per domain, in Simple, how many signals
+were tried and whether any beat the market; in Detailed it shows the bench
+table, the benchmark weeks and the library.
+
+Blends are benched and can be a strategy's belief; they are not yet among
+the benchmark's configurations, because a blend needs a fit on the
+platform's history first. Committees join once they are evaluated (task
+67 waits on a key), and opted-in strategies once Phase 18 gives a person
+the way to opt in.
 
 ## Where It Lives
 
@@ -182,5 +230,6 @@ with the Developer Certificate of Origin, F11).
 `registry.py`, `ratings.py`, `goals.py`, `weather.py`, `market.py`,
 `bench.py`, `blend.py`, `committee.py` and `committees/`, `benchmark.py`;
 new evidence accessors in `vp/forecast/evidence.py`; the command line
-`vp signals list|check|bench`; on the platform, the bench and benchmark
-jobs and the Signals page.
+`vp signals list|check|bench`; on the platform, `vp/platform/signals.py`,
+migration 0018 and `vp/ui/static/app/views/signals.js`. Results are in
+`tests/reports/phase16_signals.md`.

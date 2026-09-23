@@ -531,7 +531,28 @@ The spec and what runs it are the engine's (`vp/strategy`,
   over every stored research answer and strategy run: cutoffs, the number
   gate, cost reported, and whether the confirmed spec is the one that ran.
 
-## The Local Stand-in
+## Signals and the Benchmark (Phase 16)
+
+The signals, the bench and the benchmark's arithmetic are the engine's
+(`vp/signals`, `docs/signals.md`); the platform runs them on the shared
+data as the system (`vp/platform/signals.py`, migration 0018).
+
+- **Tables.** `signal_bench` (the latest bench per domain),
+  `benchmark_weeks` (the frozen question set, its hash and seed) and
+  `benchmark_entries` (each configuration's commitment, salt and payload,
+  and its score once revealed). A trigger refuses any change to a sealed
+  entry's commitment, salt or payload. They carry no workspace: they are
+  the same for everyone, like the market data.
+- **Jobs.** `signal_bench` weekly in the data pool; `benchmark_freeze`
+  on Mondays and `benchmark_score` daily in the platform pool; all three
+  are platform kinds, enqueued only by the scheduler or `vp jobs`.
+- **What is shown.** The service returns an entry's salt and forecasts
+  only after the week is revealed; before that, the commitment alone. The
+  salt stays in the table because the service has to reveal it later, so
+  the owner's database access can read it early; moving salts to a key
+  held apart (or publishing them from a separate signer) is the fix if the
+  benchmark ever carries money or reputation that makes that matter.
+
 
 `deploy/compose.yaml` runs the platform from one image: Postgres 16, MinIO,
 a setup job that migrates and creates the bucket, the web service (four

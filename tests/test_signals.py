@@ -30,6 +30,7 @@ def test_every_signal_passes_purity_and_the_cutoff_sentinel(signal_id, roots) ->
     plain, guarded = roots
     make = lambda: registry.load(signal_id)  # noqa: E731
     assert gates.purity(make()) == []
+    assert gates.metadata(make()) == []
     assert gates.cutoff_sentinel(make, plain, guarded) == []
 
 
@@ -84,6 +85,12 @@ def test_the_gates_catch_an_impure_and_a_leaky_signal(tmp_path, roots) -> None:
     assert any("imports os" in p for p in problems)
     assert any("calls open" in p for p in problems)
     assert any("reads the clock" in p for p in problems)
+    assert gates.metadata(bad) == [
+        "no cutoff",
+        "no warmup",
+        "no reference for the method",
+        "names no evidence accessor",
+    ]
     leaky = _module(tmp_path, "vp_leaky_signal", LEAKY).Leaky
     plain, guarded = roots
     assert gates.cutoff_sentinel(leaky, plain, guarded)  # its values move

@@ -94,6 +94,21 @@ def purity(signal: Signal) -> list[str]:
     return problems
 
 
+def metadata(signal: Signal) -> list[str]:
+    """What the contribution checklist finds missing from the metadata."""
+    meta = signal.meta
+    problems = [
+        f"no {name}"
+        for name in ("id", "title", "cutoff", "warmup", "licence")
+        if not str(getattr(meta, name)).strip()
+    ]
+    if not meta.references:
+        problems.append("no reference for the method")
+    if not meta.accessors and not meta.uses_price:
+        problems.append("names no evidence accessor")
+    return problems
+
+
 # ------------------------------------------------------------------ fixtures
 
 CUTOFF = datetime(2026, 3, 1, tzinfo=UTC)

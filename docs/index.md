@@ -44,6 +44,9 @@ Polymarket, scored by backtest and paper trading before any live execution. The
   (markets, belief, rule, sizing, schedule), what a prompt may override,
   props, model tiers, the compiler, preview, number gate and lifecycle
   (Phase 15).
+- [Signals and the benchmark](signals.md): the signal contract and its
+  gates, the library, the bench against the market, blends, committees,
+  contamination and the weekly benchmark with sealed forecasts (Phase 16).
 - [Browser dashboard](ui.md): the Phase 12 page the interface grew from,
   and `vp ui`, the developer's local view over a data root.
 - [Security design](security.md): the proposed design for live execution

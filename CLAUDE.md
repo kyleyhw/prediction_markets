@@ -52,6 +52,8 @@ The original `prediction_markets` project is archived unchanged under
   alerts in `docs/runbook.md`, deploy files in `deploy/`. The engine must
   never import it (`tests/test_platform_boundary.py`); `vp/cli.py`, the
   composition root, imports it only inside its platform commands.
+- `vp/signals/`: the signal library, gates, bench, blends, committees and
+  the benchmark's arithmetic (Phase 16, `docs/signals.md`).
 - `vp/`: the engine. `venues/polymarket.py` (read-only client with the
   closed-is-not-resolved evidence ladder), `domains/` (cs2, weather, epl),
   `markets/` (record, source, Parquet store, dataset, snapshot),
@@ -146,7 +148,15 @@ pages (`#describe`, `#strategy`, `#research`); report in
 key**: nothing model-backed has run for real; the first keyed session runs
 `vp strategy eval --live` and an LLM strategy backtest. Strategy backtests
 charge each market's stated fee, or the published 5% where a record states
-none. Earlier,
+none. **Phase 16 was built the same day** (`docs/signals.md`): the
+signal contract, gates and checklist (`vp signals check`), eleven signals
+(`vp/signals/`), the bench against the market (`vp signals bench`),
+blends, committees (built, not evaluated: no key), contamination
+accounting (no model cutoff recorded yet, so every model result counts as
+contaminated), and the weekly benchmark with sealed forecasts (migration
+0018, `vp/platform/signals.py`, the Signals page). Nothing is alive on any
+domain; report in `tests/reports/phase16_signals.md`. Week 2026-W39 is
+frozen on the stand-in and waits for its questions to resolve. Earlier,
 the decisions each phase needed were taken on 2026-09-19 as proposed
 (Fly.io with Amsterdam as the first region, magic-link sign-in, quarter
 Kelly with a 5% cap and a 0.03 minimum edge, fees shown, session keys for
