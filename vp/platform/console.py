@@ -94,8 +94,9 @@ def _admin(conn: Any, args: argparse.Namespace) -> None:
         print(f"cleared {ops.resume(conn, UUID(args.workspace))} pause(s)")
     elif command == "halts":
         for h in ops.active_halts(conn):
+            workspace = str(h["workspace_id"] or "")
             print(
-                f"{h['scope']:>9} {h['workspace_id'] or '':36} {_when(h['set_at'])} "
+                f"{h['scope']:>9} {workspace:36} {_when(h['set_at'])} "
                 f"{h['set_by']}: {h['reason']}"
             )
     elif command == "budget":
