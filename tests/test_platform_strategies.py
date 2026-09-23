@@ -201,6 +201,10 @@ def test_a_strategy_trades_paper_by_its_spec_in_an_account_of_its_own(
     row = job_row(pg_owner, job)
     assert row["state"] == "succeeded", row["error"]
     ledger = PgLedger(app_pool, ada, UUID(opened["account_id"]))
+    first = next(iter(ledger.entries()))
+    assert first["kind"] == "manifest"  # what produced the paper period
+    assert first["data"]["domains"]["cs2"]["spec_hash"] == made["spec_hash"]
+    assert ledger.verify() is None
     orders = [e["data"] for e in ledger.entries() if e["kind"] == "order"]
     assert len(orders) == 1, row["result"]
     order = orders[0]

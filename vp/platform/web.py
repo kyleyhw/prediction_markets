@@ -1196,7 +1196,13 @@ def create_app(
     def paper_strategy(strategy_id: UUID, principal: Writer) -> dict[str, Any]:
         """Open the newest version's paper account; it trades on schedule."""
         try:
-            return _found(lambda: strategies.start_paper(pool, principal, strategy_id))
+            versions = {}
+            for domain in DOMAINS:
+                stamp = store.get_bytes(f"shared/markets/{domain}/LATEST")
+                versions[domain] = stamp.decode().strip() if stamp else "none"
+            return _found(
+                lambda: strategies.start_paper(pool, principal, strategy_id, versions)
+            )
         except ValueError as exc:
             raise HTTPException(409, str(exc)) from None
 

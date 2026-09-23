@@ -225,6 +225,32 @@ Under `vp serve` the page starts work and shows it progressing:
   seconds only while something is active.
 - **What it cost.** Settings shows the month's model spending (above).
 
+## Strategies of One's Own (Phase 15)
+
+Hosted only (`vp ui` explains that the assistant needs the service):
+
+- **Strategies** lists the person's own strategies with their status and
+  first rendered line, then the sample strategies; it offers "Describe a
+  strategy" and "Ask the research assistant".
+- **Describe** (`#describe/new` or `#describe/<strategy>` to change one) is
+  a conversation with the compiler. A proposal is shown as the engine
+  renders it, in the same words for everyone, with what changed when
+  refining and, in Detailed, the spec itself; "Run this" freezes exactly
+  that. A question offers its choices as buttons; a refusal says what
+  cannot be expressed. A suggested memory note is offered, never saved
+  without a click.
+- **A strategy's page** (`#strategy/<id>`) shows what runs, the preview
+  (markets open now, settled markets a month, cost, the bets an edge
+  needs), the run cards of its backtests with their caveats, its paper
+  record (the sample strategies' view, full in Detailed), and in Detailed
+  its versions and fingerprints. Buttons start a backtest or paper, change
+  it, or stop it.
+- **Research** (`#research/<conversation>`) shows answers with how many
+  figures were checked against the data, or how many were replaced; in
+  Detailed, every tool call with its input and result.
+- **Settings** gains "What the assistant remembers": the person's notes,
+  added and deleted there.
+
 ## Endpoints Added
 
 | Path | Returns |
@@ -232,6 +258,16 @@ Under `vp serve` the page starts work and shows it progressing:
 | `GET /api/settings` | the person's settings, defaults until saved (`vp serve`) |
 | `PUT /api/settings` | replaces them; browser session only |
 | `GET /api/markets/<domain>/<id>` | one market: book depth, fee terms, forecasts, its price across recent snapshots |
+| `POST /api/strategies/compile` | queues one message to the compiler; returns the job and conversation |
+| `POST /api/research` | queues one message to the research assistant |
+| `GET /api/conversations/<id>` | the person's conversation and its turns |
+| `POST /api/strategies/confirm` | freezes the spec of a stored turn as a version |
+| `GET /api/strategies`, `GET /api/strategies/<id>` | the workspace's strategies; one with versions, runs, accounts |
+| `GET /api/strategies/<id>/preview` | the newest version's preview |
+| `POST /api/strategies/<id>/backtest`, `/paper`, `/retire` | start a backtest, open paper, stop |
+| `GET /api/strategies/<id>/paper` | the newest account's paper view |
+| `GET`, `POST /api/memory`, `DELETE /api/memory/<id>` | the person's memory notes |
+| `GET`, `PUT`, `DELETE /api/packs/<domain>` | the platform's pack and the workspace's copy |
 
 `/api/overview` now carries each domain's title and summary (from the
 engine's `Domain`, so a new domain brings its own words) and, under `vp

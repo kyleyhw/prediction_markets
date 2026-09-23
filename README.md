@@ -26,7 +26,10 @@ strategy has to clear, not a result the project is trying to explain away.
   trading and backtests started from the page with their progress and
   cost, per-person storage in Postgres and an object store, a job queue
   with worker pools, one live market-data subscription for everyone, and
-  metrics and alerts ([docs/platform.md](docs/platform.md),
+  metrics and alerts; and strategies of one's own, described in a
+  sentence, read back exactly as they will run, previewed, backtested and
+  paper traded, with a research assistant that states no figure it did not
+  look up ([docs/strategies.md](docs/strategies.md)) ([docs/platform.md](docs/platform.md),
   [docs/interface.md](docs/interface.md), measured in
   [the Phase 13 report](tests/reports/phase13_platform.md)). It is not
   deployed anywhere yet. When it is, it is how most people will use this,

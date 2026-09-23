@@ -92,16 +92,10 @@ def run(
     if manifest is None or spec_file is None:
         return [Check("confirmed_is_executed", NOT_EVALUABLE, "no manifest or spec")]
     executed = spec_hash(Spec.model_validate_json(spec_file))
-    same = version_hash == manifest.get("spec_hash") == executed
-    return [
-        Check(
-            "confirmed_is_executed",
-            PASS if same else FAIL,
-            ""
-            if same
-            else f"{version_hash[:12]} / {str(manifest.get('spec_hash'))[:12]} / {executed[:12]}",
-        )
-    ]
+    hashes = [version_hash, str(manifest.get("spec_hash")), executed]
+    same = len(set(hashes)) == 1
+    detail = "" if same else " / ".join(h[:12] for h in hashes)
+    return [Check("confirmed_is_executed", PASS if same else FAIL, detail)]
 
 
 def _path(spec: dict[str, Any], dotted: str) -> Any:

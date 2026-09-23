@@ -34,7 +34,7 @@ export function simple(p) {
   return h;
 }
 
-function full(p) {
+export function full(p) {
   let h = table(
     [t('col.strategy'), term('bankroll', tp('col.balance')), term('realised', tp('col.realised')), term('exposure', tp('col.open_stake')), term('fee', tp('col.fees')), t('col.open'), t('col.settled'), term('skill', tp('col.forward_skill'))],
     p.accounts.map((a) => [strategyName(a.forecaster), esc(fmt.money(a.bankroll)), signed(a.realised, esc(fmt.signedMoney(a.realised))), esc(fmt.money(a.exposure)),
@@ -71,6 +71,7 @@ function summarise(e) {
     case 'forecast': return `${d.forecaster} p̂ ${fmt.num(d.p_hat, 3)}, q ${fmt.num(d.q, 3)}, market ${d.market_id}`;
     case 'settlement': return `${d.forecaster} market ${d.market_id}: label ${d.label}, ${fmt.signedMoney(d.pnl)}`;
     case 'cycle': return `${d.domain}: ${d.markets}`;
+    case 'manifest': return `version ${d.strategy_version}: ${Object.keys(d.domains).join(', ')}`;
     default: return JSON.stringify(d);
   }
 }

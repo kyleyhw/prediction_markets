@@ -318,9 +318,15 @@ strategy; the run card says how many markets that was.
 
 ## Where It Lives
 
-- Engine: `vp/strategy/spec.py` (the spec, validation, caps, rendering,
-  diff, hash), `vp/strategy/run.py` (a spec's selector and policy, its
-  backtest and its paper cycle), `vp/domains/props.py`; the policy hook in
-  `vp/backtest/sizing.py`.
-- Platform: the `strategies` and `strategy_versions` tables, the compiler
-  and research-session jobs, the strategy pages.
+- Engine, `vp/strategy/`: `spec.py` (the spec, validation, caps,
+  rendering, diff, hash), `run.py` (a spec's selector, policy and belief;
+  its backtest with manifest and card; its paper options), `compiler.py`,
+  `preview.py`, `card.py` (manifests and run cards), `agent.py` (the
+  research assistant and its tools), `gate.py` (the number gate),
+  `evals.py` (the harness); `vp/domains/props.py` and
+  `vp/domains/pack.py` with `vp/domains/packs/*.md`; the policy hook in
+  `vp/backtest/sizing.py`. The command line: `vp strategy check`, `diff`,
+  `preview`, `backtest`, `eval`.
+- Platform: migration 0017, `vp/platform/strategies.py`,
+  `vp/platform/research.py`, the `compile` and `research` jobs, the routes
+  and pages (`docs/platform.md`, `docs/interface.md`).

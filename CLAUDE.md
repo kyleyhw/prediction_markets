@@ -133,7 +133,20 @@ negative-zero fault, now fixed; they stay until a general cleanup of
 test data, by the owner's decision), and the
 cloud deploy (task 34, F16), after which the host measurements, 48 and 49
 follow. Open-Meteo and GDELT answer 429 or time out from this container.
-Earlier,
+**Phase 15 was built the same day** under the owner's goal "implement
+the next three phases" (`docs/strategies.md` first, decisions as proposed):
+the spec (`vp/strategy/`), props parsed against the venue's own
+`sportsMarketType` (the record now stores `market_type` and the resolution
+`description`), domain packs (`vp/domains/packs/`), the compiler, preview,
+research assistant with the number gate and loop guards, manifests and run
+cards, strategy versions and paper accounts per version (migration 0017),
+memory, the evals harness (`vp strategy eval`, `vp admin evals`) and the
+pages (`#describe`, `#strategy`, `#research`); report in
+`tests/reports/phase15_strategies.md`. **Task 60 is blocked on an API
+key**: nothing model-backed has run for real; the first keyed session runs
+`vp strategy eval --live` and an LLM strategy backtest. Strategy backtests
+charge each market's stated fee, or the published 5% where a record states
+none. Earlier,
 the decisions each phase needed were taken on 2026-09-19 as proposed
 (Fly.io with Amsterdam as the first region, magic-link sign-in, quarter
 Kelly with a 5% cap and a 0.03 minimum edge, fees shown, session keys for

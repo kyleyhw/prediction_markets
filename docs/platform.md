@@ -491,6 +491,46 @@ than guessed. Both are drafts until a lawyer has read them (flag F18).
 - **Export** was already there: Settings downloads every record held for
   the person, and the paper ledger as a file that verifies offline.
 
+## Strategies (Phase 15)
+
+The spec and what runs it are the engine's (`vp/strategy`,
+`docs/strategies.md`); the platform stores and schedules them
+(`vp/platform/strategies.py`, migration 0017).
+
+- **Tables.** `strategies` (name and lifecycle status) and
+  `strategy_versions` (the spec, its hash and the rendering confirmed; a
+  trigger refuses any edit, so a version is what its hash says);
+  `conversations` and `conversation_turns` (a person's own, by both
+  workspace and person); `user_memory` (the person's own, in any
+  workspace); `domain_packs` (a workspace's copy of a pack);
+  `paper_accounts.strategy_version_id`; and `runs.strategy_version_id`,
+  `manifest` and `manifest_hash`. Every one has a workspace or a person
+  column, so account deletion (migration 0016) reaches it unchanged.
+- **Jobs.** `compile` runs one message through the compiler and `research`
+  one message through the research assistant; both store the person's
+  words and the answer as turns, reserve a fixed amount before they run
+  ($0.25 and $0.60) and charge what the model actually cost. A `backtest`
+  naming a strategy version runs the spec on each of its domains and
+  stores one run per domain with its manifest and run card; statistical
+  beliefs are memoised as the other backtests' are. Both new kinds run in
+  the interactive pool.
+- **Confirming.** The browser sends only which turn to confirm; the spec
+  is read from the stored turn and validated again, so a spec is never
+  taken from the page. A confirmation in a conversation about a strategy
+  adds its next version; confirming the version already in use is refused.
+- **Paper.** Starting paper opens an account for the newest version (once
+  per version) with two schedules, its cycle at the spec's cadence and
+  settlement hourly, and writes the run manifest as the ledger's first
+  entry, inside the hash chain. The cycle trades by the spec (belief,
+  selector, rule, caps, window) instead of the account's list of
+  forecasters. Retiring switches the schedules off and keeps every record.
+- **Model calls** go through the same limited client as the forecaster's,
+  which now also passes the `beta` namespace the compiler and the research
+  assistant use for the server-side refusal fallback.
+- **Evals.** `vp admin evals` runs the harness (`vp/strategy/evals.py`)
+  over every stored research answer and strategy run: cutoffs, the number
+  gate, cost reported, and whether the confirmed spec is the one that ran.
+
 ## The Local Stand-in
 
 `deploy/compose.yaml` runs the platform from one image: Postgres 16, MinIO,

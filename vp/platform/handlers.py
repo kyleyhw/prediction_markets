@@ -325,7 +325,6 @@ def research_message(ctx: JobContext) -> dict[str, Any]:
 
 def strategy_backtest(ctx: JobContext) -> dict[str, Any]:
     """Backtest a confirmed strategy version on each of its domains."""
-    from vp.strategy import card
     from vp.strategy import run as strategy_run
     from vp.strategy.preview import LLM_SAMPLE
     from vp.strategy.spec import validate
@@ -373,20 +372,15 @@ def strategy_backtest(ctx: JobContext) -> dict[str, Any]:
                 else lambda f, d: Memoised(f, svc.pool, salts.get(d, "none"))
             ),
             made=made,
+            dataset_versions=salts,
+            packs=packs,
             **llm,
         )
         ctx.progress(0.92, "saving the runs")
         for domain, result in results.items():
             folder = out / domain
-            manifest = card.manifest(
-                spec, domain=domain, dataset_version=salts[domain], packs=packs
-            )
+            manifest = json.loads((folder / "manifest.json").read_text())
             data = json.loads((folder / "results.json").read_text())
-            data["card"] = card.run_card(
-                data, manifest, sees_price=spec.belief.sees_price and uses_model
-            )
-            (folder / "manifest.json").write_text(json.dumps(manifest, indent=1))
-            (folder / "card.json").write_text(json.dumps(data["card"], indent=1))
             run_id = uuid4()
             prefix = f"workspaces/{ctx.principal.workspace}/runs/{run_id}"
             for path in sorted(folder.iterdir()):

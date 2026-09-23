@@ -149,6 +149,8 @@ def backtest(
     progress: Callable[[float, str], None] | None = None,
     wrap: Callable[[Forecaster, str], Forecaster] | None = None,
     made: list[Forecaster] | None = None,
+    dataset_versions: Mapping[str, str] | None = None,
+    packs: Mapping[str, str] | None = None,
     **llm: Any,
 ) -> dict[str, BacktestResult]:
     """Backtest the spec on each of its domains, one run directory per domain.
@@ -156,8 +158,12 @@ def backtest(
     The market's own price is always run beside the belief, as the
     reference every run card scores against. ``wrap`` may wrap the belief
     (the platform memoises statistical ones); the beliefs used are appended
-    to ``made``, so a caller can read what they spent.
+    to ``made``, so a caller can read what they spent. Each domain's
+    directory gets the spec, its rendering, the manifest (with the dataset
+    version given, ``local`` otherwise) and the run card.
     """
+    from vp.strategy import card
+
     results: dict[str, BacktestResult] = {}
     for domain in spec.selector.domains:
         if not (root / "markets" / domain / "resolved.parquet").exists():
@@ -211,7 +217,19 @@ def backtest(
             1 for m in resolved if m.fee_rate is None and where(m)
         )
         data["fee_rate_assumed"] = ASSUMED_FEE_RATE
+        manifest = card.manifest(
+            spec,
+            domain=domain,
+            dataset_version=(dataset_versions or {}).get(domain, "local"),
+            packs=dict(packs or {}),
+        )
+        uses_model = spec.belief.forecaster == "llm" and spec.rule.kind == "edge"
+        data["card"] = card.run_card(
+            data, manifest, sees_price=spec.belief.sees_price and uses_model
+        )
         path.write_text(json.dumps(data, indent=1))
+        (folder / "manifest.json").write_text(json.dumps(manifest, indent=1))
+        (folder / "card.json").write_text(json.dumps(data["card"], indent=1))
     return results
 
 

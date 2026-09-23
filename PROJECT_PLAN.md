@@ -709,15 +709,15 @@ that runs, is scored, and is shown honestly.
     checked against the venue's own `sportsMarketType` on 133 captured
     questions; the record stores `market_type` and `description`; props are
     opt-in by kind; the EPL domain now excludes Dota 2 and cricket.
-52. [pending] Compiler: prompt to spec through structured output, with
+52. [done 2026-09-23; accuracy awaits a key, task 60] Compiler: prompt to spec through structured output, with
     clarifying questions when a field is ambiguous, a refusal when a request
     needs a field the spec lacks (a constraint is never silently dropped),
     and the rendered restatement the user confirms.
-53. [pending] Preview before anything runs: the markets the selector picks
+53. [done 2026-09-23] Preview before anything runs: the markets the selector picks
     now, historical counts per month, example questions, the estimated cost
     of a backtest and of a month of paper trading, and the sample size the
     selector could ever provide against the sample size an edge would need.
-54. [pending] Research session agent.
+54. [done 2026-09-23; first real runs await a key] Research session agent.
     - Tools: search markets, explain a market, evidence at a cutoff, preview
       a selector, run or fetch a backtest, paper status, compare runs, read
       the signal bench, read Learn and the glossary. No tool fetches the web
@@ -731,16 +731,16 @@ that runs, is scored, and is shown honestly.
       call refused from its second failure, per-session token, turn and time
       budgets, cancellation, cost shown live.
     - Streaming progress for long runs through the job system.
-55. [pending] Per-user memory: interests, risk appetite, sizing preferences,
+55. [done 2026-09-23] Per-user memory: interests, risk appetite, sizing preferences,
     past decisions, visible and editable and deletable by the user, injected
     into prompts as context, never used to change a spec without the user
     confirming the rendered spec.
-56. [pending] Domain packs: one markdown file with frontmatter per domain
+56. [done 2026-09-23] Domain packs: one markdown file with frontmatter per domain
     (how questions are phrased, which fields parse, which evidence exists
     and its cutoff semantics, base rates, known pitfalls), loaded with
     progressive disclosure; platform copies versioned and hashed; workspace
     copies editable; written from primary sources.
-57. [pending] Run manifests and run cards.
+57. [done 2026-09-23] Run manifests and run cards.
     - Every backtest, paper period and forecast batch writes a manifest:
       spec version hash, forecaster configurations, domain pack hashes,
       dataset version, evidence archive version, fee schedule version, model
@@ -751,24 +751,24 @@ that runs, is scored, and is shown honestly.
       market-following baseline, fees paid, cost, leakage status, the sample
       size an edge of this size would need, the manifest hash, and caveats
       written from data (small $n$, daily-bar cutoffs, contaminated window).
-58. [pending] Strategy lifecycle: draft, previewed, backtested, paper,
+58. [done 2026-09-23] Strategy lifecycle: draft, previewed, backtested, paper,
     retired (live is added in Phase 22); versions are never edited; each
     strategy has its own P&L, skill and settled-count views and its own
     paper account; refinement by conversation produces a new version.
-59. [pending] Evals harness, offline and deterministic, over persisted
+59. [done 2026-09-23] Evals harness, offline and deterministic, over persisted
     session and run artifacts: every evidence call respected the cutoff; the
     confirmed spec equals the executed spec; cost was reported; the number
     gate held; `NOT_EVALUABLE` is distinct from pass; cases as JSON with the
     prompt unchanged; run in CI against a fake model.
-60. [pending] First runs of the LLM forecaster against the API, on a keyed
+60. [blocked: needs an API key; the commands are ready] First runs of the LLM forecaster against the API, on a keyed
     machine: cost per forecast per model tier, skill against the market on
     a 400-market sample per domain, split by the evidence window
     (Mathematical core): markets resolved after the model's training cutoff
     against markets resolved before it, reported separately.
-61. [pending] Refinement by conversation ("smaller stakes", "only weekends",
+61. [done 2026-09-23] Refinement by conversation ("smaller stakes", "only weekends",
     "ignore matches with a roster change") producing a new version with a
     diff, never editing the old.
-62. [pending] Phase 15 report: compiler accuracy on a held-out prompt set,
+62. [done 2026-09-23, `tests/reports/phase15_strategies.md`; the LLM numbers wait on task 60] Phase 15 report: compiler accuracy on a held-out prompt set,
     preview counts against realised counts, harness pass rates, the first
     LLM skill numbers with their intervals and window split.
 

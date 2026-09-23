@@ -7,7 +7,7 @@ import { api, send } from '../api.js';
 import { render } from '../main.js';
 import { jobsPanel } from '../work.js';
 import { after, detailed, empty, esc, fmt, head, signed, t, table, term, tp } from '../ui.js';
-import { simple as paperSimple } from './strategies.js';
+import { full as paperFull, simple as paperSimple } from './strategies.js';
 
 function previewHtml(p) {
   let h = `<h2>${t('strategy.preview_title')}</h2><ul class="notes">`;
@@ -71,7 +71,7 @@ export default async function strategy([id]) {
   h += s.runs.length ? s.runs.map((r) => card(r, titles)).join('') : `<p class="muted">${t('strategy.no_runs')}</p>`;
   h += `<h2>${t('strategy.paper_title')}</h2>`;
   const paper = s.accounts.length ? await api(`strategies/${id}/paper`) : null;
-  h += paper?.paper.accounts.length ? paperSimple(paper.paper) : `<p class="muted">${t(s.accounts.length ? 'strategy.paper_waiting' : 'strategy.no_paper')}</p>`;
+  h += paper?.paper.accounts.length ? (detailed() ? paperFull(paper.paper) : paperSimple(paper.paper)) : `<p class="muted">${t(s.accounts.length ? 'strategy.paper_waiting' : 'strategy.no_paper')}</p>`;
   if (detailed() && s.versions.length > 1) {
     h += `<h2>${t('strategy.versions')}</h2>` + table([t('strategy.col_version'), t('col.created'), t('strategy.col_changes')],
       s.versions.slice().reverse().map((x) => [esc(x.version), esc(fmt.dateTime(x.created_at)),

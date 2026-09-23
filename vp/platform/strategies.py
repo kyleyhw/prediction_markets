@@ -355,12 +355,21 @@ def detail(
 
 
 def start_paper(
-    pool: ConnectionPool, principal: Principal, strategy_id: UUID
+    pool: ConnectionPool,
+    principal: Principal,
+    strategy_id: UUID,
+    dataset_versions: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     """Open a paper account for the newest version and schedule it.
 
-    Idempotent per version: asking again returns the version's account.
+    Idempotent per version: asking again returns the version's account. A
+    new account's ledger starts with the run manifest (spec hash, packs,
+    dataset versions, packages), so the paper period's record says what
+    produced it, inside the hash chain.
     """
+    from vp.platform.ledger import PgLedger
+    from vp.strategy.card import manifest
+
     head = latest(pool, principal, strategy_id)
     if head["status"] == "retired":
         raise ValueError("a retired strategy does not trade")
@@ -371,7 +380,8 @@ def start_paper(
             "select id from paper_accounts where strategy_version_id = %s",
             (head["version_id"],),
         ).fetchone()
-        if row is None:
+        opened = row is None
+        if opened:
             row = conn.execute(
                 "insert into paper_accounts (name, domains, forecasters, "
                 "initial_cash, created_by, strategy_version_id) "
@@ -406,8 +416,27 @@ def start_paper(
                         now,
                     ),
                 )
+    assert row is not None
+    account_id = row[0]
+    if opened:
+        packs = workspace_packs(pool, principal)
+        PgLedger(pool, principal, account_id).append(
+            "manifest",
+            {
+                "strategy_version": head["version"],
+                "domains": {
+                    d: manifest(
+                        spec,
+                        domain=d,
+                        dataset_version=(dataset_versions or {}).get(d, "unknown"),
+                        packs=packs,
+                    )
+                    for d in spec.selector.domains
+                },
+            },
+        )
     advance(pool, principal, strategy_id, "paper")
-    return {"account_id": str(row[0]), "version": head["version"]}
+    return {"account_id": str(account_id), "version": head["version"]}
 
 
 def _belief_name(spec: Spec) -> str:
