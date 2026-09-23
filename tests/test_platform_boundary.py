@@ -45,4 +45,6 @@ def test_the_composition_root_imports_it_only_lazily() -> None:
     """A top-level import would load the platform for every engine command."""
     tree = ast.parse(COMPOSITION_ROOT.read_text())
     top_level = [n for n in tree.body if isinstance(n, ast.Import | ast.ImportFrom)]
-    assert not any(_imports_platform(ast.Module(body=[n], type_ignores=[])) for n in top_level)
+    assert not any(
+        _imports_platform(ast.Module(body=[n], type_ignores=[])) for n in top_level
+    )

@@ -207,6 +207,30 @@ def _to_float(value: Any) -> float | None:
     return result if math.isfinite(result) else None
 
 
+def _fee_terms(raw: dict[str, Any]) -> dict[str, float | None]:
+    """The market's taker fee rate and exponent, or ``None`` when not stated.
+
+    ``feesEnabled`` false means no fee; true with a ``feeSchedule`` gives the
+    rate and exponent of ``C * rate * (p * (1 - p)) ** exponent``. Anything
+    else leaves the rate unknown rather than guessing zero.
+    """
+    schedule = raw.get("feeSchedule")
+    if isinstance(schedule, str):
+        try:
+            schedule = json.loads(schedule)
+        except ValueError, TypeError:
+            schedule = None
+    enabled = raw.get("feesEnabled")
+    if enabled is False:
+        return {"fee_rate": 0.0, "fee_exponent": 1.0}
+    if enabled is True and isinstance(schedule, dict):
+        rate = _to_float(schedule.get("rate"))
+        exponent = _to_float(schedule.get("exponent"))
+        if rate is not None:
+            return {"fee_rate": rate, "fee_exponent": exponent or 1.0}
+    return {"fee_rate": None, "fee_exponent": None}
+
+
 def _probability(value: Any) -> dict[str, float] | None:
     """Convert a raw outcome share price into a labelled probability record."""
     price = _to_float(value)
@@ -421,6 +445,7 @@ def normalize_market(raw: dict[str, Any]) -> dict[str, Any]:
         "spread": _to_float(raw.get("spread")),
         "last_trade_price": _to_float(raw.get("lastTradePrice")),
         "one_day_probability_change": _to_float(raw.get("oneDayPriceChange")),
+        **_fee_terms(raw),
     }
 
 

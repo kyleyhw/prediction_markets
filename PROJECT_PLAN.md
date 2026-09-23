@@ -518,8 +518,19 @@ Started 2026-09-21; what is built is recorded in `docs/platform.md`.
     - The platform halt as a row: while set, no worker runs a job, no LLM
       call is made and no order is prepared; a workspace halt likewise; each
       is a ledger entry with its principal.
-37. [pending] The existing views on the new service, and fees in paper
+37. [in-progress] The existing views on the new service, and fees in paper
     trading.
+    - Landed 2026-09-23 (F5): the client reads each market's `feesEnabled`
+      and `feeSchedule` (rate and exponent) into the record and the
+      snapshot files; `FeeModel` takes the exponent; a paper order is
+      sized at the market's own rate through the same `FeeModel` the
+      backtest uses and records `fee`, `fee_rate` and `fee_source`
+      (`market`, or `assumed` when the venue states none); settlement is
+      net of it because the stake already includes it. Live on that day
+      every CS2, weather and EPL market stated rate 0.05, exponent 1.
+    - Outstanding: the views from tenant-scoped queries, and the backtest
+      reading per-market rates (task 77; older datasets lack the columns
+      and read as "not stated").
     - Overview, backtests, paper and markets rendered from tenant-scoped
       queries instead of a data root; the same page, fonts, charts and
       glossary; a browser end-to-end test with the preinstalled Chromium.
@@ -1159,9 +1170,9 @@ called done.
   order records the fee it paid and the effective price; settlement P&L is
   net of it; and the run card and the ledger show fees paid. This lands in
   Phase 13 (task 37) so that the first hosted paper cycle is realistic, and
-  task 77 re-runs the Phase 9 baselines fee-aware. `docs/sizing.md` names a
-  `taker_base_fee` field the venue has since replaced; task 78 re-verifies
-  the field against a live response.
+  task 77 re-runs the Phase 9 baselines fee-aware. Paper orders have paid
+  each market's own rate since 2026-09-23 (task 37); `taker_base_fee` is a
+  legacy field and the rate is now read from `feeSchedule`.
 - **F6 (Phase 15, then 20). Per-market caps are not portfolio caps.** Until
   Phase 20 adds per-event exposure and simultaneous Kelly, several positions
   in one event (a winner market and its maps, the buckets of one weather

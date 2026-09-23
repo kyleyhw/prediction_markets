@@ -106,7 +106,12 @@ def test_parquet_round_trip(tmp_path: Path) -> None:
     )
     from dataclasses import replace
 
-    market = replace(market, domain="epl", parsed={"kind": "match", "side": "Arsenal"})
+    market = replace(
+        market,
+        domain="epl",
+        parsed={"kind": "match", "side": "Arsenal"},
+        fee_rate=0.05,
+    )
     path = tmp_path / "markets.parquet"
     store.write_markets(path, [market])
     assert store.read_markets(path) == [market]
@@ -127,3 +132,17 @@ def test_history_round_trip(tmp_path: Path) -> None:
     rows = store.read_history(path)
     assert [r["implied_probability"] for r in rows] == [0.4, 0.6]
     assert rows[0]["market_id"] == "1" and rows[0]["outcome"] == "Yes"
+
+
+def test_files_without_fee_columns_read_as_not_stated(tmp_path: Path) -> None:
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    market = market_from_record(
+        record(), event_id="e", event_title="t", tags=(), fetched_at=STAMP
+    )
+    old = pa.schema([f for f in store.MARKET_SCHEMA if not f.name.startswith("fee_")])
+    row = {k: v for k, v in store.market_to_row(market).items() if k in old.names}
+    pq.write_table(pa.Table.from_pylist([row], schema=old), tmp_path / "old.parquet")
+    (read,) = store.read_markets(tmp_path / "old.parquet")
+    assert read.fee_rate is None and read.fee_exponent == 1.0

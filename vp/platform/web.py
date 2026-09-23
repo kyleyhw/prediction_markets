@@ -475,7 +475,11 @@ def create_app(
     @app.get("/api/backtests/{domain}/{stamp}/{figure}")
     def figure(domain: str, stamp: str, figure: str, principal: Reader) -> FileResponse:
         """One figure of one backtest run."""
-        if domain not in DOMAINS or not _STAMP.match(stamp) or not _FIGURE.match(figure):
+        if (
+            domain not in DOMAINS
+            or not _STAMP.match(stamp)
+            or not _FIGURE.match(figure)
+        ):
             raise HTTPException(404, "no such figure")
         base = (settings.data_root / "backtests").resolve()
         path = (base / domain / stamp / figure).resolve()
@@ -533,7 +537,7 @@ def _sign_in_form(error: str = "") -> str:
         "<h1>Sign in</h1><p>Enter your email and we will send you a link. "
         "There is no password.</p>" + message + '<form method="post" '
         'action="/auth/sign-in"><label for=email>Email</label>'
-        '<input id=email name=email type=email autocomplete=email required '
+        "<input id=email name=email type=email autocomplete=email required "
         "autofocus><button type=submit>Send me a link</button></form>"
     )
 

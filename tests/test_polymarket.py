@@ -47,6 +47,21 @@ def test_open_market_is_unresolved() -> None:
     assert market["best_bid"] == 0.61 and market["liquidity_usd"] == 250.0
 
 
+def test_fee_terms_come_from_the_markets_schedule() -> None:
+    # As served on 2026-09-23 for a sports market.
+    schedule = {"exponent": 1, "rate": 0.05, "takerOnly": True, "rebateRate": 0.15}
+    market = pm.normalize_market(
+        gamma_market(feesEnabled=True, feeSchedule=schedule, takerBaseFee=1000)
+    )
+    assert market["fee_rate"] == 0.05 and market["fee_exponent"] == 1.0
+    encoded = gamma_market(feesEnabled=True, feeSchedule=json.dumps(schedule))
+    assert pm.normalize_market(encoded)["fee_rate"] == 0.05
+    assert pm.normalize_market(gamma_market(feesEnabled=False))["fee_rate"] == 0.0
+    # Nothing stated is unknown, not free: the legacy base fee is not a rate.
+    unknown = pm.normalize_market(gamma_market(takerBaseFee=1000))
+    assert unknown["fee_rate"] is None and unknown["fee_exponent"] is None
+
+
 def test_closed_without_record_is_pending_with_inference_only() -> None:
     raw = gamma_market(closed=True, outcomePrices=json.dumps(["0.9999", "0.0001"]))
     market = pm.normalize_market(raw)

@@ -122,10 +122,8 @@ class TestPlatformSettings:
         assert settings.secure_cookies is False
 
     def test_the_migration_url_does_not_print(self) -> None:
-        settings = load_settings(
-            self.MINIMAL
-            | {"VP_MIGRATION_DATABASE_URL": "postgresql://owner:pw@db/vp"}  # pragma: allowlist secret
-        )
+        url = "postgresql://owner:pw@db/vp"  # pragma: allowlist secret
+        settings = load_settings(self.MINIMAL | {"VP_MIGRATION_DATABASE_URL": url})
         assert settings.migration_database_url
         assert "owner:pw" not in repr(settings)
 

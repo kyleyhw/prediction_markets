@@ -16,20 +16,30 @@ there is no trade.
 
 ## Fees
 
-Polymarket charges a taker fee on some markets, set per market by the
-protocol and applied at match time. Its documentation (docs.polymarket.com,
-Trading → Fees, read 2026-09-13) states the fee on $C$ shares matched at
-price $p$ as
+Polymarket charges a taker fee set per market by the protocol and applied
+at match time. Its documentation (docs.polymarket.com, Trading → Fees) and
+each market's `feeSchedule` (read 2026-09-23) give the fee on $C$ shares
+matched at price $p$ as
 
-$$\text{fee} = C \cdot r \cdot p\,(1 - p),$$
+$$\text{fee} = C \cdot r \cdot \bigl(p\,(1 - p)\bigr)^{e},$$
 
-with $r$ the market's taker fee rate, published on the CLOB market object
-as `taker_base_fee` in basis points. The form is symmetric and vanishes at
-the extremes, so a fee is largest on a 50/50 contract and negligible on a
-long shot. Sports and weather markets carried a zero rate when this was
-written, and the backtest's default is zero; the live rate must be read
-from the market, never assumed. The fee enters sizing through the effective
-price $a' = a + r\,a(1 - a)$.
+with $r$ the market's taker rate and $e$ its exponent. On 2026-09-23 every
+CS2, weather and EPL market carried `feesEnabled: true` and a schedule of
+$r = 0.05$, $e = 1$, takers only (a sports market shows `sports_fees_v3`,
+a weather one `weather_fees`; they differ only in the maker rebate, which
+does not concern a taker). The older `takerBaseFee` field still reads 1000
+and is not the rate. The form is symmetric and vanishes at the extremes, so
+a fee is largest on a 50/50 contract: 1.25 cents a share at 50 cents.
+
+The client reads the schedule into each market record (`fee_rate`,
+`fee_exponent`); a market with `feesEnabled: false` is free, and one that
+states nothing has an unknown rate, never an assumed zero. `fees_for`
+returns the market's own model, or the caller's fallback labelled
+`assumed`. Paper trading sizes on the market's rate. The backtest still
+takes one `--fee-rate` for the whole run, default zero, because the Phase 7
+datasets predate the fee columns; task 77 re-runs the baselines with the
+market's rate. The fee enters sizing through the effective price
+$a' = a + r\,(a(1 - a))^{e}$.
 
 ## Kelly
 

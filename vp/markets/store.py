@@ -57,6 +57,8 @@ MARKET_SCHEMA = pa.schema(
         ("tags", pa.list_(pa.string())),
         ("fetched_at", pa.string()),
         ("parsed", pa.map_(pa.string(), pa.string())),
+        ("fee_rate", pa.float64()),
+        ("fee_exponent", pa.float64()),
     ]
 )
 
@@ -113,6 +115,8 @@ def market_to_row(market: BinaryMarket) -> dict[str, Any]:
         "tags": list(market.tags),
         "fetched_at": market.fetched_at,
         "parsed": list(market.parsed.items()),
+        "fee_rate": market.fee_rate,
+        "fee_exponent": market.fee_exponent,
     }
 
 
@@ -154,6 +158,9 @@ def market_from_row(row: dict[str, Any]) -> BinaryMarket:
         tags=tuple(row["tags"] or ()),
         fetched_at=row["fetched_at"],
         parsed=dict(row["parsed"] or ()),
+        # Files written before the fee columns existed read as "not stated".
+        fee_rate=row.get("fee_rate"),
+        fee_exponent=row.get("fee_exponent") or 1.0,
     )
 
 

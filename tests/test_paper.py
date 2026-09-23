@@ -74,6 +74,8 @@ def test_cycle_orders_at_the_touch_and_settles(tmp_path: Path) -> None:
     # touch rests 7 shares, so the fill is capped at 7 shares for 3.57.
     assert order["side"] == "yes" and order["price"] == 0.51
     assert order["shares"] == 7.0 and order["stake"] == pytest.approx(3.57)
+    # The fake market states no fee, so the zero fallback applies and says so.
+    assert order["fee"] == 0.0 and order["fee_source"] == "assumed"
     assert [e["kind"] for e in ledger.entries()] == [
         "cycle",
         "forecast",
@@ -103,6 +105,50 @@ def test_cycle_orders_at_the_touch_and_settles(tmp_path: Path) -> None:
     assert last is not None and last["kind"] == "settlement"
     assert last["data"]["brier"] == pytest.approx((0.9 - 1) ** 2)
     assert ledger.verify() is None
+
+
+def test_order_pays_the_markets_own_fee(tmp_path: Path) -> None:
+    """A market stating a 0.05 rate is charged at it, not at the fallback."""
+
+    def search_with_fees(query: str, **kwargs: Any) -> dict[str, Any]:
+        result = fake_search(query, **kwargs)
+        return {
+            **result,
+            "events": [
+                {
+                    **event,
+                    "markets": [
+                        {**m, "fee_rate": 0.05, "fee_exponent": 1.0}
+                        for m in event["markets"]
+                    ],
+                }
+                for event in result["events"]
+            ],
+        }
+
+    source = PolymarketSource(
+        iter_events=fake_iter_events,
+        search_events=search_with_fees,
+        fetch_history=fake_history,
+        fetch_book=fake_book,
+        now=lambda: "2026-09-13T00:00:00Z",
+    )
+    ledger = Ledger(tmp_path / "paper" / "ledger.jsonl")
+    run_cycle(
+        CS2,
+        [Constant(0.9, name="sure")],
+        source,
+        tmp_path,
+        ledger,
+        depth=1,
+        initial_cash=100.0,
+        now=NOW,
+    )
+    order = replay(ledger, 100.0)["sure"].open["6"]
+    per_share = 0.05 * 0.51 * 0.49
+    assert order["fee_source"] == "market" and order["fee_rate"] == 0.05
+    assert order["price"] == pytest.approx(0.51 + per_share)
+    assert order["fee"] == pytest.approx(order["shares"] * per_share)
 
 
 def test_leakage_gap(tmp_path: Path) -> None:

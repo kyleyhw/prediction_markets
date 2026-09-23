@@ -6,17 +6,19 @@ ask $a$ is $\\hat p - a - \\text{fee}(a)$; betting against $A$ means buying the
 complementary share at $1 - b$ (where $b$ is the bid for $A$), worth
 $(1 - \\hat p) - (1 - b) - \\text{fee}(1 - b)$.
 
-**Fees.** Polymarket charges a taker fee on some markets, set per market by
-the protocol and applied at match time. Its documentation (trading/fees,
-read 2026-09-13) gives the fee on $C$ shares matched at price $p$ as
+**Fees.** Polymarket charges a taker fee set per market by the protocol and
+applied at match time. Its documentation (trading/fees) and each market's
+``feeSchedule`` (read 2026-09-23) give the fee on $C$ shares matched at
+price $p$ as
 
-$$\\text{fee} = C \\cdot r \\cdot p (1 - p),$$
+$$\\text{fee} = C \\cdot r \\cdot \\bigl(p (1 - p)\\bigr)^{e},$$
 
-with $r$ the market's taker fee rate (``taker_base_fee`` on the CLOB market
-object, in basis points). The form is symmetric in $p$ and vanishes at the
-extremes, so a fee is largest on 50/50 contracts. Most sports and weather
-markets carried $r = 0$ when this was written; the rate is a parameter here
-and the live figure must be read from the market, never assumed.
+with $r$ the market's taker rate and $e$ its exponent. Sports and weather
+markets carried $r = 0.05$, $e = 1$ that day, takers only. The form is
+symmetric in $p$ and vanishes at the extremes, so a fee is largest on 50/50
+contracts. The rate is read from the market (``BinaryMarket.fee_rate``) and
+only a market that does not state one falls back to an assumed rate; see
+:func:`fees_for`.
 
 **Kelly.** Buying a share at price $a$ with win probability $\\hat p$ is a bet
 at fractional odds $b = (1 - a)/a$: a stake $a$ returns $1$. The Kelly
@@ -33,16 +35,31 @@ Fees enter through the effective price $a' = a + \\text{fee}(a)$.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from vp.markets.schema import BinaryMarket
 
 
 @dataclass(frozen=True)
 class FeeModel:
-    """Taker fee per share at price ``p``: ``rate * p * (1 - p)``."""
+    """Taker fee per share at price ``p``: ``rate * (p * (1 - p)) ** exponent``."""
 
     rate: float = 0.0
+    exponent: float = 1.0
 
     def per_share(self, price: float) -> float:
-        return self.rate * price * (1.0 - price)
+        return self.rate * (price * (1.0 - price)) ** self.exponent
+
+
+def fees_for(market: BinaryMarket, fallback: FeeModel) -> tuple[FeeModel, str]:
+    """The market's own fee model, or ``fallback`` when it states none.
+
+    The second value says which: ``"market"`` or ``"assumed"``.
+    """
+    if market.fee_rate is None:
+        return fallback, "assumed"
+    return FeeModel(market.fee_rate, market.fee_exponent), "market"
 
 
 @dataclass(frozen=True)

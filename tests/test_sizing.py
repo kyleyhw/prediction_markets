@@ -13,6 +13,8 @@ def test_fee_is_symmetric_and_zero_at_extremes() -> None:
     assert fees.per_share(0.3) == pytest.approx(fees.per_share(0.7))
     assert fees.per_share(0.0) == 0.0 and fees.per_share(1.0) == 0.0
     assert FeeModel().per_share(0.5) == 0.0
+    # The venue's exponent: 0.05 * (0.5 * 0.5) ** 2 = 0.003125.
+    assert FeeModel(0.05, 2.0).per_share(0.5) == pytest.approx(0.003125)
 
 
 def test_kelly_fraction() -> None:

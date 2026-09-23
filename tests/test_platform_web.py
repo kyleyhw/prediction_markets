@@ -70,7 +70,10 @@ def _link_token(mailer: OutboxMailer, email: str) -> str:
 def _sign_in(client: TestClient, mailer: OutboxMailer, email: str) -> str:
     """Sign in as a person would, and return the session cookie."""
     client.cookies.clear()
-    assert client.post("/auth/sign-in", data={"email": email}, headers=ORIGIN).status_code == 200
+    assert (
+        client.post("/auth/sign-in", data={"email": email}, headers=ORIGIN).status_code
+        == 200
+    )
     token = _link_token(mailer, email)
     assert client.get(f"/auth/verify?token={token}").status_code == 200
     done = client.post(
@@ -151,7 +154,9 @@ def test_a_link_works_once(client: TestClient, mailer: OutboxMailer) -> None:
     email = _email()
     _sign_in(client, mailer, email)
     token = _link_token(mailer, email)
-    again = _as(client, None).post("/auth/verify", data={"token": token}, headers=ORIGIN)
+    again = _as(client, None).post(
+        "/auth/verify", data={"token": token}, headers=ORIGIN
+    )
     assert again.status_code == 400
     assert "expired" in again.text
 
@@ -276,7 +281,10 @@ def test_two_people_each_see_only_their_own(
     client: TestClient, mailer: OutboxMailer
 ) -> None:
     ada, bob = _email(), _email()
-    ada_cookie, bob_cookie = _sign_in(client, mailer, ada), _sign_in(client, mailer, bob)
+    ada_cookie, bob_cookie = (
+        _sign_in(client, mailer, ada),
+        _sign_in(client, mailer, bob),
+    )
     ada_me = _as(client, ada_cookie).get("/auth/me").json()
     client.post("/api/tokens", json={"name": "ada's"}, headers=ORIGIN)
     bob_me = _as(client, bob_cookie).get("/auth/me").json()
@@ -308,7 +316,10 @@ def test_an_api_token_is_shown_once_and_acts_with_its_scope(
     assert client.get("/api/overview", headers=bearer).status_code == 200
     assert client.get("/auth/me", headers=bearer).json()["roles"] == ["viewer"]
     # A token cannot mint tokens, whatever its scope.
-    assert client.post("/api/tokens", json={"name": "x"}, headers=bearer).status_code == 403
+    assert (
+        client.post("/api/tokens", json={"name": "x"}, headers=bearer).status_code
+        == 403
+    )
 
     revoked = _as(client, cookie).delete(f"/api/tokens/{token_id}", headers=ORIGIN)
     assert revoked.status_code == 204
@@ -354,6 +365,6 @@ def test_nothing_personal_is_left_in_the_browser_cache(
     _as(client, _sign_in(client, mailer, _email()))
     for path in ("/", "/api/overview", "/auth/me"):
         assert client.get(path).headers["Cache-Control"] == "no-store", path
-    assert "no-store" not in client.get("/fonts/InstrumentSans-latin.woff2").headers.get(
-        "Cache-Control", ""
-    )
+    assert "no-store" not in client.get(
+        "/fonts/InstrumentSans-latin.woff2"
+    ).headers.get("Cache-Control", "")

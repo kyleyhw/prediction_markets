@@ -37,7 +37,7 @@ from pathlib import Path
 from typing import Any
 
 from vp.backtest.scoring import brier_one
-from vp.backtest.sizing import FeeModel, size
+from vp.backtest.sizing import FeeModel, fees_for, size
 from vp.domains.base import Domain
 from vp.forecast import Evidence, Forecaster
 from vp.forecast.base import clip
@@ -144,11 +144,12 @@ def run_cycle(
             if quote is None or forecaster.name == "market":
                 continue
             bid, ask, bid_size, ask_size = quote
+            market_fees, fee_source = fees_for(market, fees)
             position = size(
                 forecast.p_hat,
                 ask=ask,
                 bid=bid,
-                fees=fees,
+                fees=market_fees,
                 kelly_multiplier=kelly_multiplier,
                 max_fraction=max_fraction,
                 min_edge=min_edge,
@@ -161,6 +162,7 @@ def run_cycle(
             if resting > 0:
                 shares = min(shares, resting)
                 stake = shares * position.price
+            quoted = ask if position.side == "yes" else 1.0 - bid
             order = {
                 "forecaster": forecaster.name,
                 "market_id": market.market_id,
@@ -170,6 +172,9 @@ def run_cycle(
                 "price": position.price,
                 "shares": shares,
                 "stake": stake,
+                "fee": shares * (position.price - quoted),
+                "fee_rate": market_fees.rate,
+                "fee_source": fee_source,
                 "p_hat": forecast.p_hat,
                 "q": market.p_yes,
                 "bankroll_before": account.bankroll,

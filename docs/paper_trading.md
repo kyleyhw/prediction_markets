@@ -19,7 +19,8 @@ built and tested before any execution code exists.
 
 Entry kinds: `cycle` (a run started: domain, snapshot file, market count),
 `forecast` (forecaster, market, $\hat p$, cost, market price), `order`
-(side, effective price, shares, stake, bankroll before), `settlement`
+(side, effective price, shares, stake, fee paid, fee rate and its source,
+bankroll before), `settlement`
 (label, profit, Brier score of the forecast and of the market price,
 bankroll after).
 
@@ -40,6 +41,13 @@ bankroll after).
    resting size at the touch. One open position per forecaster per market.
    The `market` forecaster never orders: it has no edge over itself and
    serves as the reference score.
+5. **Fees** are the market's own taker fee, read from its `feeSchedule`
+   with the snapshot, through the same `FeeModel` the backtest uses
+   (`docs/sizing.md`): $C \cdot r \cdot (p(1 - p))^{e}$, 1.25 cents a share
+   at 50 cents on today's sports and weather rate of 0.05. Sizing sees the
+   effective price with the fee in it, and the order records the dollars
+   paid. A market that states no rate falls back to the caller's model and
+   the order says `assumed`. Orders written before 2026-09-23 paid none.
 
 Each forecaster keeps a separate paper account so they are compared on
 equal footing.
@@ -49,7 +57,8 @@ equal footing.
 `vp paper settle` fetches each open position's market by condition id, the
 CLOB path that carries the venue's `winner` flag, and settles those the
 venue has resolved: a share of the winning side pays 1, so the profit is
-shares minus stake on a win and minus the stake on a loss. Pending markets
+shares minus stake on a win and minus the stake on a loss. The stake
+includes the fee, so the profit is net of it. Pending markets
 stay open; a void resolution (no winner) is counted and left open for a
 later decision. Every settlement entry records the Brier score of the
 forecast and of the market price at order time, which is how forward skill
