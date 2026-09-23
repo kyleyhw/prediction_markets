@@ -94,13 +94,21 @@ services:
     <<: *app
     command: ["worker", "--kinds", "paper_cycle", "settle", "--concurrency", "2", "--metrics-port", "9102"]
 
+  # The scheduler shares a pool only with short maintenance jobs, so it is
+  # never queued behind a long one; captures (evidence, snapshots, the
+  # resolution reconcile) are time-sensitive and never wait behind the
+  # dataset builds, which run for hours and get a pool of their own.
   worker-platform:
     <<: *app
-    command: ["worker", "--kinds", "scheduler", "partitions", "reconcile", "sweep", "--concurrency", "2", "--metrics-port", "9103"]
+    command: ["worker", "--kinds", "scheduler", "partitions", "sweep", "--concurrency", "1", "--metrics-port", "9103"]
+
+  worker-capture:
+    <<: *app
+    command: ["worker", "--kinds", "snapshot", "evidence", "reconcile", "--concurrency", "2", "--metrics-port", "9106"]
 
   worker-data:
     <<: *app
-    command: ["worker", "--kinds", "dataset", "snapshot", "evidence", "--concurrency", "2", "--metrics-port", "9105"]
+    command: ["worker", "--kinds", "dataset", "--concurrency", "2", "--metrics-port", "9105"]
 
   ingest:
     <<: *app

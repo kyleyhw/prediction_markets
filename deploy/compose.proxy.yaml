@@ -37,6 +37,7 @@ services:
   worker-paper: *proxy
   worker-platform: *proxy
   worker-data: *proxy
+  worker-capture: *proxy
   ingest: *proxy
   prometheus:
     network_mode: host

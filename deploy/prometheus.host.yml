@@ -16,7 +16,7 @@ scrape_configs:
       - targets: ["localhost:8000"]
   - job_name: workers
     static_configs:
-      - targets: ["localhost:9101", "localhost:9102", "localhost:9103", "localhost:9105"]
+      - targets: ["localhost:9101", "localhost:9102", "localhost:9103", "localhost:9105", "localhost:9106"]
   - job_name: ingest
     static_configs:
       - targets: ["localhost:9104"]
