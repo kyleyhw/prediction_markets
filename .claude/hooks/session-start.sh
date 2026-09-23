@@ -22,6 +22,24 @@ uv python install
 # Project and dev dependencies from uv.lock; installs the `vp` entry point.
 uv sync --frozen
 
+# The platform's development database (Phase 13): start Postgres, point the
+# service and its tests at it, and apply migrations. The engine works
+# without it, so a failure here warns rather than stopping the session.
+if bash "$CLAUDE_PROJECT_DIR/.claude/hooks/postgres.sh"; then
+  DB='postgresql:///vp_dev?host=/var/run/postgresql'
+  export VP_DATABASE_URL="$DB&user=vp_app"
+  export VP_MIGRATION_DATABASE_URL="$DB&user=postgres"
+  {
+    echo "export VP_DATABASE_URL='$VP_DATABASE_URL'"
+    echo "export VP_MIGRATION_DATABASE_URL='$VP_MIGRATION_DATABASE_URL'"
+    echo "export VP_TEST_DATABASE_URL='$VP_MIGRATION_DATABASE_URL'"
+    echo "export VP_TEST_APP_DATABASE_URL='$VP_DATABASE_URL'"
+  } >> "$CLAUDE_ENV_FILE"
+  uv run vp db migrate || echo "warning: platform migrations failed" >&2
+else
+  echo "warning: development Postgres did not start; platform tests will skip" >&2
+fi
+
 # Commits carry the owner's identity, never the container's default.
 git config user.name "Kyle"
 git config user.email "kyleyhw@gmail.com"
