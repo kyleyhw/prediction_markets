@@ -20,9 +20,9 @@ import os
 from collections.abc import Iterator
 from uuid import UUID, uuid4
 
+import psycopg
 import pytest
 
-import psycopg
 from vp.platform.db import (
     MigrationError,
     TransactionStateError,
@@ -117,9 +117,7 @@ def test_migrations_are_recorded_and_applying_twice_is_a_no_op(
     assert names == sorted(names)
 
 
-def test_an_edited_migration_is_refused(
-    owner: psycopg.Connection, tmp_path
-) -> None:
+def test_an_edited_migration_is_refused(owner: psycopg.Connection, tmp_path) -> None:
     """The database and the repository must not disagree about the schema."""
     dir_ = tmp_path / "migrations"
     dir_.mkdir()
@@ -155,9 +153,7 @@ def test_a_query_that_forgets_its_filter_returns_nothing_not_someone_else(
 ) -> None:
     """The point of row-level security, stated as a test."""
     with tenant_session(app, _principal(tenants, "a")) as conn:
-        rows = conn.execute(
-            "select workspace_id from memberships"
-        ).fetchall()
+        rows = conn.execute("select workspace_id from memberships").fetchall()
     assert {r[0] for r in rows} == {tenants["ws_a"]}
     assert tenants["ws_b"] not in {r[0] for r in rows}
 
@@ -196,7 +192,9 @@ def test_deleting_another_workspaces_rows_touches_nothing(
     app: psycopg.Connection, tenants: dict[str, UUID]
 ) -> None:
     with tenant_session(app, _principal(tenants, "a")) as conn:
-        conn.execute("delete from memberships where workspace_id = %s", (tenants["ws_b"],))
+        conn.execute(
+            "delete from memberships where workspace_id = %s", (tenants["ws_b"],)
+        )
     with tenant_session(app, _principal(tenants, "b")) as conn:
         rows = conn.execute("select count(*) from memberships").fetchone()
     assert rows and rows[0] == 1

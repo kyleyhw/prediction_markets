@@ -114,9 +114,7 @@ def applied_migrations(conn: psycopg.Connection) -> list[AppliedMigration]:
     return [AppliedMigration(str(n), str(c), a) for n, c, a in rows]
 
 
-def migrate(
-    conn: psycopg.Connection, *, directory: Path | None = None
-) -> list[str]:
+def migrate(conn: psycopg.Connection, *, directory: Path | None = None) -> list[str]:
     """Apply every migration the database has not seen, in filename order.
 
     Each runs in its own transaction with its name and checksum, so a
@@ -191,7 +189,5 @@ def tenant_session(
             "select set_config('vp.workspace_id', %s, true)",
             (str(principal.workspace),),
         )
-        conn.execute(
-            "select set_config('vp.user_id', %s, true)", (str(user_id),)
-        )
+        conn.execute("select set_config('vp.user_id', %s, true)", (str(user_id),))
         yield conn

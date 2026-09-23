@@ -81,7 +81,13 @@ principal, the database foundation and the tenancy boundary are built and
 tested (`docs/platform.md`), and the web service, sign-in, jobs, the
 market-data service, deploy, budgets and observability are not.
 Database-backed tests skip unless `VP_TEST_DATABASE_URL` and
-`VP_TEST_APP_DATABASE_URL` are set; `docs/platform.md` says how. Earlier,
+`VP_TEST_APP_DATABASE_URL` are set; `docs/platform.md` says how. On
+2026-09-23 the user deferred the Fly.io account and the cloud deploy to
+the end (flag F16): build and verify on a local stand-in (Postgres 16, an
+S3-compatible store such as MinIO, the same image under Docker Compose).
+The deploy must happen before Phase 21 at the latest and before any real
+user; the evidence archive (task 33) captures nothing between sessions
+without an always-on machine, which is the owner's call. Earlier,
 the decisions each phase needed were taken on 2026-09-19 as proposed
 (Fly.io with Amsterdam as the first region, magic-link sign-in, quarter
 Kelly with a 5% cap and a 0.03 minimum edge, fees shown, session keys for

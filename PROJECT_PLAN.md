@@ -439,8 +439,17 @@ Started 2026-09-21; what is built is recorded in `docs/platform.md`.
       accumulates forward and every week not captured is a week no backtest
       can use honestly. Storage in object storage as Parquet with capture
       times; the readers come in Phase 17.
-34. [pending] Deploy.
-    - One container image; managed Postgres with point-in-time recovery;
+34. [pending] Deploy. **Cloud deployment deferred to the end** (decided
+    2026-09-23, flag F16): the platform is built and verified on a local
+    stand-in, and the Fly.io account, the region probe of F1 and the
+    public deploy come when the build is otherwise done, and in any case
+    before anything reaches a real user.
+    - Now: the same container image run locally with Docker Compose,
+      Postgres 16 and an S3-compatible object store (MinIO), so every code
+      path the cloud will run is exercised here; migrations as a job; the
+      GitHub Actions workflow that runs the tests and builds the image,
+      without the deploy step.
+    - Deferred: one container image; managed Postgres with point-in-time recovery;
       object storage; a staging environment that receives every deploy
       first; GitHub Actions runs the tests, builds the image, runs
       migrations as a job and deploys `master`; HTTPS and a domain; secrets
@@ -482,7 +491,8 @@ Started 2026-09-21; what is built is recorded in `docs/platform.md`.
       load, restore time. The capacity model's stage-A column replaced by
       numbers.
 
-Done when one person can sign in, see the dashboard's four views over live
+Done when (on the local stand-in until the deferred deploy of task 34)
+one person can sign in, see the dashboard's four views over live
 data the service ingests itself, run a backtest and a paper cycle from the
 page, watch them progress, and see what it cost; when a second person cannot
 see any of it; and when the report holds the measurements above.
@@ -1186,6 +1196,24 @@ called done.
   accent on the warm off-white background and its dark counterpart both
   clear WCAG AA contrast (about 5.8:1 and 7.4:1); any trialled alternative
   must clear the same bar before it is shown.
+- **F16 (decided 2026-09-23). No cloud account until the end.** The owner
+  chose to build without a Fly.io account and deploy last. Everything is
+  built and verified against a local stand-in (Postgres 16, an
+  S3-compatible store, the same image). Three things cannot be done until
+  the deploy, and are listed so they are not forgotten: the region probe
+  and terms check of F1 from the host's region; the restore drill and
+  every measurement of task 38 that needs a real host (request latency
+  from outside, ingestion lag over days, cost per user-day); and anything
+  a real user touches, since public sign-up (Phase 14) needs a host.
+  Phase 21, the scale proof, needs a staging environment and is therefore
+  the latest point the deploy can happen; Phase 22 depends on it too.
+  **The cost:** the evidence archive of task 33 only accumulates while a
+  collector runs continuously, and a development container is ephemeral,
+  so without an always-on machine nothing is captured between sessions and
+  those weeks are lost to every future backtest. Proposed: accept the gap
+  for now, or run the collectors alone on any always-on machine the owner
+  has (a home server, a laptop with cron), writing the same files; the
+  owner decides.
 - **F15 (resolved 2026-09-19). Live execution is hosted only, and
   built last.** The owner decided that trades must execute while the
   user's computer is closed, so the operator-machine path of Phase 11

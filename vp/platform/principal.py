@@ -84,9 +84,7 @@ class Principal:
     def __post_init__(self) -> None:
         if not self.subject.strip():
             raise ValueError("a principal must have a non-empty subject")
-        object.__setattr__(
-            self, "attributable", self.auth_method in ATTRIBUTABLE
-        )
+        object.__setattr__(self, "attributable", self.auth_method in ATTRIBUTABLE)
 
     @classmethod
     def anonymous(cls) -> Principal:
