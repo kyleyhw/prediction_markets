@@ -71,13 +71,21 @@ def test_keys_built_from_fixed_lists_exist() -> None:
         + [f"settings.later_{v}" for v in ("play_money", "notifications", "model")]
         + [
             f"jobs.kind.{k}"
-            for k in ("backtest", "compile", "paper_cycle", "settle", "leakage")
+            for k in (
+                "backtest",
+                "compile",
+                "research",
+                "paper_cycle",
+                "settle",
+                "leakage",
+            )
         ]
         + [
             f"strategy.status.{k}"
             for k in ("draft", "previewed", "backtested", "paper", "retired")
         ]
         + [f"describe.example_{k}" for k in ("one", "two", "three")]
+        + [f"research.example_{k}" for k in ("one", "two", "three")]
         + [
             f"jobs.state.{k}"
             for k in ("queued", "running", "succeeded", "failed", "dead", "cancelled")

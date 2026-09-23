@@ -70,6 +70,7 @@ export const fmt = {
   cents: (v, d = 1) => (missing(v) ? DASH : t('fmt.cents', { n: nf({ minimumFractionDigits: d, maximumFractionDigits: d }).format(100 * v) })),
   date: (iso) => (iso ? new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(iso)) : DASH),
   dateTime: (iso) => (iso ? new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso)) : DASH),
+  month: (ym) => (ym ? new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(ym + '-01T00:00:00Z')) : DASH),
   shortDate: (ms) => new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short' }).format(new Date(ms)),
   // "in 2 days", "3 hours ago"
   relative(iso, now = Date.now()) {

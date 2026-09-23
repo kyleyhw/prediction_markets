@@ -203,7 +203,8 @@
     "mine_version": "version {n}",
     "mine_none": "None yet. Describe one in your own words and read back exactly what would run before anything does.",
     "describe": "Describe a strategy",
-    "samples_title": "Sample strategies"
+    "samples_title": "Sample strategies",
+    "research": "Ask the research assistant"
   },
   "bt": {
     "title": "Backtests",
@@ -790,7 +791,8 @@
       "paper_cycle": "Paper trading",
       "settle": "Settlement check",
       "leakage": "Leakage check",
-      "compile": "Reading your description"
+      "compile": "Reading your description",
+      "research": "Looking into your question"
     },
     "state": {
       "queued": "Waiting",
@@ -887,5 +889,27 @@
     "versions": "Versions",
     "col_version": "Version",
     "col_changes": "What changed"
+  },
+  "research": {
+    "title": "Research assistant",
+    "lede": "Ask about markets, what was known before a date, or how your strategies have done. It answers only from the data it looks up, and every figure it states is checked against that data before you see it.",
+    "local_text": "The research assistant needs the service and its AI model.",
+    "label": "Your question",
+    "working": "Looking into it; this can take a minute.",
+    "example_one": "Which Counter-Strike series open now are priced between 60 and 85 cents?",
+    "example_two": "How did Arsenal do in their matches before 1 March 2026?",
+    "example_three": "Compare my strategies' backtests.",
+    "checked": {
+      "one": "The 1 figure in this answer was checked against the data it looked up.",
+      "other": "All {n} figures in this answer were checked against the data it looked up."
+    },
+    "replaced": {
+      "one": "1 figure could not be found in the data and was replaced by a pointer to it.",
+      "other": "{n} figures could not be found in the data and were replaced by a pointer to it."
+    },
+    "looked": {
+      "one": "It looked at 1 thing.",
+      "other": "It looked at {n} things."
+    }
   }
 }

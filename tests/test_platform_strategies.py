@@ -235,3 +235,45 @@ def test_memory_is_the_person_s_own_and_goes_with_them(
     assert not strategies.forget(app_pool, bob, UUID(note))
     assert strategies.forget(app_pool, ada, UUID(note))
     assert strategies.memory(app_pool, ada) == []
+
+
+def test_the_research_assistant_answers_as_the_person_and_is_charged(
+    app_pool,
+    pg_owner,
+    two_workspaces,
+    services: Services,  # noqa: F811
+    monkeypatch,
+) -> None:
+    from tests.test_agent import Script, call, say
+
+    ada, bob = two_workspaces["a"], two_workspaces["b"]
+    convo, _, _ = compile_once(
+        app_pool, services, ada, monkeypatch, answer("spec", GOOD)
+    )
+    turn = strategies.conversation(app_pool, ada, convo)["turns"][1]
+    made = strategies.confirm(app_pool, ada, convo, turn["id"])
+    script = Script(
+        call("my_strategies"),
+        call("strategy_results", strategy_id=made["strategy_id"]),
+        say("You have one strategy, Arsenal by Elo, not yet backtested."),
+    )
+    monkeypatch.setattr(
+        "vp.platform.llmops.client_for", lambda *a, **k: (script, "platform")
+    )
+    asked = strategies.open_conversation(app_pool, bob)
+    job = enqueue(
+        app_pool, bob, "research", {"conversation_id": str(asked), "words": "mine?"}
+    )
+    run_all(app_pool, services, ("research",))
+    row = job_row(pg_owner, job)
+    assert row["state"] == "succeeded", row["error"]
+    answer_turn = strategies.conversation(app_pool, bob, asked)["turns"][1]["content"]
+    # Bob has no strategies, and Ada's id is not found from Bob's workspace.
+    assert answer_turn["tools"][0]["result"] == "The person has no strategies yet."
+    assert answer_turn["tools"][1]["result"].startswith("error: no such strategy")
+    assert row["result"]["cost_usd"] > 0 and row["result"]["tools"] == 2
+    with app_pool.connection() as conn, tenant_session(conn, bob):
+        (charged,) = conn.execute(
+            "select sum(usd) from spend where kind = 'charge' and forecaster = 'research'"
+        ).fetchone()
+    assert charged > 0

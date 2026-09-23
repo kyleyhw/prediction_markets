@@ -1,0 +1,685 @@
+{
+ "about": "Held-out compiler prompts (plan, task 59). Each prompt is kept exactly as written. `recorded` is a hand-written answer that CI plays through a fake model to test the harness; the compiler's own accuracy comes from `vp strategy eval --live` with a key (task 60).",
+ "cases": [
+  {
+   "prompt": "Back Premier League teams whenever Elo ratings say they are underpriced.",
+   "expect": {
+    "kind": "spec",
+    "fields": {
+     "selector.domains": [
+      "epl"
+     ],
+     "belief.forecaster": "elo",
+     "rule.kind": "edge"
+    }
+   },
+   "recorded": {
+    "answer": "spec",
+    "message": "",
+    "choices": [],
+    "remember": [],
+    "spec": {
+     "name": "EPL Elo",
+     "selector": {
+      "domains": [
+       "epl"
+      ],
+      "kinds": [
+       "match"
+      ]
+     },
+     "belief": {
+      "forecaster": "elo"
+     }
+    }
+   }
+  },
+  {
+   "prompt": "Buy the favourite in Counter-Strike series priced between 60 and 85 cents.",
+   "expect": {
+    "kind": "spec",
+    "fields": {
+     "selector.domains": [
+      "cs2"
+     ],
+     "rule.kind": "follow",
+     "rule.follow": "favourite",
+     "rule.price_min": 0.6,
+     "rule.price_max": 0.85
+    }
+   },
+   "recorded": {
+    "answer": "spec",
+    "message": "",
+    "choices": [],
+    "remember": [],
+    "spec": {
+     "name": "CS2 favourites",
+     "selector": {
+      "domains": [
+       "cs2"
+      ],
+      "kinds": [
+       "match"
+      ]
+     },
+     "belief": {
+      "forecaster": "market"
+     },
+     "rule": {
+      "kind": "follow",
+      "follow": "favourite",
+      "price_min": 0.6,
+      "price_max": 0.85
+     }
+    }
+   }
+  },
+  {
+   "prompt": "Fade long shots in football: buy the favourite when the underdog is under 20 cents.",
+   "expect": {
+    "kind": "spec",
+    "fields": {
+     "rule.kind": "follow",
+     "rule.follow": "favourite",
+     "rule.price_min": 0.8
+    }
+   },
+   "recorded": {
+    "answer": "spec",
+    "message": "",
+    "choices": [],
+    "remember": [],
+    "spec": {
+     "name": "Fade long shots",
+     "selector": {
+      "domains": [
+       "epl"
+      ],
+      "kinds": [
+       "match"
+      ]
+     },
+     "belief": {
+      "forecaster": "market"
+     },
+     "rule": {
+      "kind": "follow",
+      "follow": "favourite",
+      "price_min": 0.8,
+      "price_max": 1.0
+     }
+    }
+   }
+  },
+  {
+   "prompt": "Use climatology on London's daily high temperature buckets.",
+   "expect": {
+    "kind": "spec",
+    "fields": {
+     "selector.domains": [
+      "weather"
+     ],
+     "belief.forecaster": "climatology"
+    }
+   },
+   "recorded": {
+    "answer": "spec",
+    "message": "",
+    "choices": [],
+    "remember": [],
+    "spec": {
+     "name": "London climatology",
+     "selector": {
+      "domains": [
+       "weather"
+      ],
+      "kinds": [
+       "daily_temperature"
+      ],
+      "where": [
+       {
+        "field": "city",
+        "op": "is",
+        "values": [
+         "London"
+        ]
+       }
+      ]
+     },
+     "belief": {
+      "forecaster": "climatology"
+     }
+    }
+   }
+  },
+  {
+   "prompt": "Only bet on Arsenal matches with Elo, at most 2% of my balance a bet.",
+   "expect": {
+    "kind": "spec",
+    "fields": {
+     "sizing.max_fraction": 0.02,
+     "belief.forecaster": "elo"
+    }
+   },
+   "recorded": {
+    "answer": "spec",
+    "message": "",
+    "choices": [],
+    "remember": [],
+    "spec": {
+     "name": "Arsenal Elo",
+     "selector": {
+      "domains": [
+       "epl"
+      ],
+      "kinds": [
+       "match"
+      ],
+      "where": [
+       {
+        "field": "side",
+        "op": "is",
+        "values": [
+         "Arsenal FC"
+        ]
+       }
+      ]
+     },
+     "belief": {
+      "forecaster": "elo"
+     },
+     "sizing": {
+      "max_fraction": 0.02
+     }
+    }
+   }
+  },
+  {
+   "prompt": "Elo on EPL, but never more than $15 on one bet and no more than 5 bets open.",
+   "expect": {
+    "kind": "spec",
+    "fields": {
+     "sizing.max_stake_usd": 15,
+     "sizing.max_open": 5
+    }
+   },
+   "recorded": {
+    "answer": "spec",
+    "message": "",
+    "choices": [],
+    "remember": [],
+    "spec": {
+     "name": "EPL Elo capped",
+     "selector": {
+      "domains": [
+       "epl"
+      ]
+     },
+     "belief": {
+      "forecaster": "elo"
+     },
+     "sizing": {
+      "max_stake_usd": 15,
+      "max_open": 5
+     }
+    }
+   }
+  },
+  {
+   "prompt": "Ask the AI to forecast EPL draws; tell it that draws are underpriced in derbies.",
+   "expect": {
+    "kind": "spec",
+    "fields": {
+     "belief.forecaster": "llm",
+     "belief.sees_price": false
+    }
+   },
+   "recorded": {
+    "answer": "spec",
+    "message": "",
+    "choices": [],
+    "remember": [],
+    "spec": {
+     "name": "AI draws",
+     "selector": {
+      "domains": [
+       "epl"
+      ],
+      "kinds": [
+       "match"
+      ],
+      "where": [
+       {
+        "field": "side",
+        "op": "is",
+        "values": [
+         "draw"
+        ]
+       }
+      ]
+     },
+     "belief": {
+      "forecaster": "llm",
+      "instructions": "Draws are underpriced in derbies."
+     }
+    }
+   }
+  },
+  {
+   "prompt": "Have the strong AI model forecast CS2 series, three times each, averaged.",
+   "expect": {
+    "kind": "spec",
+    "fields": {
+     "belief.tier": "strong",
+     "belief.samples": 3
+    }
+   },
+   "recorded": {
+    "answer": "spec",
+    "message": "",
+    "choices": [],
+    "remember": [],
+    "spec": {
+     "name": "CS2 AI strong",
+     "selector": {
+      "domains": [
+       "cs2"
+      ],
+      "kinds": [
+       "match"
+      ]
+     },
+     "belief": {
+      "forecaster": "llm",
+      "tier": "strong",
+      "samples": 3
+     }
+    }
+   }
+  },
+  {
+   "prompt": "Let the AI see the market price and adjust from it, on Premier League matches.",
+   "expect": {
+    "kind": "spec",
+    "fields": {
+     "belief.sees_price": true
+    }
+   },
+   "recorded": {
+    "answer": "spec",
+    "message": "",
+    "choices": [],
+    "remember": [],
+    "spec": {
+     "name": "AI anchored",
+     "selector": {
+      "domains": [
+       "epl"
+      ],
+      "kinds": [
+       "match"
+      ]
+     },
+     "belief": {
+      "forecaster": "llm",
+      "sees_price": true
+     }
+    }
+   }
+  },
+  {
+   "prompt": "Always bet the under on Counter-Strike map round totals.",
+   "expect": {
+    "kind": "refusal"
+   },
+   "recorded": {
+    "answer": "refusal",
+    "message": "Always taking the under is not something the spec can say: a follow rule buys the favourite or the underdog by price, and an edge rule needs a belief.",
+    "choices": [],
+    "remember": [],
+    "spec": null
+   }
+  },
+  {
+   "prompt": "Trade EPL exact scores of 0-0 with the constant 50% belief.",
+   "expect": {
+    "kind": "spec",
+    "fields": {
+     "selector.kinds": [
+      "exact_score"
+     ],
+     "belief.forecaster": "constant"
+    }
+   },
+   "recorded": {
+    "answer": "spec",
+    "message": "",
+    "choices": [],
+    "remember": [],
+    "spec": {
+     "name": "0-0 constant",
+     "selector": {
+      "domains": [
+       "epl"
+      ],
+      "kinds": [
+       "exact_score"
+      ],
+      "where": [
+       {
+        "field": "score",
+        "op": "is",
+        "values": [
+         "0-0"
+        ]
+       }
+      ]
+     },
+     "belief": {
+      "forecaster": "constant"
+     }
+    }
+   }
+  },
+  {
+   "prompt": "Elo on EPL matches, starting 6 hours before kick-off, checking every 2 hours.",
+   "expect": {
+    "kind": "spec",
+    "fields": {
+     "schedule.hours_before_close": 6,
+     "schedule.cadence_hours": 2
+    }
+   },
+   "recorded": {
+    "answer": "spec",
+    "message": "",
+    "choices": [],
+    "remember": [],
+    "spec": {
+     "name": "EPL Elo late",
+     "selector": {
+      "domains": [
+       "epl"
+      ]
+     },
+     "belief": {
+      "forecaster": "elo"
+     },
+     "schedule": {
+      "hours_before_close": 6,
+      "cadence_hours": 2
+     }
+    }
+   }
+  },
+  {
+   "prompt": "Elo on EPL but stop trading after three losses in a row.",
+   "expect": {
+    "kind": "refusal"
+   },
+   "recorded": {
+    "answer": "refusal",
+    "message": "Stopping after a run of losses cannot be expressed in a strategy; everything else can.",
+    "choices": [],
+    "remember": [],
+    "spec": null
+   }
+  },
+  {
+   "prompt": "Bet on teams whose star player is injured, according to the news.",
+   "expect": {
+    "kind": "refusal"
+   },
+   "recorded": {
+    "answer": "refusal",
+    "message": "The spec cannot read injury news.",
+    "choices": [],
+    "remember": [],
+    "spec": null
+   }
+  },
+  {
+   "prompt": "Double my stake after every loss on CS2 favourites.",
+   "expect": {
+    "kind": "refusal"
+   },
+   "recorded": {
+    "answer": "refusal",
+    "message": "Doubling after losses cannot be expressed; sizing is fractional Kelly or a flat share of the balance.",
+    "choices": [],
+    "remember": [],
+    "spec": null
+   }
+  },
+  {
+   "prompt": "Bet 20% of my balance on each Arsenal match using Elo.",
+   "expect": {
+    "kind": "question"
+   },
+   "recorded": {
+    "answer": "question",
+    "message": "The most a strategy may stake on one market is 5% of the balance. Use 5%?",
+    "choices": [
+     "Use 5%",
+     "Use less"
+    ],
+    "remember": [],
+    "spec": null
+   }
+  },
+  {
+   "prompt": "Bet on the favourite.",
+   "expect": {
+    "kind": "question"
+   },
+   "recorded": {
+    "answer": "question",
+    "message": "Which markets: Premier League matches, Counter-Strike series, or weather?",
+    "choices": [
+     "Premier League",
+     "Counter-Strike",
+     "Weather"
+    ],
+    "remember": [],
+    "spec": null
+   }
+  },
+  {
+   "prompt": "Make me money on tennis.",
+   "expect": {
+    "kind": "refusal"
+   },
+   "recorded": {
+    "answer": "refusal",
+    "message": "Tennis markets are not available here.",
+    "choices": [],
+    "remember": [],
+    "spec": null
+   }
+  },
+  {
+   "prompt": "Only trade on weekends, Elo on EPL.",
+   "expect": {
+    "kind": "refusal"
+   },
+   "recorded": {
+    "answer": "refusal",
+    "message": "The spec cannot restrict trading to days of the week.",
+    "choices": [],
+    "remember": [],
+    "spec": null
+   }
+  },
+  {
+   "prompt": "Weather: bet when climatology beats the price by at least 8 points, only on the Yes side.",
+   "expect": {
+    "kind": "spec",
+    "fields": {
+     "rule.min_edge": 0.08,
+     "rule.sides": "yes",
+     "belief.forecaster": "climatology"
+    }
+   },
+   "recorded": {
+    "answer": "spec",
+    "message": "",
+    "choices": [],
+    "remember": [],
+    "spec": {
+     "name": "Weather yes",
+     "selector": {
+      "domains": [
+       "weather"
+      ],
+      "kinds": [
+       "daily_temperature"
+      ]
+     },
+     "belief": {
+      "forecaster": "climatology"
+     },
+     "rule": {
+      "min_edge": 0.08,
+      "sides": "yes"
+     }
+    }
+   }
+  },
+  {
+   "prompt": "Elo on CS2 BO3 series only, never in matches whose question mentions Academy.",
+   "expect": {
+    "kind": "spec",
+    "fields": {
+     "selector.exclude_words": [
+      "Academy"
+     ]
+    }
+   },
+   "recorded": {
+    "answer": "spec",
+    "message": "",
+    "choices": [],
+    "remember": [],
+    "spec": {
+     "name": "CS2 BO3 Elo",
+     "selector": {
+      "domains": [
+       "cs2"
+      ],
+      "kinds": [
+       "match"
+      ],
+      "where": [
+       {
+        "field": "format",
+        "op": "is",
+        "values": [
+         "BO3"
+        ]
+       }
+      ],
+      "exclude_words": [
+       "Academy"
+      ]
+     },
+     "belief": {
+      "forecaster": "elo"
+     }
+    }
+   }
+  },
+  {
+   "prompt": "Buy the underdog on EPL over/under 2.5 goals when it's between 30 and 45 cents.",
+   "expect": {
+    "kind": "spec",
+    "fields": {
+     "selector.kinds": [
+      "total"
+     ],
+     "rule.follow": "underdog"
+    }
+   },
+   "recorded": {
+    "answer": "spec",
+    "message": "",
+    "choices": [],
+    "remember": [],
+    "spec": {
+     "name": "Under 2.5 underdog",
+     "selector": {
+      "domains": [
+       "epl"
+      ],
+      "kinds": [
+       "total"
+      ],
+      "where": [
+       {
+        "field": "line",
+        "op": "is",
+        "values": [
+         "2.5"
+        ]
+       }
+      ]
+     },
+     "belief": {
+      "forecaster": "market"
+     },
+     "rule": {
+      "kind": "follow",
+      "follow": "underdog",
+      "price_min": 0.3,
+      "price_max": 0.45
+     }
+    }
+   }
+  },
+  {
+   "prompt": "Use a quarter of Kelly but with a 1 point minimum edge on EPL Elo.",
+   "expect": {
+    "kind": "question"
+   },
+   "recorded": {
+    "answer": "question",
+    "message": "The smallest edge a strategy may use is 3 points after fees. Use 3 points?",
+    "choices": [
+     "Use 3 points",
+     "Use more"
+    ],
+    "remember": [],
+    "spec": null
+   }
+  },
+  {
+   "prompt": "Paper trade with $500 of play money: Elo on all Premier League matches.",
+   "expect": {
+    "kind": "spec",
+    "fields": {
+     "sizing.initial_cash": 500
+    }
+   },
+   "recorded": {
+    "answer": "spec",
+    "message": "",
+    "choices": [],
+    "remember": [],
+    "spec": {
+     "name": "EPL Elo 500",
+     "selector": {
+      "domains": [
+       "epl"
+      ]
+     },
+     "belief": {
+      "forecaster": "elo"
+     },
+     "sizing": {
+      "initial_cash": 500
+     }
+    }
+   }
+  }
+ ]
+}

@@ -90,7 +90,7 @@ services:
   # behind anything long.
   worker-interactive:
     <<: *app
-    command: ["worker", "--kinds", "backtest", "compile", "leakage", "--concurrency", "2", "--metrics-port", "9101"]
+    command: ["worker", "--kinds", "backtest", "compile", "research", "leakage", "--concurrency", "2", "--metrics-port", "9101"]
 
   worker-paper:
     <<: *app

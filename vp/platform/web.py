@@ -378,6 +378,15 @@ class CompileBody(BaseModel):
     strategy_id: UUID | None = None
 
 
+class ResearchBody(BaseModel):
+    """One message to the research assistant."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    words: str = Field(min_length=1, max_length=2000)
+    conversation_id: UUID | None = None
+
+
 class ConfirmBody(BaseModel):
     """Which proposed spec to freeze as a version: never the spec itself."""
 
@@ -1071,6 +1080,31 @@ def create_app(
             pool,
             principal,
             "compile",
+            {"conversation_id": str(convo), "words": body.words},
+            reserved_usd=reserved,
+        )
+        return {"job_id": job_id, "conversation_id": convo}
+
+    @app.post("/api/research", status_code=202)
+    def ask_research(body: ResearchBody, principal: Writer) -> dict[str, Any]:
+        """Send one message to the research assistant; the answer arrives as
+        a turn of the conversation when the job is done."""
+        from vp.platform.research import RESEARCH_RESERVE_USD
+
+        paid_by_platform = llmops.key_hint(pool, principal) is None
+        if paid_by_platform and not settings.anthropic_api_key:
+            raise HTTPException(409, "no model key is available for this workspace")
+        convo = body.conversation_id or strategies.open_conversation(pool, principal)
+        _found(lambda: strategies.conversation(pool, principal, convo))
+        reserved = RESEARCH_RESERVE_USD if paid_by_platform else 0.0
+        try:
+            budgets.reserve(pool, principal, reserved)
+        except budgets.OverBudget as exc:
+            raise HTTPException(402, str(exc)) from None
+        job_id = jobs.enqueue(
+            pool,
+            principal,
+            "research",
             {"conversation_id": str(convo), "words": body.words},
             reserved_usd=reserved,
         )

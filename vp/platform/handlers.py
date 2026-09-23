@@ -15,6 +15,8 @@ the workspace's tables and the object store, as the job's principal:
 * `leakage`: `vp.paper.leakage` between a backtest run and an account.
 * `compile`: one message of a person's strategy conversation through the
   compiler (`vp.strategy.compiler`), stored as two turns and charged.
+* `research`: one message to the research assistant (`vp.strategy.agent`
+  with `vp.platform.research`'s tools), stored and charged the same way.
 
 A `backtest` naming a strategy version runs that spec on each of its
 domains (`vp.strategy.run.backtest`) and stores one run per domain with its
@@ -255,6 +257,68 @@ def compile_turn(ctx: JobContext) -> dict[str, Any]:
     return {
         "conversation_id": str(convo_id),
         "kind": out.kind,
+        "cost_usd": float(charged),
+    }
+
+
+def research_message(ctx: JobContext) -> dict[str, Any]:
+    """One message to the research assistant."""
+    from vp.platform import research
+    from vp.strategy.agent import research_turn
+
+    svc: Services = ctx.services
+    p = ctx.job.payload
+    convo_id = UUID(str(p["conversation_id"]))
+    words = str(p["words"])
+    convo = strategies.conversation(svc.pool, ctx.principal, convo_id)
+    past, tokens, turns = research.history(convo)
+    client, paid_by = llmops.client_for(
+        svc.pool, ctx.principal, svc.settings.anthropic_api_key, svc.settings.master_key
+    )
+    svc.refresh(list(DOMAINS))
+    tools = research.PlatformToolBox(
+        svc.shared.root,
+        svc.pool,
+        ctx.principal,
+        packs=strategies.workspace_packs(svc.pool, ctx.principal),
+    )
+    turn = research_turn(
+        words,
+        client=client,
+        tools=tools,
+        history=past,
+        used_tokens=tokens,
+        used_turns=turns,
+        progress=ctx.progress,
+    )
+    strategies.add_turns(
+        svc.pool,
+        ctx.principal,
+        convo_id,
+        [("user", {"words": words}), ("assistant", turn.as_json())],
+        turn.cost_usd,
+    )
+    charged = budgets.settle_job(
+        svc.pool,
+        ctx.principal,
+        ctx.job.id,
+        ctx.job.reserved_usd,
+        [
+            {
+                "forecaster": "research",
+                "model": turn.model,
+                "input_tokens": turn.input_tokens,
+                "output_tokens": turn.output_tokens,
+                "usd": turn.cost_usd,
+            }
+        ],
+        paid_by,
+    )
+    return {
+        "conversation_id": str(convo_id),
+        "stopped": turn.stopped,
+        "gate": turn.gate,
+        "tools": len(turn.tools),
         "cost_usd": float(charged),
     }
 
@@ -775,6 +839,7 @@ def handlers(extra: dict[str, Handler] | None = None) -> dict[str, Handler]:
     table: dict[str, Handler] = {
         "backtest": backtest,
         "compile": compile_turn,
+        "research": research_message,
         "paper_cycle": paper_cycle,
         "settle": settle_account,
         "sample_cycle": sample_cycle,

@@ -15,7 +15,8 @@ Subcommands:
 * ``vp strategy check|diff|preview|backtest``: a strategy spec (a JSON
   file): its problems, plain-language rendering and hash; what changed
   between two versions; what it would touch and cost; its backtest on each
-  of its domains.
+  of its domains. ``vp strategy eval`` runs the compiler's held-out prompts
+  (``--live`` against the real model).
 * ``vp ui``: a local, read-only browser dashboard over the data root.
 * ``vp serve``: the platform web service, with sign-in, over Postgres.
 * ``vp db migrate``: apply the platform's pending database migrations.
@@ -137,6 +138,11 @@ def main() -> None:
     sprev = strat_sub.add_parser("preview", help="what a spec would touch")
     sprev.add_argument("spec", type=Path)
     sprev.add_argument("--root", type=Path, default=Path("data"))
+    seval = strat_sub.add_parser("eval", help="the compiler's held-out prompts")
+    seval.add_argument("--cases", type=Path, default=Path("tests/evals/compiler.json"))
+    seval.add_argument(
+        "--live", action="store_true", help="ask the real model (needs a key)"
+    )
     sback = strat_sub.add_parser("backtest", help="backtest a spec")
     sback.add_argument("spec", type=Path)
     sback.add_argument("--root", type=Path, default=Path("data"))
@@ -223,6 +229,7 @@ def main() -> None:
     aa = adm_sub.add_parser("archive", help="move old months to object storage")
     aa.add_argument("--before", required=True, help="YYYY-MM: archive months before it")
     adm_sub.add_parser("audit", help="verify the audit chain and show its tail")
+    adm_sub.add_parser("evals", help="the evals harness over stored answers and runs")
 
     args = parser.parse_args()
     logging.basicConfig(
@@ -360,6 +367,18 @@ def _strategy(args: argparse.Namespace) -> None:
     def load(path: Path) -> Spec:
         return Spec.model_validate_json(path.read_text())
 
+    if args.strategy_command == "eval":
+        from vp.strategy import evals
+
+        cases = evals.load_cases(args.cases)
+        if args.live:
+            import anthropic
+
+            client = anthropic.Anthropic()
+        else:
+            client = evals.Recorded(cases)
+        print(json.dumps(evals.compiler(cases, client), indent=1))
+        return
     if args.strategy_command == "diff":
         for path, old, new in diff(load(args.old), load(args.new)):
             print(f"{path}: {old!r} -> {new!r}")

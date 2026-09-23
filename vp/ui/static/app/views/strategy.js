@@ -14,7 +14,7 @@ function previewHtml(p) {
   h += `<li>${t('strategy.open_now', { n: p.open_now })}</li>`;
   const months = Object.keys(p.per_month);
   h += months.length
-    ? `<li>${t('strategy.history', { n: p.resolved, since: months[0], per_month: fmt.num(p.settled_a_month, 0), priced: p.with_history })}</li>`
+    ? `<li>${t('strategy.history', { n: p.resolved, since: fmt.month(months[0]), per_month: fmt.num(p.settled_a_month, 0), priced: p.with_history })}</li>`
     : `<li>${t('strategy.no_history')}</li>`;
   h += p.backtest_usd || p.paper_month_usd
     ? `<li>${t('strategy.cost', { markets: p.backtest_markets, backtest: fmt.money(p.backtest_usd), month: fmt.money(p.paper_month_usd) })}</li>`
@@ -29,11 +29,11 @@ function previewHtml(p) {
   return h;
 }
 
-function card(run) {
+function card(run, titles) {
   const c = run.results?.card;
   if (!c) return '';
   const bets = c.bets ? t('strategy.card_bets', { n: c.bets, ret: fmt.signedPct(c.return), fees: fmt.money(c.fees_usd) }) : t('strategy.card_no_bets');
-  let h = `<div class="card" style="margin-bottom:12px"><h3 style="margin-top:0">${t('strategy.card_title', { domain: run.domain, version: run.version, when: fmt.dateTime(run.created_at) })}</h3>
+  let h = `<div class="card" style="margin-bottom:12px"><h3 style="margin-top:0">${t('strategy.card_title', { domain: titles[run.domain] || run.domain, version: run.version, when: fmt.dateTime(run.created_at) })}</h3>
     <p>${t('strategy.card_scored', { n: c.scored, of: c.candidates })} ${bets}</p>`;
   if (c.advantage) {
     h += `<p>${t(c.advantage.low > 0 ? 'strategy.card_better' : c.advantage.high < 0 ? 'strategy.card_worse' : 'strategy.card_level')}</p>`;
@@ -67,7 +67,8 @@ export default async function strategy([id]) {
   const preview = await api(`strategies/${id}/preview`);
   if (preview) h += previewHtml(preview);
   h += `<h2>${t('strategy.runs_title')}</h2>`;
-  h += s.runs.length ? s.runs.map(card).join('') : `<p class="muted">${t('strategy.no_runs')}</p>`;
+  const titles = Object.fromEntries(Object.entries((await api('overview'))?.domains || {}).map(([name, d]) => [name, d.title]));
+  h += s.runs.length ? s.runs.map((r) => card(r, titles)).join('') : `<p class="muted">${t('strategy.no_runs')}</p>`;
   h += `<h2>${t('strategy.paper_title')}</h2>`;
   const paper = s.accounts.length ? await api(`strategies/${id}/paper`) : null;
   h += paper?.paper.accounts.length ? paperSimple(paper.paper) : `<p class="muted">${t(s.accounts.length ? 'strategy.paper_waiting' : 'strategy.no_paper')}</p>`;

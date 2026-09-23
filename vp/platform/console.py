@@ -119,6 +119,8 @@ def _admin(conn: Any, args: argparse.Namespace) -> None:
         print(f"queued {len(ids)} job(s): {', '.join(map(str, ids))}")
     elif command == "archive":
         _archive(conn, _month(args.before))
+    elif command == "evals":
+        _evals(conn)
     elif command == "audit":
         broken = audit.verify(conn)
         entries = audit.entries(conn)
@@ -130,6 +132,43 @@ def _admin(conn: Any, args: argparse.Namespace) -> None:
         for e in entries[-10:]:
             who = e["data"].get("principal", {}).get("subject")
             print(f"  #{e['seq']} {e['at']} {e['kind']} by {who}")
+
+
+def _evals(conn: Any) -> None:
+    """The evals harness over every stored research answer and strategy run."""
+    import json
+
+    from vp.platform.config import load_settings
+    from vp.platform.storage import open_store
+    from vp.strategy import evals
+
+    store = open_store(load_settings())
+    results = []
+    turns = conn.execute(
+        "select t.conversation_id, t.id, t.content, t.created_at, "
+        "(select u.content->>'words' from conversation_turns u "
+        " where u.conversation_id = t.conversation_id and u.id < t.id "
+        " and u.role = 'user' order by u.id desc limit 1) "
+        "from conversation_turns t "
+        "where t.role = 'assistant' and t.content->>'kind' = 'research'"
+    ).fetchall()
+    for convo, turn, content, at, words in turns:
+        results.append(
+            (f"turn {convo}/{turn}", evals.research_turn(words or "", content, at))
+        )
+    runs = conn.execute(
+        "select r.id, v.spec_hash, r.manifest, r.artifacts from runs r "
+        "join strategy_versions v on v.id = r.strategy_version_id"
+    ).fetchall()
+    for run_id, version_hash, manifest, artifacts in runs:
+        spec = store.get_bytes(f"{artifacts}/spec.json")
+        results.append(
+            (
+                f"run {run_id}",
+                evals.run(version_hash, manifest, spec.decode() if spec else None),
+            )
+        )
+    print(json.dumps(evals.summary(results), indent=1))
 
 
 def _archive(conn: Any, before: date) -> None:
