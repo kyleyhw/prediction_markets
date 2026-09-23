@@ -8,6 +8,7 @@ import { esc, setLocale, t, tp } from './i18n.js';
 import { loadLocal, loadRemote, prefs, save } from './prefs.js';
 import { after, installGlossary, runHooks } from './ui.js';
 import backtests from './views/backtests.js';
+import describe from './views/describe.js';
 import home from './views/home.js';
 import learn from './views/learn.js';
 import market from './views/market.js';
@@ -15,10 +16,11 @@ import markets from './views/markets.js';
 import settings from './views/settings.js';
 import start from './views/start.js';
 import strategies from './views/strategies.js';
+import strategy from './views/strategy.js';
 
-const ROUTES = { home, markets, market, strategies, backtests, learn, settings, start };
+const ROUTES = { home, markets, market, strategies, strategy, describe, backtests, learn, settings, start };
 const NAV = ['home', 'markets', 'strategies', 'backtests', 'learn', 'settings'];
-const SECTION = { market: 'markets', start: 'home' };
+const SECTION = { market: 'markets', start: 'home', strategy: 'strategies', describe: 'strategies' };
 
 export function applyTheme() {
   const theme = prefs().theme;

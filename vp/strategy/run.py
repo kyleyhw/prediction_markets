@@ -9,6 +9,7 @@ market's own fee, as paper does.
 
 from __future__ import annotations
 
+import json
 from collections.abc import Callable, Mapping
 from dataclasses import replace
 from pathlib import Path
@@ -20,11 +21,17 @@ from vp.domains import DOMAINS, Domain
 from vp.forecast import Forecaster, make_forecaster
 from vp.forecast.baselines import MarketPrice
 from vp.markets.schema import BinaryMarket
+from vp.markets.store import read_markets
 from vp.strategy.spec import FieldFilter, Selector, Spec, canonical, render, spec_hash
 
 #: The name a follow rule's belief records under: the market's price, which
 #: it trades on without forecasting.
 FOLLOW = "follow"
+#: The taker rate assumed for a market whose record states none (datasets
+#: built before fee schedules were captured): the venue's published 2026
+#: rate for sports and weather markets, the conservative choice, since
+#: charging nothing flatters every strategy (F5). The run card counts them.
+ASSUMED_FEE_RATE = 0.05
 
 
 def _holds(condition: FieldFilter, value: str | None) -> bool:
@@ -171,6 +178,7 @@ def backtest(
             kelly_multiplier=spec.sizing.kelly_fraction,
             max_fraction=spec.sizing.max_fraction,
             min_edge=spec.rule.min_edge,
+            fee_rate=ASSUMED_FEE_RATE,
             market_fees=True,
         )
         forecasters: list[Forecaster] = [MarketPrice(), forecaster]
@@ -186,6 +194,7 @@ def backtest(
             + "\n\n".join(render(spec))
             + "\n"
         )
+        where = selects(spec.selector, live=False)
         results[domain] = run_backtest(
             config,
             root,
@@ -193,8 +202,16 @@ def backtest(
             forecasters=forecasters,
             progress=progress,
             policy=policy(spec),
-            where=selects(spec.selector, live=False),
+            where=where,
         )
+        path = folder / "results.json"
+        data = json.loads(path.read_text())
+        resolved = read_markets(root / "markets" / domain / "resolved.parquet")
+        data["fees_assumed"] = sum(
+            1 for m in resolved if m.fee_rate is None and where(m)
+        )
+        data["fee_rate_assumed"] = ASSUMED_FEE_RATE
+        path.write_text(json.dumps(data, indent=1))
     return results
 
 

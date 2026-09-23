@@ -26,7 +26,7 @@ from vp.platform.ledger import PgLedger
 pytestmark = needs_db
 
 
-def compile_once(app_pool, services, who, monkeypatch, reply, **payload):
+def compile_once(app_pool, svc, who, monkeypatch, reply, **payload):
     fake = FakeModel(reply)
     monkeypatch.setattr(
         "vp.platform.llmops.client_for", lambda *a, **k: (fake, "platform")
@@ -43,12 +43,16 @@ def compile_once(app_pool, services, who, monkeypatch, reply, **payload):
             "words": payload.get("words", "Arsenal by Elo"),
         },
     )
-    run_all(app_pool, services, ("compile",))
+    run_all(app_pool, svc, ("compile",))
     return convo, job, fake
 
 
 def test_a_conversation_becomes_a_frozen_version_that_is_only_its_workspace_s(
-    app_pool, pg_owner, two_workspaces, services: Services, monkeypatch
+    app_pool,
+    pg_owner,
+    two_workspaces,
+    services: Services,  # noqa: F811
+    monkeypatch,
 ) -> None:
     ada, bob = two_workspaces["a"], two_workspaces["b"]
     strategies.remember(app_pool, ada, "prefers small stakes")
@@ -99,7 +103,11 @@ def test_a_conversation_becomes_a_frozen_version_that_is_only_its_workspace_s(
 
 
 def test_a_strategy_is_backtested_with_its_manifest_and_card(
-    app_pool, pg_owner, two_workspaces, services: Services, monkeypatch
+    app_pool,
+    pg_owner,
+    two_workspaces,
+    services: Services,  # noqa: F811
+    monkeypatch,
 ) -> None:
     ada = two_workspaces["a"]
     constant = with_(with_(GOOD, "belief", forecaster="constant"), "selector", where=[])
@@ -134,7 +142,12 @@ def test_a_strategy_is_backtested_with_its_manifest_and_card(
 
 
 def test_a_strategy_trades_paper_by_its_spec_in_an_account_of_its_own(
-    app_pool, pg_owner, two_workspaces, services: Services, monkeypatch, tmp_path: Path
+    app_pool,
+    pg_owner,
+    two_workspaces,
+    services: Services,  # noqa: F811
+    monkeypatch,
+    tmp_path: Path,
 ) -> None:
     ada = two_workspaces["a"]
     # A capture newer than the fixture's: one CS2 series ending in 11 hours.

@@ -95,6 +95,32 @@ function refreshData(domains) {
 // an expert's option, behind the exact words typed.
 const DELETE_WORDS = 'delete my account';
 
+// What the strategy assistant keeps about the person (task 55): theirs to
+// read, add to and delete; it is context for the assistant, and a strategy
+// changes only when the person confirms the rendered version.
+async function memory() {
+  const notes = (await api('memory')) || [];
+  after(() => {
+    const status = document.getElementById('memory-status');
+    document.querySelectorAll('[data-forget]').forEach((b) => b.addEventListener('click', async () => {
+      b.disabled = true;
+      await send('DELETE', `memory/${b.dataset.forget}`);
+      await render(false);
+    }));
+    document.getElementById('memory-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const note = document.getElementById('memory-note').value.trim();
+      if (!note) return;
+      try { await send('POST', 'memory', { note }); await render(false); } catch (err) { status.textContent = err.message; }
+    });
+  });
+  return `<h2>${t('settings.memory')}</h2><p class="muted measure">${t('settings.memory_note')}</p>
+    ${notes.length ? `<ul class="notes measure">${notes.map((n) => `<li>${esc(n.note)} <button class="btn quiet" type="button" data-forget="${esc(n.id)}" aria-label="${tp('settings.memory_forget_label', { note: n.note })}">${t('settings.memory_forget')}</button></li>`).join('')}</ul>` : `<p class="muted">${t('settings.memory_none')}</p>`}
+    <form id="memory-form" class="row"><label for="memory-note" class="sr-only">${t('settings.memory_add_label')}</label>
+      <input type="text" id="memory-note" maxlength="300" required placeholder="${tp('settings.memory_placeholder')}">
+      <button class="btn" type="submit">${t('settings.memory_add')}</button></form><p id="memory-status" class="small" role="status"></p>`;
+}
+
 function deletion() {
   after(() => document.getElementById('delete-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -135,6 +161,7 @@ export default async function settings() {
   }
   h += '</form>';
   if (session.hosted) h += await spending();
+  if (session.hosted) h += await memory();
   h += `<h2>${t('settings.start')}</h2><p class="muted">${t('settings.start_note')}</p><button class="btn" type="button" id="restart">${t('settings.start_again')}</button>`;
   if (detailed()) {
     if (session.hosted) h += `<h2>${t('settings.tokens')}</h2><p class="muted measure">${t('settings.tokens_note')}</p><div id="tokens">${tokens(await api('tokens'))}</div>`;

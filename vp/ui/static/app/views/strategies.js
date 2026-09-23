@@ -1,4 +1,6 @@
-// Strategies: the sample strategies running on play money, each with its
+// Strategies: the person's own strategies (hosted), described in a
+// conversation and each with its own page; then the sample strategies
+// running on play money, each with its
 // balance against doing nothing and its open positions in words. Detailed
 // is the paper-trading record in full: accounts, open positions with the
 // fee each paid, settlements, and the hash-chained ledger itself.
@@ -16,7 +18,7 @@ function position(o) {
   return t('strategies.position', { side: raw(side), question: o.question, price: fmt.cents(o.price, 0), stake: fmt.money(o.stake), fee: fmt.money(o.fee ?? 0) });
 }
 
-function simple(p) {
+export function simple(p) {
   let h = '';
   for (const a of p.accounts) {
     const change = a.bankroll - p.start_cash;
@@ -77,8 +79,17 @@ export default async function strategies() {
   const p = await api('paper?limit=60');
   let h = head(t('strategies.title'), t('strategies.lede'));
   if (p.verified === false) h += `<div class="aside caution" role="alert"><p>${t('home.chain_broken')}</p></div>`;
-  h += `<div class="aside"><p>${t('strategies.own_soon')}</p></div>`;
+  if (!session.hosted) h += `<div class="aside"><p>${t('strategies.own_hosted')}</p></div>`;
   if (session.hosted) {
+    const mine = (await api('strategies')) || [];
+    h += `<h2>${t('strategies.mine_title')}</h2>`;
+    h += mine.length
+      ? `<div class="grid">${mine.map((s) => `<a class="card link" href="#strategy/${esc(s.id)}"><h3 style="margin-top:0">${esc(s.name)}</h3>
+          <p><span class="pill">${t('strategy.status.' + s.status)}</span> <span class="small muted">${t('strategies.mine_version', { n: s.version })}</span></p>
+          <p class="small muted">${esc(s.rendering[0])}</p></a>`).join('')}</div>`
+      : `<p class="muted">${t('strategies.mine_none')}</p>`;
+    h += `<div class="row"><a class="btn primary" href="#describe/new">${t('strategies.describe')}</a></div>`;
+    h += `<h2>${t('strategies.samples_title')}</h2>`;
     const o = await api('overview');
     const exportLink = detailed() ? `<a class="btn quiet" href="/api/paper/export" download>${t('work.export_ledger')}</a>` : '';
     if (o.sample) {

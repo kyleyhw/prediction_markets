@@ -306,6 +306,16 @@ Each strategy has its own paper account per version in paper, so its P&L,
 skill and settled count are its own, and a refinement that goes to paper
 starts a new account beside the old rather than rewriting its history.
 
+## Fees in a Strategy's Backtest
+
+A strategy's backtest charges each market's own taker fee, as paper does
+(F5). A market whose record states a fee (including a stated zero: many
+settled markets traded before the venue charged one) is charged exactly
+that. A record that states nothing (datasets built before fee schedules
+were captured) is charged the venue's published 2026 rate for sports and
+weather, 5% of $p(1-p)$ a share, since charging nothing flatters every
+strategy; the run card says how many markets that was.
+
 ## Where It Lives
 
 - Engine: `vp/strategy/spec.py` (the spec, validation, caps, rendering,

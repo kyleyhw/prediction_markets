@@ -174,7 +174,6 @@
   "strategies": {
     "title": "Strategies",
     "lede": "Sample strategies trading with play money against the real order book, settled when the markets resolve.",
-    "own_soon": "Making your own strategy by describing it in a conversation is being built next; it will appear here.",
     "never_bets": "It never bets: it is the yardstick the others are measured against.",
     "counts": "{n} positions settled, {open} waiting.",
     "waiting": "Waiting to settle",
@@ -198,7 +197,13 @@
     },
     "chain_broken_pill": "chain broken",
     "open_shown": "The {shown} largest of {n} open positions; the ledger download has them all.",
-    "open_caption": "Each open position: the market, the side bought, the market’s chance and the strategy’s, the price paid, the shares, the stake and the fee."
+    "open_caption": "Each open position: the market, the side bought, the market’s chance and the strategy’s, the price paid, the shares, the stake and the fee.",
+    "own_hosted": "On the hosted service you can make strategies of your own by describing them in a sentence.",
+    "mine_title": "Your strategies",
+    "mine_version": "version {n}",
+    "mine_none": "None yet. Describe one in your own words and read back exactly what would run before anything does.",
+    "describe": "Describe a strategy",
+    "samples_title": "Sample strategies"
   },
   "bt": {
     "title": "Backtests",
@@ -465,7 +470,15 @@
     "delete_text": "This deletes your workspace and everything in it, your settings, sessions, tokens and email address, at once and for good. Download your records first if you want to keep them.",
     "delete_label": "Type “delete my account” to confirm",
     "delete_button": "Delete my account",
-    "delete_mismatch": "Type the words exactly as shown."
+    "delete_mismatch": "Type the words exactly as shown.",
+    "memory": "What the assistant remembers",
+    "memory_note": "Notes about you that the strategy assistant reads, such as the markets you like or how much risk you take. It never changes a strategy by itself; you confirm every version.",
+    "memory_none": "Nothing yet.",
+    "memory_forget": "Delete",
+    "memory_forget_label": "Delete the note {note}",
+    "memory_add_label": "A note to remember",
+    "memory_placeholder": "For example: I prefer small stakes",
+    "memory_add": "Add"
   },
   "start": {
     "step": "Step {n} of {total}",
@@ -776,7 +789,8 @@
       "backtest": "Backtest",
       "paper_cycle": "Paper trading",
       "settle": "Settlement check",
-      "leakage": "Leakage check"
+      "leakage": "Leakage check",
+      "compile": "Reading your description"
     },
     "state": {
       "queued": "Waiting",
@@ -793,5 +807,85 @@
     "adult": "I am 18 or older, and I accept the terms of use and the privacy notice.",
     "button": "Carry on",
     "needed": "Please tick the box first."
+  },
+  "describe": {
+    "title": "Describe a strategy",
+    "lede": "Say in your own words which markets, what you believe and how much to stake. You will read back exactly what would run before anything does, and nothing runs until you say so.",
+    "refine_title": "Change a strategy",
+    "refine_lede": "Say what to change. The version running now stays as it is; a change becomes a new version you read and confirm.",
+    "local_title": "Only on the hosted service",
+    "local_text": "Describing a strategy needs the service and its AI model. On your own machine, write a spec as a JSON file and use vp strategy check.",
+    "back": "Back to strategies",
+    "conversation": "The conversation so far",
+    "examples_intro": "For example:",
+    "example_one": "Back Premier League home teams when their ratings say they are underpriced, small stakes.",
+    "example_two": "Buy the favourite in Counter-Strike series priced between 60 and 85 cents.",
+    "example_three": "In London's daily high temperature markets, bet when climatology disagrees with the price by more than five points.",
+    "label": "Your strategy, in a sentence or two",
+    "reply_label": "Your answer, or what to change",
+    "send": "Send",
+    "sending": "Reading your description; this takes up to a minute.",
+    "failed": "That did not work: {error}",
+    "remembered": "Remembered. You can see and delete it in Settings.",
+    "changes": "What changes",
+    "spec_json": "The spec, exactly as it would run",
+    "what_runs": "What would run",
+    "confirm": "Run this",
+    "confirm_version": "Use this as the new version",
+    "you": "You",
+    "assistant": "Assistant",
+    "remember": "Remember: {note}",
+    "cost": "This answer cost {usd} ({model})."
+  },
+  "strategy": {
+    "missing": "No such strategy",
+    "missing_text": "It may belong to another workspace, or the link is wrong.",
+    "status": {
+      "draft": "Confirmed, not yet looked at.",
+      "previewed": "Previewed; not yet backtested.",
+      "backtested": "Backtested; not trading.",
+      "paper": "Trading with play money.",
+      "retired": "Stopped. Its records stay."
+    },
+    "what_runs": "What runs (version {version})",
+    "hash": "Version fingerprint {hash}",
+    "backtest": "See what it would have done",
+    "paper": "Start paper trading",
+    "refine": "Change it",
+    "retire": "Stop it",
+    "preview_title": "What it would touch",
+    "open_now": {
+      "one": "1 market it would consider is open now.",
+      "other": "{n} markets it would consider are open now."
+    },
+    "history": "{n} settled markets it would have picked since {since}, about {per_month} a month; {priced} of them have the price history a backtest needs.",
+    "no_history": "No settled markets it would have picked are on record yet.",
+    "cost": "A backtest on {markets} of them would cost about {backtest}; a month of paper trading about {month}.",
+    "free": "It uses no AI model, so running it costs nothing.",
+    "power": "Telling an edge of {edge} points at {price} from luck takes about {n} settled bets.",
+    "power_months": {
+      "one": "At its pace that is about 1 month.",
+      "other": "At its pace that is about {n} months."
+    },
+    "examples": "Markets it would consider now",
+    "runs_title": "What it would have done",
+    "no_runs": "No backtest yet. Run one to see what it would have done on markets that have already settled.",
+    "card_title": "{domain}, version {version}, {when}",
+    "card_scored": "{n} of {of} markets scored.",
+    "card_bets": "{n} bets, {ret} overall, {fees} in fees.",
+    "card_no_bets": "It found no bet worth making.",
+    "card_better": "Its forecasts beat the market's, and not by luck alone.",
+    "card_worse": "Its forecasts were worse than the market's.",
+    "card_level": "It cannot be told apart from the market on these markets.",
+    "card_caption": "The belief against the market on the same markets: Brier scores, their mean difference with a 95% interval, and the markets such a difference would need.",
+    "col_advantage": "Advantage over the market",
+    "col_needed": "Markets needed",
+    "manifest": "Run fingerprint {hash}",
+    "paper_title": "In paper",
+    "no_paper": "Not trading. Start paper trading to watch it on live prices with play money.",
+    "paper_waiting": "Its account is open; the first cycle runs within the hour.",
+    "versions": "Versions",
+    "col_version": "Version",
+    "col_changes": "What changed"
   }
 }

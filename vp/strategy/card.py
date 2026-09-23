@@ -208,6 +208,12 @@ def run_card(
             "Some prices are daily bars, so the price at the cutoff can be up"
             " to a day old."
         )
+    if results.get("fees_assumed"):
+        caveats.append(
+            f"{results['fees_assumed']} of the selected markets did not state a fee;"
+            f" the venue's 2026 rate ({results.get('fee_rate_assumed', 0):.0%} of"
+            " p(1 - p) a share) was charged instead."
+        )
     if results.get("with_price", 0) < results.get("candidates", 0):
         missing = results["candidates"] - results["with_price"]
         caveats.append(f"{missing} selected markets had no price at the cutoff.")
