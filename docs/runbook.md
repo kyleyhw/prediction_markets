@@ -14,18 +14,19 @@ paused with `vp admin pause <workspace> --reason "..."`.
 
 ## Quotes stale
 
-`vp_quote_age_p99_seconds > 60` for five minutes: the books the snapshots
-and paper cycles read are more than a minute old for the slowest percent of
-tokens. The objective is under 60 s at the 99th percentile.
+`vp_quote_age_p99_seconds > 60` for five minutes: for the slowest percent
+of tokens, the socket carrying them has heard nothing from the venue for
+over a minute, so the books the snapshots and paper cycles read may be that
+old. The objective is under 60 s at the 99th percentile. A quiet market is
+not stale: on a live socket the venue sends every change and answers the
+ten-second `PING`, so the age is the socket's silence, not the time since
+a book last changed (which runs to hours for quiet markets).
 
 - Is `vp ingest` running? `docker compose ps ingest`, then its log.
 - Reconnects (`vp_ws_reconnects_total`) rising means the channel is
   dropping; see the next entry.
-- A few very quiet markets can hold the percentile up without anything
-  wrong: a token whose book has not changed is still subscribed. If
-  `vp_tokens_tracked` is steady and reconnects are flat, check whether the
-  stale tokens belong to markets past their end date, which discovery
-  drops on its next pass.
+- A socket that stays connected but silent (the maximum climbing while
+  reconnects are flat) is a half-open connection: restart `vp ingest`.
 - If the feed cannot recover, halt the platform so paper cycles do not
   trade stale prices, and resume once quotes are fresh.
 

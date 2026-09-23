@@ -90,6 +90,10 @@ class Book:
         )
 
 
+#: The channel's change events, whose stamps measure the ingestion lag.
+CHANGES = frozenset({"price_change", "best_bid_ask", "last_trade_price"})
+
+
 def _num(value: Any) -> float | None:
     try:
         return float(value)
@@ -205,11 +209,6 @@ class MarketState:
             )
         return out
 
-    def ages(self, now: float | None = None) -> list[float]:
-        """Seconds since each subscribed token's book last changed or was sent."""
-        now = now or time.time()
-        return [now - b.updated for b in self.books.values() if b.updated]
-
 
 # ------------------------------------------------------------- the service
 
@@ -252,6 +251,8 @@ class Ingest:
         self.reconnects = 0
         self.messages = 0
         self._flushed: dict[str, float] = {}  # token -> book time last written
+        self._heard: dict[int, float] = {}  # socket's token set -> last message
+        self._started = time.time()
         self._sockets: list[tuple[asyncio.Queue[list[str]], set[str]]] = []
 
     # -- discovery and the registry --
@@ -410,6 +411,7 @@ class Ingest:
                     adder = asyncio.create_task(self._subscribe_more(ws, tokens, extra))
                     try:
                         async for raw in ws:
+                            self._heard[id(tokens)] = time.time()
                             if raw == "PONG":
                                 continue
                             self._handle(raw)
@@ -449,10 +451,12 @@ class Ingest:
             if isinstance(event, dict):
                 self.messages += 1
                 moved |= self.state.apply(event)
-                # The venue stamps each event in milliseconds; the gap to now
-                # is the ingestion lag the plan asks to measure.
+                # The venue stamps each event in milliseconds; for a change
+                # the gap to now is the ingestion lag. A `book` message is a
+                # picture of the book, stamped with its last change, which
+                # may be days ago, so it says nothing about the lag.
                 stamp = _num(event.get("timestamp"))
-                if stamp and self.metrics:
+                if stamp and self.metrics and event.get("event_type") in CHANGES:
                     self.metrics.lag(time.time() - stamp / 1000)
         held = {t for t in moved if self.state.token_market.get(t) in self.held}
         if held:
@@ -535,9 +539,21 @@ class Ingest:
         for t in tasks:
             t.cancel()
 
+    def staleness(self, now: float | None = None) -> list[float]:
+        """Per subscribed token, the seconds since its socket last heard from
+        the venue: how old our copy of its book can be. A quiet book on a
+        live socket is current (the venue sends every change, and answers
+        the ten-second PING), so how long a book has gone unchanged is not
+        its age; a socket gone silent makes every book on it stale."""
+        now = now or time.time()
+        ages: list[float] = []
+        for _, tokens in self._sockets:
+            ages += [now - self._heard.get(id(tokens), self._started)] * len(tokens)
+        return ages
+
     def _measure(self) -> None:
         if self.metrics:
-            self.metrics.freshness(self.state.ages(), len(self.state.token_market))
+            self.metrics.freshness(self.staleness(), len(self.state.token_market))
 
 
 # ----------------------------------------------------------- reconciliation

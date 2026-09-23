@@ -10,8 +10,10 @@ measured is what the objectives and the report need (plan, task 36):
   queue's depth and oldest age by kind (read from `vp_queue_stats`, which
   returns counts only);
 * the venue: requests, latency and status by host, so a 429 is visible;
-* the market feed: reconnects, tokens tracked, and the age of the books
-  (the quote-freshness objective is the 99th percentile under 60 s);
+* the market feed: reconnects, tokens tracked, the ingestion lag (venue
+  stamp to receipt), and how stale the books can be, which is how long
+  each token's socket has been silent (the quote-freshness objective is
+  the 99th percentile under 60 s);
 * resolutions: the delay between the venue resolving and us recording it;
 * money: model spend by forecaster;
 * the ledger: append latency.
@@ -95,9 +97,13 @@ WS_RECONNECTS = Counter(
 )
 TOKENS_TRACKED = Gauge("vp_tokens_tracked", "Tokens subscribed", registry=REGISTRY)
 QUOTE_AGE_P99 = Gauge(
-    "vp_quote_age_p99_seconds", "99th percentile age of the books", registry=REGISTRY
+    "vp_quote_age_p99_seconds",
+    "99th percentile of socket silence over tokens",
+    registry=REGISTRY,
 )
-QUOTE_AGE_MAX = Gauge("vp_quote_age_max_seconds", "Oldest book", registry=REGISTRY)
+QUOTE_AGE_MAX = Gauge(
+    "vp_quote_age_max_seconds", "Longest socket silence", registry=REGISTRY
+)
 INGEST_LAG = Histogram(
     "vp_ingest_lag_seconds",
     "Venue event timestamp to our receipt",

@@ -271,5 +271,29 @@ def test_the_venue_s_event_stamp_gives_the_ingestion_lag() -> None:
     seen = Seen()
     service = Ingest(None, None, [], metrics=seen)  # ty: ignore[invalid-argument-type]
     stamp = int((time.time() - 0.5) * 1000)
-    service._handle(json.dumps([{"event_type": "new_market", "timestamp": str(stamp)}]))
+    old = int((time.time() - 86_400) * 1000)
+    service._handle(
+        json.dumps(
+            [
+                {
+                    "event_type": "best_bid_ask",
+                    "asset_id": "a",
+                    "timestamp": str(stamp),
+                },
+                # A picture of a book stamped with its last change says
+                # nothing about the lag.
+                {"event_type": "book", "asset_id": "b", "timestamp": str(old)},
+            ]
+        )
+    )
     assert len(seen.lags) == 1 and 0.4 < seen.lags[0] < 5
+
+
+def test_a_book_is_as_stale_as_its_socket_is_silent() -> None:
+    service = Ingest(None, None, [])  # ty: ignore[invalid-argument-type]
+    live, silent = {"a", "b", "c"}, {"d"}
+    service._sockets = [(asyncio.Queue(), live), (asyncio.Queue(), silent)]
+    now = time.time()
+    service._started = now - 100
+    service._heard[id(live)] = now - 2
+    assert sorted(service.staleness(now)) == pytest.approx([2, 2, 2, 100])

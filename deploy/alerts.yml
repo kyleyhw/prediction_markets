@@ -7,7 +7,7 @@ groups:
         for: 5m
         labels: {severity: page}
         annotations:
-          summary: "The newest quotes are over a minute old at the 99th percentile"
+          summary: "Market sockets silent for over a minute (99th percentile of tokens)"
           runbook: "docs/runbook.md#quotes-stale"
       - alert: MarketFeedReconnecting
         expr: increase(vp_ws_reconnects_total[10m]) > 5
