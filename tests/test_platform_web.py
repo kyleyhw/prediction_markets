@@ -53,7 +53,8 @@ def client(
         data_root=tmp_path_factory.mktemp("data"),
         public_url="http://testserver",
     )
-    with TestClient(create_app(settings, mailer=mailer)) as test_client:
+    app = create_app(settings, mailer=mailer, sign_in_limit=100_000)
+    with TestClient(app) as test_client:
         yield test_client
 
 
@@ -441,3 +442,20 @@ def test_nothing_personal_is_left_in_the_browser_cache(
     assert "no-store" not in client.get(
         "/fonts/InstrumentSans-latin.woff2"
     ).headers.get("Cache-Control", "")
+
+
+def test_one_address_cannot_ask_for_links_without_limit(
+    owner, mailer: OutboxMailer, tmp_path: Path
+) -> None:
+    settings = Settings(
+        database_url=APP_URL, data_root=tmp_path, public_url="http://testserver"
+    )
+    app = create_app(settings, mailer=mailer, sign_in_limit=2)
+    with TestClient(app, client=(f"10.9.{uuid4().int % 250}.1", 50000)) as limited:
+        codes = [
+            limited.post(
+                "/auth/sign-in", data={"email": _email()}, headers=ORIGIN
+            ).status_code
+            for _ in range(3)
+        ]
+    assert codes == [200, 200, 429]

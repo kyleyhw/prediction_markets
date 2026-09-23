@@ -49,9 +49,12 @@ harmless, and it is recorded in `docs/platform.md`.
 
 from __future__ import annotations
 
+import hmac
 import html
 import logging
 import re
+import threading
+import time
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from typing import Annotated, Any, Literal
@@ -73,12 +76,16 @@ from psycopg_pool import ConnectionPool
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
 from vp.domains import DOMAINS
-from vp.platform import auth
+from vp.platform import auth, budgets, jobs, llmops
 from vp.platform.config import Settings
 from vp.platform.db import tenant_session
+from vp.platform.ledger import PgLedger
 from vp.platform.mail import Mailer, Message, OutboxMailer
+from vp.platform.observe import HTTP_REQUESTS, HTTP_SECONDS, exposition, span
 from vp.platform.principal import AuthMethod, Principal
-from vp.ui.server import STATIC, DataView
+from vp.platform.storage import ObjectStore, SharedRoot, open_store
+from vp.platform.views import WorkspaceView
+from vp.ui.server import STATIC
 
 logger = logging.getLogger(__name__)
 
@@ -95,6 +102,9 @@ _CSP = (
 )
 _API_REFERENCE = ("/docs", "/redoc")  # FastAPI's pages load their own scripts
 _MARKET_ID = re.compile(r"^[0-9A-Za-z_-]{1,80}$")
+_RUN_FILE = re.compile(r"^[a-z_]{1,64}\.(png|json|md|jsonl)$")
+#: Sign-in requests per client address per hour, whatever the addresses.
+SIGN_IN_PER_ADDRESS = 20
 _STAMP = re.compile(r"^[0-9A-Za-z_-]{1,64}$")
 _FIGURE = re.compile(r"^[a-z_]{1,64}\.png$")
 _SECRET_QUERY = re.compile(r"([?&]token=)[^&\s\"']+")
@@ -286,11 +296,101 @@ def browser_session(principal: Reader) -> Principal:
 BrowserSession = Annotated[Principal, Depends(browser_session)]
 
 
+def writer(principal: Reader) -> Principal:
+    """A reader whose role and credential may change the workspace's data."""
+    if not principal.may_write:
+        raise HTTPException(403, "your role or token may not start work here")
+    return principal
+
+
+Writer = Annotated[Principal, Depends(writer)]
+
+
+class BacktestRequest(BaseModel):
+    """A backtest to run: what the page's form and the API send."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    domain: str
+    forecasters: list[str] = Field(default_factory=lambda: ["market", "constant"])
+    hours_before_close: float = Field(default=24.0, ge=1, le=720)
+    kinds: list[str] = Field(default_factory=list, max_length=10)
+    max_markets: int | None = Field(default=None, ge=1, le=5000)
+    batch: bool = False
+    model: str | None = None
+
+    @field_validator("domain")
+    @classmethod
+    def known_domain(cls, value: str) -> str:
+        if value not in DOMAINS:
+            raise ValueError(f"unknown domain {value!r}")
+        return value
+
+    @field_validator("forecasters")
+    @classmethod
+    def known_forecasters(cls, value: list[str]) -> list[str]:
+        from vp.forecast import FORECASTER_NAMES
+
+        unknown = sorted(set(value) - set(FORECASTER_NAMES))
+        if unknown or not value or len(value) > 5:
+            raise ValueError(f"choose one to five of {', '.join(FORECASTER_NAMES)}")
+        return list(dict.fromkeys(value))
+
+    @field_validator("model")
+    @classmethod
+    def known_model(cls, value: str | None) -> str | None:
+        from vp.forecast.llm import PRICES
+
+        if value is not None and value not in PRICES:
+            raise ValueError(f"unknown model {value!r}")
+        return value
+
+
+class PaperStart(BaseModel):
+    """Open the workspace's paper account with the sample strategies."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    domains: list[str] = Field(default_factory=list, max_length=20)
+    timezone: str = "UTC"
+
+    @field_validator("domains")
+    @classmethod
+    def known(cls, value: list[str]) -> list[str]:
+        unknown = sorted(set(value) - set(DOMAINS))
+        if unknown:
+            raise ValueError(f"unknown domains: {', '.join(unknown)}")
+        return list(dict.fromkeys(value))
+
+    @field_validator("timezone")
+    @classmethod
+    def real_zone(cls, value: str) -> str:
+        from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
+        try:
+            ZoneInfo(value)
+        except ZoneInfoNotFoundError, ValueError:
+            raise ValueError(f"unknown time zone {value!r}") from None
+        return value
+
+
+class KeyBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    key: str = Field(min_length=20, max_length=300)
+
+
+#: The sample strategies a new paper account runs: the statistical ones,
+#: which cost nothing. The model joins them in Phase 15, as a choice.
+SAMPLE_FORECASTERS = ["market", "constant", "elo", "climatology"]
+
+
 def create_app(
     settings: Settings,
     *,
     mailer: Mailer | None = None,
     pool: ConnectionPool | None = None,
+    store: ObjectStore | None = None,
+    sign_in_limit: int = SIGN_IN_PER_ADDRESS,
 ) -> FastAPI:
     """Build the application.
 
@@ -308,7 +408,30 @@ def create_app(
         open=False,
     )
     mailer = mailer or OutboxMailer(settings.outbox_dir)
-    view = DataView(settings.data_root)
+    store = store or open_store(settings)
+    shared = SharedRoot(store, settings.cache)
+    stop = threading.Event()
+
+    def refresh_shared() -> None:
+        try:
+            shared.refresh(DOMAINS)
+        except Exception:  # noqa: BLE001 - the views read what the cache holds
+            logger.exception("could not refresh the shared cache")
+
+    def keep_fresh() -> None:
+        """Refresh the shared cache when the ingest or a job says there is
+        something new (NOTIFY vp_data), and once a minute regardless."""
+        while not stop.is_set():
+            try:
+                with psycopg.connect(settings.database_url, autocommit=True) as conn:
+                    conn.execute("listen vp_data")
+                    while not stop.is_set():
+                        notes = list(conn.notifies(timeout=60.0, stop_after=1))
+                        refresh_shared()
+                        del notes
+            except Exception:  # noqa: BLE001 - retry; the minute timer covers it
+                logger.exception("vp_data listener lost its connection")
+                stop.wait(5.0)
 
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
@@ -316,9 +439,15 @@ def create_app(
         try:
             with pool.connection() as conn:
                 check_database(conn)
+            refresh_shared()
+            threading.Thread(target=keep_fresh, daemon=True).start()
             yield
         finally:
+            stop.set()
             pool.close()
+
+    def view_for(principal: Principal) -> WorkspaceView:
+        return WorkspaceView(shared, pool, principal, store)
 
     app = FastAPI(
         title="vibe-predict",
@@ -345,7 +474,13 @@ def create_app(
             return JSONResponse(
                 {"detail": "cross-site request refused"}, status_code=403
             )
-        response = await call_next(request)
+        started = time.monotonic()
+        with span("request", method=request.method, path=request.url.path):
+            response = await call_next(request)
+        route = request.scope.get("route")
+        template = getattr(route, "path", "unmatched")
+        HTTP_REQUESTS.labels(template, request.method, str(response.status_code)).inc()
+        HTTP_SECONDS.labels(template).observe(time.monotonic() - started)
         for name, value in _SECURITY_HEADERS.items():
             response.headers.setdefault(name, value)
         if not request.url.path.startswith(_API_REFERENCE):
@@ -387,7 +522,9 @@ def create_app(
         return _page("Sign in", _sign_in_form())
 
     @app.post("/auth/sign-in", include_in_schema=False)
-    def request_link(email: Annotated[str, Form()] = "") -> HTMLResponse:
+    def request_link(
+        request: Request, email: Annotated[str, Form()] = ""
+    ) -> HTMLResponse:
         """Send a sign-in link. Answers the same whether or not one was sent."""
         address = auth.normalize_email(email)
         if address is None:
@@ -396,7 +533,21 @@ def create_app(
                 _sign_in_form("That does not look like an email address."),
                 status=422,
             )
+        client = request.client.host if request.client else "unknown"
         with pool.connection() as conn:
+            allowed = conn.execute(
+                "select vp_rate_limit(%s, %s, %s)",
+                (f"sign-in-ip:{client}", sign_in_limit, 3600),
+            ).fetchone()
+            if not allowed or not allowed[0]:
+                return _page(
+                    "Sign in",
+                    _sign_in_form(
+                        "Too many sign-in requests from your network this hour. "
+                        "Try again later."
+                    ),
+                    status=429,
+                )
             token = auth.request_sign_in(conn, address)
         if token is not None:
             link = f"{settings.public_url}/auth/verify?token={token}"
@@ -540,49 +691,63 @@ def create_app(
 
     @app.get("/api/overview")
     def overview(principal: Reader) -> Any:
-        """Per-domain counts and the paper accounts."""
-        # The data root's path is the server's business, not the reader's.
-        return {k: v for k, v in view.overview().items() if k != "root"}
+        """Per-domain counts, the paper accounts, and the workspace's account."""
+        return view_for(principal).overview()
 
     @app.get("/api/backtests")
     def backtests(principal: Reader) -> Any:
-        """Every backtest run with its tables."""
-        return view.backtests()
+        """The workspace's backtest runs, newest first."""
+        return view_for(principal).backtests()
 
-    @app.get("/api/backtests/{domain}/{stamp}/{figure}")
-    def figure(domain: str, stamp: str, figure: str, principal: Reader) -> FileResponse:
-        """One figure of one backtest run."""
-        if (
-            domain not in DOMAINS
-            or not _STAMP.match(stamp)
-            or not _FIGURE.match(figure)
-        ):
-            raise HTTPException(404, "no such figure")
-        base = (settings.data_root / "backtests").resolve()
-        path = (base / domain / stamp / figure).resolve()
-        if not path.is_relative_to(base) or not path.is_file():
-            raise HTTPException(404, "no such figure")
-        return FileResponse(path, media_type="image/png")
+    @app.get("/api/runs/{run_id}/{name}")
+    def run_file(run_id: UUID, name: str, principal: Reader) -> Response:
+        """One file of one of the workspace's runs (results, summary, figures)."""
+        if not _RUN_FILE.match(name):
+            raise HTTPException(404, "no such file")
+        with pool.connection() as conn, tenant_session(conn, principal):
+            row = conn.execute(
+                "select artifacts from runs where id = %s", (run_id,)
+            ).fetchone()
+        data = store.get_bytes(f"{row[0]}/{name}") if row and row[0] else None
+        if data is None:
+            raise HTTPException(404, "no such file")
+        media = {"png": "image/png", "json": "application/json"}.get(
+            name.rsplit(".", 1)[-1], "text/plain; charset=utf-8"
+        )
+        return Response(data, media_type=media)
 
     @app.get("/api/paper")
     def paper(
         principal: Reader, limit: Annotated[int, Query(ge=1, le=1000)] = 50
     ) -> Any:
-        """The paper ledger: integrity, accounts, positions, settlements."""
-        return view.paper(limit=limit)
+        """The workspace's paper ledger: integrity, accounts, positions, settlements."""
+        return view_for(principal).paper(limit=limit)
+
+    @app.get("/api/paper/export")
+    def paper_export(principal: Reader) -> Response:
+        """The account's hash-chained ledger as JSON lines, to verify offline."""
+        view = view_for(principal)
+        if view.account is None:
+            raise HTTPException(404, "this workspace has no paper account")
+        ledger = PgLedger(pool, principal, view.account["id"], store=store)
+        return Response(
+            ledger.export_jsonl(),
+            media_type="application/x-ndjson",
+            headers={"Content-Disposition": 'attachment; filename="ledger.jsonl"'},
+        )
 
     @app.get("/api/snapshots/{domain}")
     def snapshot(domain: str, principal: Reader) -> Any:
-        """The latest snapshot of a domain's open markets."""
+        """The latest capture of a domain's open markets."""
         if domain not in DOMAINS:
             raise HTTPException(404, "no such domain")
-        return view.snapshot(domain)
+        return view_for(principal).snapshot(domain)
 
     @app.get("/api/markets/{domain}/{market_id}")
     def market(domain: str, market_id: str, principal: Reader) -> Any:
         """One market: book depth, fee, forecasts and its recent prices."""
         found = (
-            view.market(domain, market_id)
+            view_for(principal).market(domain, market_id)
             if domain in DOMAINS and _MARKET_ID.match(market_id)
             else None
         )
@@ -594,8 +759,222 @@ def create_app(
     def forecasts(
         principal: Reader, limit: Annotated[int, Query(ge=1, le=1000)] = 100
     ) -> Any:
-        """The most recent paper forecasts."""
-        return view.forecasts(limit=limit)
+        """The workspace's most recent forecasts."""
+        return view_for(principal).forecasts(limit=limit)
+
+    # ----------------------------------------------------------------- work
+
+    @app.get("/api/capabilities")
+    def capabilities(principal: Reader) -> dict[str, Any]:
+        """What this service can do for this workspace."""
+        own = llmops.key_hint(pool, principal)
+        return {
+            "llm": bool(settings.anthropic_api_key or own),
+            "own_keys": bool(settings.master_key),
+            "own_key_hint": own,
+            "jobs": sorted(jobs.WORKSPACE_KINDS),
+        }
+
+    @app.get("/api/jobs")
+    def list_jobs(
+        principal: Reader, limit: Annotated[int, Query(ge=1, le=200)] = 30
+    ) -> list[dict[str, Any]]:
+        """The workspace's recent jobs, newest first, with their progress."""
+        return jobs.workspace_jobs(pool, principal, limit=limit)
+
+    @app.get("/api/jobs/{job_id}")
+    def get_job(job_id: UUID, principal: Reader) -> dict[str, Any]:
+        found = [
+            j
+            for j in jobs.workspace_jobs(pool, principal, limit=200)
+            if j["id"] == job_id
+        ]
+        if not found:
+            raise HTTPException(404, "no such job")
+        return found[0]
+
+    @app.post("/api/jobs/{job_id}/cancel", status_code=202)
+    def cancel_job(job_id: UUID, principal: Writer) -> dict[str, Any]:
+        if not jobs.request_cancel(pool, principal, job_id):
+            raise HTTPException(404, "no such job, or it has already finished")
+        return {"id": job_id, "cancel_requested": True}
+
+    def _estimate(body: BacktestRequest) -> dict[str, Any]:
+        from vp.backtest.run import BacktestConfig, select_markets
+        from vp.forecast.llm import DEFAULT_MODEL, estimate_usd
+        from vp.markets.store import read_markets
+
+        path = shared.root / "markets" / body.domain / "resolved.parquet"
+        if not path.exists():
+            raise HTTPException(409, "this domain's data has not arrived yet")
+        config = BacktestConfig(
+            domain=body.domain,
+            forecasters=tuple(body.forecasters),
+            kinds=tuple(body.kinds),
+            max_markets=body.max_markets,
+        )
+        markets = len(select_markets(read_markets(path), config))
+        usd = (
+            estimate_usd(markets, body.model or DEFAULT_MODEL, batch=body.batch)
+            if "llm" in body.forecasters
+            else 0.0
+        )
+        return {"markets": markets, "estimate_usd": round(usd, 4)}
+
+    @app.post("/api/backtests/estimate")
+    def estimate_backtest(body: BacktestRequest, principal: Reader) -> dict[str, Any]:
+        """What a backtest would cover and cost, before it runs."""
+        standing = budgets.standing(pool, principal)
+        return _estimate(body) | {
+            "remaining_usd": float(standing.remaining_usd),
+            "limit_usd": float(standing.limit_usd),
+        }
+
+    @app.post("/api/backtests", status_code=202)
+    def start_backtest(body: BacktestRequest, principal: Writer) -> dict[str, Any]:
+        """Queue a backtest; its progress is at /api/jobs/{id}."""
+        estimate = _estimate(body)
+        paid_by_platform = llmops.key_hint(pool, principal) is None
+        if "llm" in body.forecasters:
+            if not (settings.anthropic_api_key or not paid_by_platform):
+                raise HTTPException(409, "no model key is available for this workspace")
+        reserved = estimate["estimate_usd"] if paid_by_platform else 0.0
+        try:
+            budgets.reserve(pool, principal, reserved)
+        except budgets.OverBudget as exc:
+            raise HTTPException(402, str(exc)) from None
+        payload = body.model_dump()
+        try:
+            job_id = jobs.enqueue(
+                pool, principal, "backtest", payload, reserved_usd=reserved
+            )
+        except Exception:
+            budgets.settle_job(pool, principal, UUID(int=0), reserved, [])
+            raise
+        return {"job_id": job_id, **estimate}
+
+    @app.post("/api/paper/start", status_code=201)
+    def start_paper(body: PaperStart, principal: Writer) -> dict[str, Any]:
+        """Open the paper account with the sample strategies, schedule its
+        hourly cycle and settlement in the person's time zone, and run the
+        first cycle now."""
+        from datetime import UTC, datetime
+
+        domains = body.domains or list(DOMAINS)
+        with pool.connection() as conn, tenant_session(conn, principal):
+            if conn.execute("select 1 from paper_accounts").fetchone():
+                raise HTTPException(409, "this workspace already has a paper account")
+            (account_id,) = conn.execute(
+                "insert into paper_accounts (workspace_id, name, domains, forecasters, "
+                "created_by) values (%s, 'Sample strategies', %s, %s, %s) returning id",
+                (principal.workspace, domains, SAMPLE_FORECASTERS, principal.user_id),
+            ).fetchone() or (None,)
+            now = datetime.now(tz=UTC)
+            for name, kind, cron in (
+                ("paper cycle", "paper_cycle", "7 * * * *"),
+                ("settlement", "settle", "37 * * * *"),
+            ):
+                conn.execute(
+                    "insert into schedules (workspace_id, created_by, name, kind, "
+                    "payload, cron, timezone, next_run_at) "
+                    "values (%s, %s, %s, %s, %s, %s, %s, %s)",
+                    (
+                        principal.workspace,
+                        principal.user_id,
+                        name,
+                        kind,
+                        Jsonb({"account_id": str(account_id)}),
+                        cron,
+                        body.timezone,
+                        jobs.next_fire(cron, body.timezone, now),
+                    ),
+                )
+        job_id = jobs.enqueue(
+            pool, principal, "paper_cycle", {"account_id": str(account_id)}
+        )
+        return {"account_id": account_id, "job_id": job_id}
+
+    @app.post("/api/paper/run", status_code=202)
+    def run_paper(principal: Writer, what: str = "cycle") -> dict[str, Any]:
+        """Run a paper cycle or a settlement pass now."""
+        kind = {"cycle": "paper_cycle", "settle": "settle"}.get(what)
+        if kind is None:
+            raise HTTPException(422, "what must be cycle or settle")
+        account = view_for(principal).account
+        if account is None:
+            raise HTTPException(409, "start paper trading first")
+        return {
+            "job_id": jobs.enqueue(
+                pool, principal, kind, {"account_id": str(account["id"])}
+            )
+        }
+
+    @app.post("/api/refresh/{domain}", status_code=202)
+    def refresh_domain(domain: str, principal: Writer) -> dict[str, Any]:
+        """Ask for a fresh capture of a domain's markets; at most one per
+        domain every fifteen minutes, whoever asks."""
+        from datetime import UTC, datetime
+
+        if domain not in DOMAINS:
+            raise HTTPException(404, "no such domain")
+        now = datetime.now(tz=UTC)
+        window = now.replace(
+            minute=now.minute - now.minute % 15, second=0, microsecond=0
+        )
+        job_id = jobs.enqueue_platform(
+            pool,
+            "snapshot",
+            {"domain": domain},
+            idempotency_key=f"refresh:{domain}:{window:%Y%m%dT%H%M}",
+            priority=jobs.PRIORITY_INTERACTIVE,
+        )
+        return {"queued": job_id is not None}
+
+    @app.get("/api/spend")
+    def spend(principal: Reader) -> dict[str, Any]:
+        """This month's model spending: the budget, what is used, by what."""
+        standing = budgets.standing(pool, principal)
+        return {
+            "limit_usd": float(standing.limit_usd),
+            "charged_usd": float(standing.charged_usd),
+            "reserved_usd": float(standing.reserved_usd),
+            "remaining_usd": float(standing.remaining_usd),
+            "breakdown": budgets.breakdown(pool, principal),
+        }
+
+    @app.get("/api/keys")
+    def get_key(principal: BrowserSession) -> dict[str, Any]:
+        return {
+            "hint": llmops.key_hint(pool, principal),
+            "enabled": bool(settings.master_key),
+        }
+
+    @app.put("/api/keys")
+    def put_key(body: KeyBody, principal: BrowserSession) -> dict[str, Any]:
+        """Store the workspace's own model key, encrypted; only a hint comes back."""
+        if not principal.may_write:
+            raise HTTPException(403, "your role may not change keys")
+        try:
+            hint = llmops.store_key(pool, principal, body.key, settings.master_key)
+        except llmops.KeysUnavailable as exc:
+            raise HTTPException(409, str(exc)) from None
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from None
+        return {"hint": hint}
+
+    @app.delete("/api/keys", status_code=204)
+    def delete_key(principal: BrowserSession) -> Response:
+        llmops.delete_key(pool, principal)
+        return Response(status_code=204)
+
+    @app.get("/metrics", include_in_schema=False)
+    def metrics(request: Request) -> Response:
+        """Prometheus metrics, for the operator's scraper only."""
+        token = settings.metrics_token
+        given = request.headers.get("authorization", "")
+        if not token or not hmac.compare_digest(given, f"Bearer {token}"):
+            raise HTTPException(404, "not found")
+        return Response(exposition(), media_type="text/plain; version=0.0.4")
 
     # ---------------------------------------------------------------- page
 

@@ -26,6 +26,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+import threading
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 from functools import partial
@@ -40,7 +41,7 @@ import pyarrow.parquet as pq
 from vp.domains import DOMAINS as DOMAIN_ADAPTERS
 from vp.markets.schema import BinaryMarket
 from vp.markets.store import read_markets
-from vp.paper.ledger import Ledger
+from vp.paper.ledger import ChainLedger, Ledger, verify_entries
 from vp.paper.loop import replay
 
 logger = logging.getLogger(__name__)
@@ -49,20 +50,47 @@ DOMAINS = tuple(DOMAIN_ADAPTERS)
 START_CASH = 1000.0
 
 
+# Parquet reads, keyed by path and modification time, shared by every view
+# in the process: the hosted service builds a view per request, and a
+# weather snapshot is too large to decode on each.
+_CACHE: dict[str, tuple[float, Any]] = {}
+_CACHE_LOCK = threading.Lock()
+
+
 class DataView:
-    """Read-only queries over a data root, with mtime-keyed caching."""
+    """Read-only queries over a data root, with mtime-keyed caching.
+
+    The hosted service subclasses it (`vp.platform.views.WorkspaceView`) to
+    read a workspace's ledger, runs and forecasts from Postgres while the
+    shared market files come from the same data root; the methods below it
+    overrides are the seams.
+    """
 
     def __init__(self, root: Path) -> None:
         self.root = root
-        self._cache: dict[str, tuple[float, Any]] = {}
 
     def _cached(self, path: Path, load: Any) -> Any:
         key = str(path)
         mtime = path.stat().st_mtime if path.exists() else -1.0
-        hit = self._cache.get(key)
+        with _CACHE_LOCK:
+            hit = _CACHE.get(key)
         if hit is None or hit[0] != mtime:
-            self._cache[key] = (mtime, load(path) if path.exists() else None)
-        return self._cache[key][1]
+            hit = (mtime, load(path) if path.exists() else None)
+            with _CACHE_LOCK:
+                _CACHE[key] = hit
+        return hit[1]
+
+    # -- the seams --
+
+    def ledger(self) -> ChainLedger:
+        """The paper ledger the views read."""
+        return Ledger(self.root / "paper" / "ledger.jsonl")
+
+    def start_cash(self) -> float:
+        return START_CASH
+
+    def backtest_count(self, domain: str) -> int:
+        return len(list((self.root / "backtests" / domain).glob("*/summary.md")))
 
     def overview(self) -> dict[str, Any]:
         domains: dict[str, Any] = {}
@@ -81,9 +109,7 @@ class DataView:
                 else 0,
                 "snapshots": len(snaps),
                 "latest_snapshot": snaps[-1].stem if snaps else None,
-                "backtests": len(
-                    list((self.root / "backtests" / domain).glob("*/summary.md"))
-                ),
+                "backtests": self.backtest_count(domain),
             }
         return {
             "root": str(self.root),
@@ -116,20 +142,21 @@ class DataView:
         return runs
 
     def paper(self, *, limit: int = 50, now: datetime | None = None) -> dict[str, Any]:
-        ledger = Ledger(self.root / "paper" / "ledger.jsonl")
+        ledger = self.ledger()
         entries = list(ledger.entries())
-        accounts = replay(ledger, START_CASH)
+        cash = self.start_cash()
+        accounts = replay(ledger, cash)
         orders = [e for e in entries if e["kind"] == "order"]
         settlements = [e for e in entries if e["kind"] == "settlement"]
         since = (now or datetime.now(tz=timezone.utc)) - timedelta(hours=24)
         recent = [e for e in entries if _parse_at(e["at"]) >= since]
         return {
             "entries": len(entries),
-            "verified": ledger.verify() is None if entries else None,
+            "verified": verify_entries(entries) is None if entries else None,
             "last_at": entries[-1]["at"] if entries else None,
-            "start_cash": START_CASH,
+            "start_cash": cash,
             "accounts": [
-                _account(name, acc, orders, settlements)
+                _account(name, acc, orders, settlements, cash)
                 for name, acc in sorted(accounts.items())
             ],
             "today": {
@@ -237,6 +264,7 @@ def _account(
     account: Any,
     orders: list[dict[str, Any]],
     settlements: list[dict[str, Any]],
+    cash: float = START_CASH,
 ) -> dict[str, Any]:
     """One paper account: balance, its curve, fees paid and forward skill."""
     own = [s for s in settlements if s["data"]["forecaster"] == name]
@@ -257,7 +285,7 @@ def _account(
             ),
             4,
         ),
-        "curve": [START_CASH] + [s["data"]["bankroll_after"] for s in own],
+        "curve": [cash] + [s["data"]["bankroll_after"] for s in own],
         "curve_at": [first] + [s["at"] for s in own],
         "open": [
             {k: v for k, v in o.items() if k != "forecaster"}
