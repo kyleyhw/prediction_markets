@@ -56,12 +56,19 @@ it directly (`vp/forecast/archive.py`).
   manifest is not read.
 - **Visibility.** A row is visible to a forecaster with cutoff $c$ only if
   its `available_at` is before $c$. `available_at` is `captured_at`
-  unless the source is a **point-in-time provider**: one that keeps each
-  value as it was issued, never revised, and documents when it was
-  issued. Only such a source may be backfilled, and each backfilled row
-  carries the latest moment the value can have existed, computed from the
-  provider's documented definition, never an earlier guess. The sources
-  that qualify are listed in the table below; today there is one.
+  unless the source is **point in time**: a provider that keeps each
+  value as it was issued, never revised, and documents when it was issued,
+  or a dated fact such as a match result. Only such a source may be
+  backfilled, and each backfilled row carries the latest moment the value
+  can have existed, computed from the provider's documented definition or
+  the fact's date, never an earlier guess; a row whose moment has not yet
+  come is not written. Two sources qualify: `open_meteo_runs` and
+  `openfootball` (`POINT_IN_TIME` in `vp/forecast/archive.py`).
+- **Checking the claim.** `vp evidence recheck` reads the last month of
+  every archived station again and compares each station, day and lead
+  with what the archive holds; a point-in-time provider must return the
+  same numbers. The first recheck (2026-09-23, 3,162 rows) found none
+  changed.
 - **Accessors.** Each source gets an accessor on `Evidence`
   (`nwp`, `ensemble`, `headlines`, `fixtures`), so no forecaster or signal
   reads files; the purity gate and the cutoff sentinel of

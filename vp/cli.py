@@ -163,15 +163,20 @@ def main() -> None:
         "weather-runs", help="point-in-time forecasts at every named station"
     )
     runs.add_argument("--root", type=Path, default=Path("data"))
-    runs.add_argument("--domain", default="weather")
+    runs.add_argument("--domain", default=None, help="default: every such domain")
     runs.add_argument("--station", action="append", default=None)
     runs.add_argument("--lead-in", type=int, default=90)
     foot = evid_sub.add_parser("football", help="fixtures and results by season")
     foot.add_argument("--root", type=Path, default=Path("data"))
     foot.add_argument("--season", action="append", required=True, help="2025-26")
+    chk = evid_sub.add_parser(
+        "recheck", help="read recent point-in-time rows again and compare"
+    )
+    chk.add_argument("--root", type=Path, default=Path("data"))
+    chk.add_argument("--days", type=int, default=30)
     ens = evid_sub.add_parser("ensemble", help="the ensemble for open markets")
     ens.add_argument("--root", type=Path, default=Path("data"))
-    ens.add_argument("--domain", default="weather")
+    ens.add_argument("--domain", default=None, help="default: every such domain")
 
     strat = sub.add_parser("strategy", help="a strategy spec (JSON)")
     strat_sub = strat.add_subparsers(dest="strategy_command", required=True)
@@ -381,6 +386,8 @@ def main() -> None:
                 lead_in=args.lead_in,
                 only=args.station,
             )
+        elif args.evidence_command == "recheck":
+            out = backfill.recheck(args.root, days=args.days, key=key)
         elif args.evidence_command == "football":
             out = backfill.football(args.root, args.season)
         else:

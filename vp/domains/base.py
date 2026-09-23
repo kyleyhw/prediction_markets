@@ -48,6 +48,11 @@ class Domain:
     zone: str = "UTC"
 
     @property
+    def observes(self) -> bool:
+        """Whether its markets settle on an observed daily temperature."""
+        return "daily_temperature" in self.kinds
+
+    @property
     def all_kinds(self) -> dict[str, tuple[str, ...]]:
         """Every kind a market of this domain can parse to, props included."""
         return {**self.kinds, **{k: props.PROP_KINDS[k] for k in self.props}}

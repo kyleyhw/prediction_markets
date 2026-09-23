@@ -21,6 +21,10 @@ observation of one market. The fields that matter downstream:
 | `Outcome.bids`, `Outcome.asks` | Book depth per outcome, best price first, when a snapshot was taken with depth. |
 | `domain`, `parsed` | Set by the domain adapter: the domain name and the structured fields read from the question. |
 | `fetched_at` | UTC time of the observation; a price is meaningless without it. |
+| `fee_rate`, `fee_exponent` | The market's own taker fee from its `feeSchedule`; `None` when the venue did not say (`docs/sizing.md`). |
+| `market_type`, `description` | The venue's `sportsMarketType` and resolution rules (Phase 15). |
+| `resolution_source` | The URL the rules name (the market's, else its event's); a weather market's station is read from it (Phase 17). |
+| `neg_risk`, `neg_risk_market_id` | Whether the event's outcomes are exclusive and share one collateral pool, and that pool's id (Phase 17). |
 
 A market with a number of outcomes other than two is rejected by
 `market_from_record` and skipped by the source. The label is filled only from
@@ -91,12 +95,38 @@ domestic cups by name. The Esports label is not used for membership because
 it is shared with every other game.
 
 The catalogue endpoint caps `limit` at 100 and rejects an `offset` above
-2000 with HTTP 422, which the weather tag's closed events exceed. `iter_events` therefore walks in end-date order and, when the
-next page would cross the cap, restarts from the last end date seen with
-`end_date_min`, skipping by id the events on the boundary date it has
-already yielded. The venue's error message points to an `/events/keyset`
-endpoint that returns a `next_cursor`, but no parameter name tried continues
-from it, so the date window is used instead.
+2000 with HTTP 422, which the weather tag's closed events exceed. Since
+Phase 13 `iter_events` walks `/events/keyset` instead, passing each page's
+`next_cursor` back as `after_cursor` (`cursor` and `next_cursor` are
+ignored: measured 2026-09-23), which reaches the end of any tag in one pass.
+
+## The Venue's 2026 Interfaces (task 78)
+
+Every endpoint in the client's table (`vp/venues/polymarket.py`) was read
+again against the live services on 2026-09-23. Unchanged: search, events
+by id (404 on a miss), by slug (exact), by tag; markets by id; the CLOB
+book, market (`tokens[].winner`) and price history. New or changed:
+
+- `GET /markets` now lists open markets unless `closed=true` is given;
+  `GET /events` has no such default. The client always states `closed`.
+- Market objects carry `negRisk`, `negRiskMarketID`, `comboStatus`
+  (combinatorial markets; `disabled` on every market sampled), `feesEnabled`
+  and `feeSchedule`; the resolution source is on the event. The record keeps
+  the negative-risk pair and the source.
+- Data API v2 price history needs a time component and serves the whole
+  life with `interval=max`; without `bucketSeconds` its bars are twelve
+  hours. The client's fallback sent no time component and was refused
+  (HTTP 400); it now sends `interval=max`, and the CLOB series, hourly for
+  a whole life in one request, stays the first choice.
+- Data API v2 resolutions carry no `payouts`: the oracle's answer is
+  `price` in 18-decimal fixed point, 1 for the first outcome and 0 for the
+  second (eight settled markets checked against the CLOB `winner` flags,
+  all agreeing, and one the CLOB had no flag for). The client read no
+  winner from any live record; it now reads `price`, and the market-data
+  service asks again about records it stored without an answer.
+- Data API v2 trades (`{"data", "pagination"}`, snake case) and holders
+  (filtered by `condition`) exist for the microstructure signals; nothing
+  reads them yet.
 
 ## Resolved Dataset
 

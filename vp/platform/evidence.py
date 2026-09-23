@@ -189,7 +189,7 @@ def open_meteo(store: ObjectStore, pool: Any) -> dict[str, Any]:
                     "temperature_2m_min": _at(daily.get("temperature_2m_min"), i),
                 }
             )
-    return _store(store, pool, "open_meteo", "weather", rows)
+    return _store(store, pool, "open_meteo", None, rows)
 
 
 def _at(values: list[Any] | None, i: int) -> Any:

@@ -229,7 +229,7 @@ class ToolBox:
         if at > self.now:
             raise ToolError("a cutoff cannot be in the future")
         ev = Evidence(at, self.root)
-        if domain == "weather":
+        if domain in DOMAINS and DOMAINS[domain].observes:
             obs = ev.daily_highs(subject)[-15:]
             if not obs:
                 return f"no daily highs for {subject} before {day}"

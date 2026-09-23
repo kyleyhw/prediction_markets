@@ -25,7 +25,10 @@ Polymarket, scored by backtest and paper trading before any live execution. The
   service, evidence, budgets and keys, observability and the local
   stand-in.
 - [Evidence sources](evidence.md): what the collectors capture, from
-  where, and on what terms.
+  where, and on what terms; how the archive is read without seeing past a
+  cutoff, and the point-in-time sources (Phase 17).
+- [Opening a new domain](domains.md): the onboarding kit and the
+  candidate domains ranked by what the venue lists (Phase 17).
 - [Runbook](runbook.md): what each alert means and what to do.
 - [Scaling](scaling.md): tenancy, storage, the job queue, the market-data
   service, LLM cost controls, the capacity model and the growth path for

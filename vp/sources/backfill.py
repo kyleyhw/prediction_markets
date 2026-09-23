@@ -28,14 +28,20 @@ FIRST = date(2024, 1, 1)  # the provider's archive starts here
 CHUNK = timedelta(days=366)
 
 
-def weather_markets(root: Path, domain: str) -> list[BinaryMarket]:
+def weather_markets(root: Path, domain: str | None = None) -> list[BinaryMarket]:
+    """The temperature markets in the root: of ``domain``, or of every
+    domain whose markets settle on an observation."""
+    from vp.domains import DOMAINS
+
+    names = [domain] if domain else [n for n, d in DOMAINS.items() if d.observes]
     markets = []
-    path = root / "markets" / domain / "resolved.parquet"
-    if path.exists():
-        markets += read_markets(path)
-    snaps = sorted((root / "snapshots" / domain).glob("*.parquet"))
-    if snaps:
-        markets += read_markets(snaps[-1])
+    for name in names:
+        path = root / "markets" / name / "resolved.parquet"
+        if path.exists():
+            markets += read_markets(path)
+        snaps = sorted((root / "snapshots" / name).glob("*.parquet"))
+        if snaps:
+            markets += read_markets(snaps[-1])
     return [m for m in markets if m.parsed.get("kind") == "daily_temperature"]
 
 
@@ -51,7 +57,7 @@ def station_days(markets: list[BinaryMarket]) -> dict[str, date]:
 
 def weather_runs(
     root: Path,
-    domain: str = "weather",
+    domain: str | None = None,
     *,
     key: str | None = None,
     lead_in: int = 90,
@@ -112,7 +118,7 @@ def weather_runs(
 
 
 def ensembles(
-    root: Path, domain: str = "weather", *, key: str | None = None
+    root: Path, domain: str | None = None, *, key: str | None = None
 ) -> dict[str, Any]:
     """Capture the ensemble at every station an open market names."""
     today = datetime.now(tz=UTC).date()
@@ -155,3 +161,45 @@ def football(root: Path, seasons: list[str]) -> dict[str, Any]:
             write_capture(root, "openfootball", got, provenance=request)
             out[f"{name} {season}"] = len(got)
     return out
+
+
+def recheck(
+    root: Path, *, days: int = 30, key: str | None = None, tolerance: float = 0.05
+) -> dict[str, Any]:
+    """Read the last ``days`` of every archived station again and compare
+    with what the archive holds: a point-in-time provider must return the
+    same value for the same station, day and lead (docs/evidence.md)."""
+    now = datetime.now(tz=UTC)
+    held: dict[tuple[str, str, int], dict[str, Any]] = {}
+    for r in Archive(root).rows("open_meteo_runs", now):
+        held[(r["station"], r["day"], r["lead_days"])] = r
+    sites = {r["station"]: r for r in Archive(root).rows("stations", now)}
+    end = now.date() - timedelta(days=1)
+    start = end - timedelta(days=days)
+    compared = changed = 0
+    examples: list[dict[str, Any]] = []
+    failed: dict[str, str] = {}
+    for code in sorted({s for s, _, _ in held}):
+        if code not in sites:
+            continue
+        try:
+            got, _ = open_meteo.previous_runs(sites[code], start, end, key=key)
+        except Exception as exc:  # noqa: BLE001 - reported, the rest go on
+            failed[code] = open_meteo.fetch_error(exc)
+            continue
+        for r in got:
+            old = held.get((code, r["day"], r["lead_days"]))
+            if old is None:
+                continue
+            compared += 1
+            delta = max(abs(old["tmax"] - r["tmax"]), abs(old["tmin"] - r["tmin"]))
+            if delta > tolerance:
+                changed += 1
+                if len(examples) < 5:
+                    examples.append({"station": code, "day": r["day"], "delta": delta})
+    return {
+        "compared": compared,
+        "changed": changed,
+        "examples": examples,
+        "failed": failed,
+    }

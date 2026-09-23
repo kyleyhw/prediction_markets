@@ -405,13 +405,21 @@ age.
 
 ## Evidence
 
-Four collectors run hourly and write Parquet captures with their capture
+Five collectors run hourly and write Parquet captures with their capture
 time, indexed in `evidence_captures` (`docs/evidence.md` has the sources
-and their terms): Open-Meteo forecasts for every city in the weather
-markets (one multi-location request; geocoding cached), the openfootball
-fixtures and results (CC0), the venue's own schedule of tracked markets,
-and GDELT headlines per domain, queried from each domain's keywords so no
-domain is hard-coded. Each collector fails alone and records why.
+and their terms): Open-Meteo forecasts for every city the open markets
+name (one multi-location request; geocoding cached), the openfootball
+fixtures and results of every domain that names a league file (CC0), the
+venue's own schedule of tracked markets, GDELT headlines per domain,
+queried from each domain's keywords, and the Open-Meteo ensemble at every
+station an open market's resolution source names (Phase 17). A sixth,
+the point-in-time forecasts of the last three days at the same stations,
+runs daily (`evidence-daily`, migration 0019) and keeps only rows already
+final. Every capture now has a manifest beside it (`<stamp>.json`: rows,
+SHA-256, licence, the request), job roots link the archive in as
+`evidence/`, and the engine reads it through `vp.forecast.archive`. The
+Open-Meteo key, when there is one, is `VP_OPEN_METEO_KEY`. Each collector
+fails alone and records why.
 
 ## Budgets and Model Keys
 

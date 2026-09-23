@@ -41,6 +41,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
+from vp.domains import DOMAINS
 from vp.domains.weather import station
 from vp.forecast.archive import Archive
 from vp.markets.schema import BinaryMarket
@@ -388,10 +389,11 @@ class Evidence:
     def daily_highs(self, city: str, statistic: str = "highest") -> list[Observation]:
         """Realised daily temperatures at ``city`` for dates before the cutoff."""
         key = f"{statistic}:{city.lower()}"
-        cities = self._highs.setdefault("weather", {})
+        cities = self._highs.setdefault("observed", {})
         if key not in cities:
             seen: dict[date, Observation] = {}
-            for m in self._resolved("weather"):
+            observed = [n for n, d in DOMAINS.items() if d.observes]
+            for m in (m for n in observed for m in self._resolved(n)):
                 p = m.parsed
                 if (
                     p.get("kind") != "daily_temperature"

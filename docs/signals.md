@@ -86,12 +86,14 @@ on the platform like every statistical forecaster's.
 | `dixon_coles` | as `poisson` | Poisson with the low-score correction and time decay | Dixon and Coles (1997), *Applied Statistics* 46 |
 | `climatology` | weather buckets | the bucket's frequency in the same season in earlier years | Wilks (2011), *Statistical Methods in the Atmospheric Sciences*, ch. 7 |
 | `persistence` | weather buckets | tomorrow like the last observed day, spread by the city's day-to-day change | Wilks (2011), ch. 7 |
+| `nwp_forecast` | weather buckets | the bucket's probability under the numerical forecast issued before the cutoff at the market's station, shifted and spread by the station's own recent errors at the same lead (Phase 17) | Open-Meteo Previous Runs; Wilks (2011), ch. 7 (model output statistics) |
+| `nwp_ensemble` | weather buckets | the share of ensemble members in the bucket after the same shift, from the newest capture before the cutoff (Phase 17) | as `nwp_forecast` |
 | `bucket_normalised` | weather buckets | the bucket's price divided by the sum of its event's bucket prices at the cutoff (a negative-risk event's prices must sum to one) | cross-market consistency; uses the price |
 | `platt_market` | all | the market price through a logistic calibration fitted on the domain's settled markets before the cutoff, refitted as they grow | Platt (1999); the favourite-longshot bias, Snowberg and Wolfers (2010), *J. Political Economy* 118 |
 | `isotonic_market` | all | the same with isotonic regression (pool-adjacent-violators) | Zadrozny and Elkan (2002), KDD |
 
 Not in version 1, and why: pi-ratings need goal margins beyond the
-exact-score window; NWP ensembles wait for Phase 17's archive; rest days
+exact-score window; rest days
 and roster flags are not probabilities; spread and depth imbalance need
 the book at the cutoff, which backtests do not have; holders concentration
 needs the venue's analytics endpoints, not yet collected.
