@@ -251,6 +251,7 @@ class Ingest:
         self.held: set[str] = set()
         self.reconnects = 0
         self.messages = 0
+        self._flushed: dict[str, float] = {}  # token -> book time last written
         self._sockets: list[tuple[asyncio.Queue[list[str]], set[str]]] = []
 
     # -- discovery and the registry --
@@ -300,7 +301,13 @@ class Ingest:
     # -- quotes and snapshots --
 
     def flush_quotes(self, moved: Iterable[str] | None = None) -> int:
-        """Write tokens' tops: all of them to this minute's row, or `moved` now."""
+        """Write tokens' tops: those changed since the last flush to this
+        minute's row, or `moved` now.
+
+        A quiet book writes no row: the quote at any minute is the latest row
+        at or before it. Writing every token every minute was 26 million rows
+        a day for 18,000 tokens, nearly all repeats.
+        """
         now = datetime.now(tz=UTC)
         minute = now.replace(second=0, microsecond=0) if moved is None else now
         tokens = list(self.state.books) if moved is None else list(moved)
@@ -310,6 +317,9 @@ class Ingest:
             market = self.state.token_market.get(token)
             if book is None or market is None:
                 continue
+            if moved is None and book.updated <= self._flushed.get(token, -1.0):
+                continue
+            self._flushed[token] = book.updated
             bid, ask = book.top()
             bid_size = book.bids.get(bid) if bid is not None else None
             ask_size = book.asks.get(ask) if ask is not None else None

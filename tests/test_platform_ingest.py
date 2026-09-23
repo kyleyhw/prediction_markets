@@ -116,6 +116,15 @@ def test_the_service_records_markets_quotes_snapshots_and_resolutions(
         }
     )
     assert service.flush_quotes() == 1
+    assert service.flush_quotes() == 0  # a quiet book writes nothing more
+    service.state.apply(
+        {
+            "event_type": "best_bid_ask",
+            "asset_id": token,
+            "best_bid": "0.48",
+            "best_ask": "0.53",
+        }
+    )
     assert service.flush_quotes() == 1  # the same minute is updated, not duplicated
     (n,) = pg_owner.execute("select count(*) from quotes").fetchone()
     assert n == 1
