@@ -43,9 +43,9 @@ def test_environment_parses_and_rejects_anything_else() -> None:
 
 def test_the_password_never_reaches_a_log_line() -> None:
     """A settings object in a traceback must not carry the password."""
-    settings = load_settings(
-        {"VP_DATABASE_URL": "postgresql://vp:hunter2@db.internal:5432/vp"}
-    )
+    # A made-up password, present to prove it is redacted.
+    fake_url = "postgresql://vp:hunter2@db.internal:5432/vp"  # pragma: allowlist secret
+    settings = load_settings({"VP_DATABASE_URL": fake_url})
     assert "hunter2" not in repr(settings)
     assert "hunter2" not in settings.redacted_database_url
     assert settings.redacted_database_url == (
