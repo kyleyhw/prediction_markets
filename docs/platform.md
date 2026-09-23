@@ -441,7 +441,9 @@ The operator works from the command line: `vp jobs` (list, show, retry,
 drain, stats) and `vp admin` (halt and resume the platform, pause a
 workspace, budgets, costs, a data refresh, archive, the audit chain).
 While the platform is halted no job is claimed; a paused workspace's jobs
-wait. Every operator action is an entry in a hash-chained audit log that
+wait, its schedules move on without queueing (a missed hourly cycle is
+skipped, not saved up), and its waiting jobs do not age the queue the
+backlog alert watches. Every operator action is an entry in a hash-chained audit log that
 names the operator.
 
 ## The Local Stand-in

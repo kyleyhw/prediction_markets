@@ -126,10 +126,11 @@ walk-through of the "done when" and the measurements are in
 `tests/reports/phase13_platform.md`. Measuring found and fixed 23
 faults (the report lists them). Open from it: **flag F17** (every sample
 paper account is the same account; about 40,000 ledger rows a person a
-day; a shared sample account is proposed and needs the owner), the
+day; the owner accepted a shared sample account, to be built before
+public sign-up), the
 fifteen stand-in test workspaces paused with broken ledger chains (from a
-negative-zero fault, now fixed; deleting them was refused and needs the
-owner), and the
+negative-zero fault, now fixed; they stay until a general cleanup of
+test data, by the owner's decision), and the
 cloud deploy (task 34, F16), after which the host measurements, 48 and 49
 follow. Open-Meteo and GDELT answer 429 or time out from this container.
 Earlier,

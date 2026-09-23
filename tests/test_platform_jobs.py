@@ -209,6 +209,40 @@ def test_schedules_fire_once_per_time_in_their_own_zone(
     assert nxt > datetime.now(tz=UTC) and nxt.minute == 0
 
 
+def test_a_paused_workspace_s_schedules_move_on_without_queueing(
+    app_pool, pg_owner, two_workspaces
+) -> None:
+    from vp.platform import ops
+
+    ada = two_workspaces["a"]
+    waiting = enqueue(app_pool, ada, "settle", {})
+    ops.halt(pg_owner, "paused for the test", ada.workspace)
+    past = datetime.now(tz=UTC) - timedelta(minutes=5)
+    with pg_owner.transaction():
+        pg_owner.execute(
+            "insert into schedules (workspace_id, created_by, name, kind, payload, "
+            "cron, timezone, next_run_at) values (%s, %s, 'paused', 'paper_cycle', "
+            "'{}', '0 * * * *', 'UTC', %s)",
+            (ada.workspace, ada.user_id, past),
+        )
+    try:
+        jobs.fire_due_schedules(app_pool)
+        kinds = [j["kind"] for j in jobs.workspace_jobs(app_pool, ada)]
+        # Moved on, queued nothing; the job already waiting ages nothing.
+        (nxt,) = pg_owner.execute(
+            "select next_run_at from schedules where name = 'paused'"
+        ).fetchone()
+        stats = {
+            (k, st): age for k, st, _, age in ops.queue_depth(pg_owner) if k == "settle"
+        }
+    finally:
+        ops.resume(pg_owner, ada.workspace)
+        pg_owner.execute("delete from schedules where name = 'paused'")
+        pg_owner.execute("delete from jobs where id = %s", (waiting,))
+    assert kinds == ["settle"] and nxt > datetime.now(tz=UTC)
+    assert stats.get(("settle", "queued")) is None
+
+
 def test_cron_is_read_in_the_schedule_s_time_zone() -> None:
     # 09:00 in London is 08:00 UTC in summer and 09:00 UTC in winter.
     summer = next_fire(
