@@ -107,6 +107,16 @@ def test_the_service_records_markets_quotes_snapshots_and_resolutions(
         "select market_id, domain from tracked_markets"
     ).fetchall()
     assert tracked == ("6", "cs2")
+    # A second pass rewrites nothing unchanged, but marks the market seen.
+    pg_owner.execute(
+        "update tracked_markets set record = '{}', "
+        "last_seen = now() - interval '1 hour'"
+    )
+    assert service.discover() == []
+    record, recent = pg_owner.execute(
+        "select record, last_seen > now() - interval '1 minute' from tracked_markets"
+    ).fetchone()
+    assert record == {} and recent
     token = fresh[0]
     service.state.apply(
         {

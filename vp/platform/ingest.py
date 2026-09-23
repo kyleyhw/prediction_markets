@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import hashlib
 import json
 import logging
 import tempfile
@@ -255,6 +256,7 @@ class Ingest:
         # token -> the top of book last written
         self._flushed: dict[str, tuple[float | None, float | None]] = {}
         self._heard: dict[int, float] = {}  # socket's token set -> last message
+        self._written: dict[str, str] = {}  # market id -> digest of its record
         self._started = time.time()
         self._sockets: list[tuple[asyncio.Queue[list[str]], set[str]]] = []
 
@@ -269,27 +271,48 @@ class Ingest:
         # A market that is no longer listed as open leaves the snapshots; its
         # token stays subscribed until the socket reconnects, which is harmless.
         self.state.markets = {m.market_id: m for m in found if m.market_id}
+        # Only a market new to us or whose record changed is written; the rest
+        # are marked seen in one statement. Rewriting all 9,300 each pass
+        # held the interpreter for seconds, the sockets went unread, and the
+        # venue closed them as slow consumers.
+        changed = []
+        for m in found:
+            row = json.loads(json.dumps(market_to_row(m), default=str))
+            digest = hashlib.sha256(
+                json.dumps({k: v for k, v in row.items() if k != "fetched_at"}).encode()
+            ).hexdigest()
+            if self._written.get(m.market_id or "") != digest:
+                changed.append((m, row))
+                self._written[m.market_id or ""] = digest
         started = datetime.now(tz=UTC)
         with self.pool.connection() as conn, conn.transaction():
-            for m in found:
-                conn.execute(
+            with conn.cursor() as cur:
+                cur.executemany(
                     "insert into tracked_markets (market_id, condition_id, domain, "
                     "question, event_title, tokens, end_date, record) "
                     "values (%s, %s, %s, %s, %s, %s, %s, %s) "
                     "on conflict (market_id) do update set last_seen = now(), "
                     "record = excluded.record, end_date = excluded.end_date, "
                     "closed = false",
-                    (
-                        m.market_id,
-                        m.condition_id,
-                        m.domain,
-                        m.question,
-                        m.event_title,
-                        [o.clob_token_id for o in m.outcomes if o.clob_token_id],
-                        m.end_date,
-                        Jsonb(json.loads(json.dumps(market_to_row(m), default=str))),
-                    ),
+                    [
+                        (
+                            m.market_id,
+                            m.condition_id,
+                            m.domain,
+                            m.question,
+                            m.event_title,
+                            [o.clob_token_id for o in m.outcomes if o.clob_token_id],
+                            m.end_date,
+                            Jsonb(row),
+                        )
+                        for m, row in changed
+                    ],
                 )
+            conn.execute(
+                "update tracked_markets set last_seen = now(), closed = false "
+                "where market_id = any(%s)",
+                ([m.market_id for m in found if m.market_id],),
+            )
             conn.execute(
                 "update tracked_markets set closed = true "
                 "where domain = any(%s) and last_seen < %s and not closed",
@@ -419,7 +442,13 @@ class Ingest:
         backoff = 1.0
         while True:
             try:
-                async with connect(WS_URL, proxy=True, open_timeout=20) as ws:
+                # A deep receive buffer absorbs a burst (the book pictures
+                # after a subscribe, a pause of the interpreter) instead of
+                # leaving it in the venue's send buffer, which closes the
+                # socket when full.
+                async with connect(
+                    WS_URL, proxy=True, open_timeout=20, max_queue=1024
+                ) as ws:
                     await ws.send(
                         json.dumps(
                             {
