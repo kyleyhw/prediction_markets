@@ -133,3 +133,25 @@ def ensembles(
         requests.append(request)
     write_capture(root, "open_meteo_ensemble", rows, provenance={"requests": requests})
     return {"stations": len(requests), "rows": len(rows)}
+
+
+def football(root: Path, seasons: list[str]) -> dict[str, Any]:
+    """Read past and current seasons of every domain with an openfootball
+    league into the archive; results are dated facts (docs/evidence.md)."""
+    from vp.domains import DOMAINS
+    from vp.sources import openfootball
+
+    out: dict[str, Any] = {}
+    for name, domain in DOMAINS.items():
+        if not domain.openfootball:
+            continue
+        for season in seasons:
+            try:
+                data, request = openfootball.fetch(season, domain.openfootball)
+            except Exception as exc:  # noqa: BLE001 - one season's failure is reported
+                out[f"{name} {season}"] = type(exc).__name__
+                continue
+            got = openfootball.rows(data, name, domain.zone)
+            write_capture(root, "openfootball", got, provenance=request)
+            out[f"{name} {season}"] = len(got)
+    return out

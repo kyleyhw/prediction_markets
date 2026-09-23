@@ -108,4 +108,6 @@ EPL = Domain(
     },
     props=tuple(PROP_KINDS),
     home_first=True,
+    openfootball="en.1",
+    zone="Europe/London",
 )

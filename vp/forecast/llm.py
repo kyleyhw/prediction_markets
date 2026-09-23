@@ -49,7 +49,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from vp.forecast.base import Forecast, clip
-from vp.forecast.evidence import Evidence, canonical
+from vp.forecast.evidence import Evidence, canonical, market_date
 from vp.markets.schema import BinaryMarket
 
 logger = logging.getLogger(__name__)
@@ -161,6 +161,49 @@ TOOLS: list[dict[str, Any]] = [
             "additionalProperties": False,
         },
     },
+    {
+        "name": "weather_forecast",
+        "description": (
+            "The numerical weather forecast for this market's station and day "
+            "as it had been issued before the cutoff (°C, with how many days "
+            "ahead it was issued), and the station's recent forecast errors."
+        ),
+        "strict": True,
+        "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": [],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "league_table",
+        "description": (
+            "The league table of the current season, derived from results "
+            "known before the cutoff."
+        ),
+        "strict": True,
+        "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": [],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "headlines",
+        "description": (
+            "News headlines captured for the market's domain in the hours "
+            "before the cutoff, newest first (titles and outlets only)."
+        ),
+        "strict": True,
+        "input_schema": {
+            "type": "object",
+            "properties": {"hours": {"type": "integer"}, "limit": {"type": "integer"}},
+            "required": ["hours", "limit"],
+            "additionalProperties": False,
+        },
+    },
 ]
 
 
@@ -213,6 +256,39 @@ def run_tool(
             f"{o.day}: high in [{o.low if o.low is not None else '-inf'}, "
             f"{o.high if o.high is not None else 'inf'}] {o.unit}"
             for o in reversed(obs[-int(args["limit"]) :])
+        )
+    if name == "weather_forecast":
+        day = market_date(market)
+        runs = sorted(ev.nwp(market), key=lambda d: (d.day, d.lead_days))
+        target = [d for d in runs if d.day == day]
+        stat = market.parsed.get("statistic", "highest")
+        observed = {
+            o.day: o for o in ev.daily_highs(market.parsed.get("city", ""), stat)
+        }
+        recent = [d for d in runs if d.lead_days == 1 and d.day in observed][-10:]
+        return _lines(
+            [
+                f"{d.day}: max {d.tmax:.1f}, min {d.tmin:.1f} °C, issued "
+                f"{d.lead_days} day(s) ahead"
+                for d in target
+            ]
+            + [
+                f"earlier {d.day}: forecast max {d.tmax:.1f}, min {d.tmin:.1f} °C; "
+                f"observed {stat} in [{observed[d.day].low}, {observed[d.day].high}] "
+                f"{observed[d.day].unit}"
+                for d in recent
+            ]
+        )
+    if name == "league_table":
+        return _lines(
+            f"{i}. {s.team}: played {s.played}, {s.points} points, goals "
+            f"{s.goals_for}-{s.goals_against}"
+            for i, s in enumerate(ev.table(domain), 1)
+        )
+    if name == "headlines":
+        found = ev.headlines(domain, float(args["hours"]))[: int(args["limit"])]
+        return _lines(
+            f"{h.captured_at:%Y-%m-%d %H:%M} {h.source}: {h.title}" for h in found
         )
     return f"unknown tool {name}"
 

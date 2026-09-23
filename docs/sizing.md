@@ -35,10 +35,14 @@ The client reads the schedule into each market record (`fee_rate`,
 `fee_exponent`); a market with `feesEnabled: false` is free, and one that
 states nothing has an unknown rate, never an assumed zero. `fees_for`
 returns the market's own model, or the caller's fallback labelled
-`assumed`. Paper trading sizes on the market's rate. The backtest still
-takes one `--fee-rate` for the whole run, default zero, because the Phase 7
-datasets predate the fee columns; task 77 re-runs the baselines with the
-market's rate. The fee enters sizing through the effective price
+`assumed`. Paper trading and strategy backtests size on the market's
+rate; `vp backtest --market-fees` does the same, with `--fee-rate` as the
+fallback for a record that states none. Datasets built from 2026-09-23 on
+carry each market's rate, which the venue sets per market: zero before
+spring 2026, then 3% or 5% by domain and month. The Phase 9 baselines
+re-run that way (task 77, the amendment to the Phase 9 report) lose four
+to five points more on each sports baseline and are otherwise unchanged.
+The fee enters sizing through the effective price
 $a' = a + r\,(a(1 - a))^{e}$.
 
 ## Kelly

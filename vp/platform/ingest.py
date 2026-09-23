@@ -626,7 +626,11 @@ def reconcile(ctx: JobContext) -> dict[str, Any]:
             "select t.condition_id, t.market_id, t.first_seen from tracked_markets t "
             "left join resolutions r on r.condition_id = t.condition_id "
             "where t.condition_id is not null and t.end_date < now() "
-            "and (r.condition_id is null or r.status <> 'resolved') "
+            "and (r.condition_id is null or r.status <> 'resolved' "
+            # Rows read before 2026-09-23, when the v2 record's answer (its
+            # `price`) was not parsed: resolved, but with no winner.
+            "or (r.source = 'data-api-v2' and r.winner_index is null "
+            "and r.payouts = '[]'::jsonb)) "
             "order by t.end_date limit %s",
             (limit,),
         ).fetchall()

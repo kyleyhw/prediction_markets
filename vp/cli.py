@@ -14,9 +14,10 @@ Subcommands:
   leakage check, all recorded in a hash-chained ledger.
 * ``vp signals list|check|bench``: the signal library, its gates, and each
   signal against the market on a domain (docs/signals.md).
-* ``vp evidence weather-runs|ensemble``: fill the evidence archive in the
-  data root from the point-in-time weather source, and capture the
-  ensemble for open markets (docs/evidence.md).
+* ``vp evidence weather-runs|football|ensemble``: fill the evidence
+  archive in the data root from the point-in-time weather source and the
+  football results, and capture the ensemble for open markets
+  (docs/evidence.md).
 * ``vp strategy check|diff|preview|backtest``: a strategy spec (a JSON
   file): its problems, plain-language rendering and hash; what changed
   between two versions; what it would touch and cost; its backtest on each
@@ -124,6 +125,11 @@ def main() -> None:
     back.add_argument("--max-markets", type=int, default=None)
     back.add_argument("--seed", type=int, default=0)
     back.add_argument("--fee-rate", type=float, default=0.0)
+    back.add_argument(
+        "--market-fees",
+        action="store_true",
+        help="charge each market's own taker fee; --fee-rate where none is stated",
+    )
     back.add_argument("--half-spread", type=float, default=0.01)
     back.add_argument(
         "--min-edge", type=float, default=0.0, help="edge required to bet (default 0)"
@@ -160,6 +166,9 @@ def main() -> None:
     runs.add_argument("--domain", default="weather")
     runs.add_argument("--station", action="append", default=None)
     runs.add_argument("--lead-in", type=int, default=90)
+    foot = evid_sub.add_parser("football", help="fixtures and results by season")
+    foot.add_argument("--root", type=Path, default=Path("data"))
+    foot.add_argument("--season", action="append", required=True, help="2025-26")
     ens = evid_sub.add_parser("ensemble", help="the ensemble for open markets")
     ens.add_argument("--root", type=Path, default=Path("data"))
     ens.add_argument("--domain", default="weather")
@@ -372,6 +381,8 @@ def main() -> None:
                 lead_in=args.lead_in,
                 only=args.station,
             )
+        elif args.evidence_command == "football":
+            out = backfill.football(args.root, args.season)
         else:
             out = backfill.ensembles(args.root, args.domain, key=key)
         print(json.dumps(out, indent=1))
@@ -385,6 +396,7 @@ def main() -> None:
             max_markets=args.max_markets,
             seed=args.seed,
             fee_rate=args.fee_rate,
+            market_fees=args.market_fees,
             half_spread=args.half_spread,
             min_edge=args.min_edge,
         )

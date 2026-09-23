@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from datetime import UTC, datetime
+from datetime import date
 from pathlib import Path
 
 import pyarrow.parquet as pq
@@ -12,12 +12,13 @@ import pytest
 from tests.conftest import needs_db
 from vp.platform import evidence
 from vp.platform.storage import LocalStore
+from vp.sources.openfootball import season_of
 
 
 def test_the_season_turns_over_in_august() -> None:
-    assert evidence.season(datetime(2026, 9, 23, tzinfo=UTC)) == "2026-27"
-    assert evidence.season(datetime(2027, 5, 1, tzinfo=UTC)) == "2026-27"
-    assert evidence.season(datetime(2026, 7, 31, tzinfo=UTC)) == "2025-26"
+    assert season_of(date(2026, 9, 23)) == "2026-27"
+    assert season_of(date(2027, 5, 1)) == "2026-27"
+    assert season_of(date(2026, 7, 31)) == "2025-26"
 
 
 CANNED = {
@@ -97,6 +98,11 @@ def test_each_source_writes_a_capture_with_its_time(
         return CANNED[host]
 
     monkeypatch.setattr(evidence, "_get", fake_get)
+    monkeypatch.setattr(
+        evidence.football,
+        "fetch",
+        lambda season, league: (CANNED["github_raw"], {"url": league}),
+    )
     site = {"station": "ZSPD", "latitude": 31.1, "longitude": 121.8}
     monkeypatch.setattr(evidence.om, "stations", lambda codes: {"ZSPD": site})
     member = {"station": "ZSPD", "day": "2026-09-24", "member": 0, "tmax": 25.0}

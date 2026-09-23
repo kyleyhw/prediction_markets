@@ -5,7 +5,7 @@ issued before the cutoff."""
 
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -99,3 +99,58 @@ def test_the_weather_model_signals_read_what_was_issued_before(roots) -> None:
     assert [h.title for h in later.headlines(targets[0].domain or "")][0] == (
         "Heat at 40.0"
     )
+
+
+def test_the_llm_forecaster_reads_the_archive_through_its_tools(roots) -> None:
+    from vp.forecast.llm import TOOLS, run_tool
+
+    plain, _ = roots
+    ev = Evidence(gates.CUTOFF, plain.root)
+    target = next(t for t in plain.targets if t.event_id == "wtarget")
+    assert {"weather_forecast", "league_table", "headlines"} <= {
+        t["name"] for t in TOOLS
+    }
+    text = run_tool("weather_forecast", {}, target, ev)
+    assert "issued 3 day(s) ahead" in text and "observed highest" in text
+    assert "Heat at 20.0" in run_tool(
+        "headlines", {"hours": 24, "limit": 5}, target, ev
+    )
+    assert "no records" in run_tool("league_table", {}, target, ev)
+
+
+def test_the_table_counts_only_results_known_before_the_cutoff(tmp_path) -> None:
+    from vp.sources.openfootball import rows
+
+    data = {
+        "name": "League 2025/26",
+        "matches": [
+            {
+                "date": "2025-08-16",
+                "time": "15:00",
+                "team1": "A FC",
+                "team2": "B FC",
+                "score": {"ft": [2, 0]},
+            },
+            {
+                "date": "2025-08-23",
+                "time": "15:00",
+                "team1": "B FC",
+                "team2": "A FC",
+                "score": [1, 1],
+            },
+            {"date": "2025-08-30", "time": "15:00", "team1": "A FC", "team2": "B FC"},
+        ],
+    }
+    later = datetime(2026, 9, 1, tzinfo=UTC)  # fetched long after
+    write_capture(
+        tmp_path,
+        "openfootball",
+        rows(data, "lg", "Europe/London"),
+        provenance={},
+        now=later,
+    )
+    first = Evidence(datetime(2025, 8, 16, 16, 30, tzinfo=UTC), tmp_path)
+    assert first.table("lg") == []  # kick-off 14:00 UTC: known from 17:00
+    second = Evidence(datetime(2025, 8, 24, tzinfo=UTC), tmp_path)
+    (a, b) = second.table("lg")
+    assert (a.team, a.played, a.points, b.points) == ("a", 2, 4, 1)

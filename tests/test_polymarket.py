@@ -205,6 +205,15 @@ def test_resolution_payouts_name_the_winner(monkeypatch) -> None:
             "resolved_at": "2026-09-20T17:52:34Z",
         },
         "0xb": {"status": "resolved", "payouts": [500000, 500000]},
+        # The shape measured live on 2026-09-23: the oracle's answer as an
+        # 18-decimal price, 1 for the first outcome and 0 for the second.
+        "0xd": {
+            "status": "resolved",
+            "price": "1000000000000000000",
+            "last_update_timestamp": "1767944244",
+        },
+        "0xe": {"status": "resolved", "price": "0"},
+        "0xf": {"status": "proposed", "price": "0"},
     }
 
     def fake_get(url, *, host_key, params):
@@ -217,6 +226,13 @@ def test_resolution_payouts_name_the_winner(monkeypatch) -> None:
     b = pm.fetch_resolution("0xb")
     assert b is not None and b["winner_index"] is None  # split: no single winner
     assert pm.fetch_resolution("0xc") is None
+    d = pm.fetch_resolution("0xd")
+    assert d is not None and d["winner_index"] == 0
+    assert d["resolved_at"] == "2026-01-09T07:37:24+00:00"
+    e = pm.fetch_resolution("0xe")
+    assert e is not None and e["winner_index"] == 1
+    f = pm.fetch_resolution("0xf")  # proposed is not final: no answer read
+    assert f is not None and f["winner_index"] is None and f["payouts"] == []
 
 
 def test_history_falls_back_to_the_data_api_where_the_clob_is_retired(
@@ -229,6 +245,7 @@ def test_history_falls_back_to_the_data_api_where_the_clob_is_retired(
             response = requests.Response()
             response.status_code = 410
             raise requests.HTTPError(response=response)
+        assert params["interval"] == "max"  # the API requires a time component
         if params.get("cursor") is None:
             return {
                 "data": [{"timestamp": 1788753600, "price": 0.495}],

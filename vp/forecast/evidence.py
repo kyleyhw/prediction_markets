@@ -137,6 +137,23 @@ class NwpDay:
     tmin: float
 
 
+@dataclass
+class Standing:
+    """A team's line in a league table derived from results before the cutoff."""
+
+    team: str
+    played: int = 0
+    won: int = 0
+    drawn: int = 0
+    lost: int = 0
+    goals_for: int = 0
+    goals_against: int = 0
+
+    @property
+    def points(self) -> int:
+        return 3 * self.won + self.drawn
+
+
 @dataclass(frozen=True)
 class Headline:
     title: str
@@ -418,6 +435,49 @@ class Evidence:
             return []
         newest = max(r["captured_at"] for r in rows)
         return [(r["tmax"], r["tmin"]) for r in rows if r["captured_at"] == newest]
+
+    def table(self, domain: str) -> list[Standing]:
+        """The league table of the season the cutoff falls in, from the
+        results known before it; best first (points, goal difference,
+        goals scored)."""
+        day = self.cutoff.date()
+        start = date(day.year if day.month >= 8 else day.year - 1, 8, 1)
+        played: dict[tuple[str, str, str], dict[str, Any]] = {}
+        for r in self._archive.rows("openfootball", self.cutoff):
+            if (
+                r.get("domain") == domain
+                and r.get("goals1") is not None
+                and start.isoformat() <= (r.get("date") or "") < day.isoformat()
+            ):
+                played[(r["date"], r["team1"], r["team2"])] = r
+        teams: dict[str, Standing] = {}
+        for r in played.values():
+            home = teams.setdefault(
+                canonical(r["team1"]), Standing(canonical(r["team1"]))
+            )
+            away = teams.setdefault(
+                canonical(r["team2"]), Standing(canonical(r["team2"]))
+            )
+            for side, other, gf, ga in ((home, away, r["goals1"], r["goals2"]),):
+                side.played += 1
+                other.played += 1
+                side.goals_for += gf
+                side.goals_against += ga
+                other.goals_for += ga
+                other.goals_against += gf
+                if gf > ga:
+                    side.won += 1
+                    other.lost += 1
+                elif gf < ga:
+                    side.lost += 1
+                    other.won += 1
+                else:
+                    side.drawn += 1
+                    other.drawn += 1
+        return sorted(
+            teams.values(),
+            key=lambda s: (-s.points, s.goals_against - s.goals_for, -s.goals_for),
+        )
 
     def headlines(self, domain: str, hours: float = 24.0) -> list[Headline]:
         """Headlines captured for ``domain`` in the ``hours`` before the cutoff,

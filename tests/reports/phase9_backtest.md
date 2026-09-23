@@ -177,3 +177,39 @@ and it is the honest bar the LLM forecaster now has to clear. The runner
 itself is fast (1 to 13 s per 400-market run after the histories are on
 disk) and the figures (`reliability.png`, `cumulative_score.png`,
 `equity.png`) are written per run under `data/backtests/`.
+
+## Amendment, 2026-09-23 (task 77): the same baselines with each market's fee
+
+The runs above charged no fee. The venue's schedule charges takers
+$C \cdot r \cdot p(1-p)$ on these markets, and the datasets rebuilt on
+2026-09-23 carry each market's own rate: zero before spring 2026, then 3%
+or 5% by domain and month (weather 5% from April; Premier League 3% from
+April, 5% from August; CS2 3% from March, 5% from July). The same commands
+were re-run on those datasets with the Phase 9 price histories, with and
+without `--market-fees`, 24 hours before settlement at a 5% minimum edge:
+
+| Domain | Scored | Forecaster | Bets, no fee | Return, no fee | Bets, fee | Return, fee | $P(\text{Sharpe} > 0)$, fee |
+| :--- | ---: | :--- | ---: | ---: | ---: | ---: | ---: |
+| weather | 348 | climatology | 244 | −77.5% | 231 | −77.2% | 0.40 |
+| epl | 389 | elo | 167 | −3.3% | 161 | −7.9% | 0.55 |
+| epl | 389 | constant | 340 | +96.7% | 334 | +56.5% | 0.84 |
+| cs2 | 107 | elo | 76 | −20.0% | 76 | −24.2% | 0.37 |
+
+The Brier scores are those above to the fourth decimal (CS2 Elo moved from
+0.2124 to 0.2113 because the rebuilt set holds more earlier results); fees
+change only the bets. They take four to five points off each sports
+baseline and cut the constant's long-shot result by about 40 points; its
+interval still includes zero. Weather barely moves because most of the
+sampled weather markets settled before fees began.
+
+**Correction.** The weather paragraph above says that at a 5% minimum edge
+climatology "placed no bet at all". Running this report's own commit
+(`4c0473b`) on the same data places 244 bets and loses 77%, as today's
+code does; the earlier sentence was wrong and the summary row is corrected
+below.
+
+| Domain | Best baseline | Skill vs market (24 h) | Bets at 5% min edge, market's fee | Verdict |
+| :--- | :--- | ---: | :--- | :--- |
+| weather | climatology | −0.19 | −77%, $P > 0$ 0.40 | market far sharper |
+| epl | elo | −0.02 | −8%, $P > 0$ 0.55 | at par a day out, no edge |
+| cs2 | elo | −0.12 | −24%, $P > 0$ 0.37 | market sharper |

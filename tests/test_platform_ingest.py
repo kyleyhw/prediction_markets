@@ -198,7 +198,16 @@ def test_reconciliation_asks_about_markets_past_their_end(
             "insert into tracked_markets (market_id, condition_id, domain, question, "
             "tokens, end_date, record) values "
             "('9', '0x9', 'cs2', 'q', '{}', now() - interval '2 hours', '{}'), "
-            "('10', '0x10', 'cs2', 'q', '{}', now() + interval '2 days', '{}')"
+            "('10', '0x10', 'cs2', 'q', '{}', now() + interval '2 days', '{}'), "
+            "('11', '0x11', 'cs2', 'q', '{}', now() - interval '3 hours', '{}'), "
+            "('12', '0x12', 'cs2', 'q', '{}', now() - interval '4 hours', '{}')"
+        )
+        # One read by the old parser (no winner); one settled as a split.
+        pg_owner.execute(
+            "insert into resolutions (condition_id, market_id, status, payouts, "
+            "winner_index, source) values "
+            "('0x11', '11', 'resolved', '[]', null, 'data-api-v2'), "
+            "('0x12', '12', 'resolved', '[0.5, 0.5]', null, 'data-api-v2')"
         )
     asked: list[str] = []
 
@@ -215,11 +224,12 @@ def test_reconciliation_asks_about_markets_past_their_end(
     monkeypatch.setattr(ingest.client, "fetch_resolution", fake_resolution)
     job = enqueue_platform(app_pool, "reconcile", idempotency_key="test-reconcile")
     Worker(app_pool, {"reconcile": ingest.reconcile}, ("reconcile",)).run_once()
-    assert asked == ["0x9"]  # only the market past its end date
+    # Past their end date and not known, or known without their answer.
+    assert asked == ["0x11", "0x9"]
     (result,) = pg_owner.execute(
         "select result from jobs where id = %s", (job,)
     ).fetchone()
-    assert result["resolved"] == 1
+    assert result["resolved"] == 2
     # Resolved at midnight, but first tracked just now: not hours late.
     assert result["max_delay_seconds"] < 60
     assert pg_owner.execute(

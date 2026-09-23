@@ -53,16 +53,13 @@ from vp.markets.schema import utc_now_iso
 from vp.platform.jobs import JobContext
 from vp.platform.storage import SHARED, ObjectStore
 from vp.sources import open_meteo as om
+from vp.sources import openfootball as football
 from vp.venues._http import set_rate, throttled_get_json
 
 logger = logging.getLogger(__name__)
 
 OPEN_METEO = "https://api.open-meteo.com/v1/forecast"
 GEOCODE = "https://geocoding-api.open-meteo.com/v1/search"
-OPENFOOTBALL = (
-    "https://raw.githubusercontent.com/openfootball/football.json/master/"
-    "{season}/en.1.json"
-)
 GDELT = "https://api.gdeltproject.org/api/v2/doc/doc"
 
 
@@ -199,39 +196,20 @@ def _at(values: list[Any] | None, i: int) -> Any:
     return values[i] if values and i < len(values) else None
 
 
-def season(now: datetime) -> str:
-    """The football season a date falls in: August to July, "2026-27"."""
-    start = now.year if now.month >= 8 else now.year - 1
-    return f"{start}-{str(start + 1)[2:]}"
-
-
 def openfootball(store: ObjectStore, pool: Any) -> dict[str, Any]:
-    now = datetime.now(tz=UTC)
-    data = _get(OPENFOOTBALL.format(season=season(now)), "github_raw")
-    captured = utc_now_iso()
-    rows = []
-    for m in data.get("matches") or []:
-        # The file gives a score as {"ht": [..], "ft": [..]}, or for some
-        # matches as the bare full-time pair [home, away].
-        score = m.get("score")
-        ft = (score if isinstance(score, list) else (score or {}).get("ft")) or [
-            None,
-            None,
-        ]
-        rows.append(
-            {
-                "captured_at": captured,
-                "season": data.get("name"),
-                "round": m.get("round"),
-                "date": m.get("date"),
-                "time": m.get("time"),
-                "team1": m.get("team1"),
-                "team2": m.get("team2"),
-                "goals1": ft[0],
-                "goals2": ft[1],
-            }
-        )
-    return _store(store, pool, "openfootball", "epl", rows)
+    """This season's fixtures and results for every domain that names an
+    openfootball league."""
+    today = datetime.now(tz=UTC).date()
+    rows: list[dict[str, Any]] = []
+    requests = []
+    for name, domain in DOMAINS.items():
+        if domain.openfootball:
+            data, request = football.fetch(
+                football.season_of(today), domain.openfootball
+            )
+            rows += football.rows(data, name, domain.zone)
+            requests.append(request)
+    return _store(store, pool, "openfootball", None, rows, {"requests": requests})
 
 
 def venue_schedules(store: ObjectStore, pool: Any) -> dict[str, Any]:

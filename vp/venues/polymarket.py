@@ -34,7 +34,16 @@ Data comes from two public, no-auth Polymarket services:
   slug, endDate, closed, active, archived, acceptingOrders, outcomes,
   outcomePrices, clobTokenIds, bestBid, bestAsk, lastTradePrice, spread,
   oneDayPriceChange, volumeNum, liquidityNum, closedTime, resolvedBy,
-  umaResolutionStatus, umaResolutionStatuses``.
+  umaResolutionStatus, umaResolutionStatuses``, and in 2026 also
+  ``negRisk, negRiskMarketID, comboStatus, feesEnabled, feeSchedule,
+  resolutionSource`` (the event's ``resolutionSource`` is the one filled).
+  - ``GET /events/keyset?limit=&tag_id=&closed=&after_cursor=`` returns
+    ``{"events": [...], "next_cursor"}``; the cursor goes back as
+    ``after_cursor`` (``cursor`` is ignored), ``limit`` is capped at 100.
+  - ``GET /markets`` lists open markets unless ``closed=true`` is given;
+    ``GET /events`` has no such default.
+  Every line of this table was re-read against the live services on
+  2026-09-23 (plan, task 78; `tests/reports/phase17_evidence.md`).
 
 * CLOB (``https://clob.polymarket.com``), order book and price history.
   - ``GET /book?token_id=<clob token id>`` returns ``{bids, asks, asset_id,
@@ -47,6 +56,21 @@ Data comes from two public, no-auth Polymarket services:
     strongest resolution evidence either API exposes.
   - ``GET /prices-history?market=<clob token id>&interval=&fidelity=`` returns
     ``{"history": [{"t": epoch_seconds, "p": price}]}``.
+
+* Data API v2 (``https://data-api.polymarket.com/v2``), fallbacks and
+  settlement.
+  - ``GET /prices-history?tokenId=&interval=max&bucketSeconds=`` returns
+    ``{"data": [{"timestamp", "price", "resolution_seconds"}], "pagination":
+    {"has_more", "next_cursor"}}``; a time component (``interval``, or
+    ``start`` and ``end`` at most 15 days apart) is required, and without
+    ``bucketSeconds`` the bars are twelve hours. The CLOB series stays the
+    first choice: hourly for a market's whole life in one request.
+  - ``GET /resolutions?condition=`` returns ``{"data": [{"condition_id",
+    "status", "price", "last_update_timestamp", ...}]}``; ``price`` is the
+    oracle's answer in 18-decimal fixed point (see :func:`fetch_resolution`).
+  - ``GET /trades`` (v2: ``{"data", "pagination"}``, snake_case) and
+    ``GET /holders`` (v2 filters by ``condition``) are the analytics the
+    microstructure signals would read; nothing reads them yet.
 
 Gotchas this module compensates for:
 
@@ -770,8 +794,11 @@ def _history_v2(token_id: str, bar_minutes: int) -> list[dict[str, Any]]:
     points: list[dict[str, Any]] = []
     cursor: str | None = None
     for _ in range(200):  # a bound: 200 pages of 500 is 100,000 bars
+        # A time component is required (verified 2026-09-23): the whole life
+        # is ``interval=max``, and ``bucketSeconds`` sets the bar width.
         params: dict[str, Any] = {
             "tokenId": token_id,
+            "interval": "max",
             "bucketSeconds": bar_minutes * 60,
             "limit": 500,
         }
@@ -946,6 +973,10 @@ def fetch_resolution(condition_id: str) -> dict[str, Any] | None:
     Returns ``None`` when the venue has no record yet. ``payouts`` is one
     number per outcome; the outcome with the positive payout won, and a
     split payout (no single winner) leaves ``winner_index`` as ``None``.
+    Measured on 2026-09-23 the record carries no ``payouts`` but the
+    oracle's answer as ``price`` in 18-decimal fixed point: 1 means the
+    first outcome won, 0 the second, one half a split (eight settled markets
+    checked against the CLOB ``winner`` flags agreed).
     """
     payload = _get_json(
         _DATA_RESOLUTIONS_URL,
@@ -957,11 +988,20 @@ def fetch_resolution(condition_id: str) -> dict[str, Any] | None:
         return None
     row = rows[0]
     payouts = [_to_float(x) or 0.0 for x in row.get("payouts") or []]
+    price = _to_float(row.get("price"))
+    if not payouts and price is not None and str(row.get("status")) == "resolved":
+        share = price / 1e18
+        payouts = [share, 1.0 - share]
     winners = [i for i, x in enumerate(payouts) if x > 0]
     return {
         "condition_id": row.get("condition_id", condition_id),
         "status": str(row.get("status") or "unknown"),
         "payouts": payouts,
         "winner_index": winners[0] if len(winners) == 1 else None,
-        "resolved_at": row.get("resolved_at"),
+        "resolved_at": row.get("resolved_at")
+        or (
+            datetime.fromtimestamp(int(t), tz=timezone.utc).isoformat()
+            if (t := row.get("last_update_timestamp"))
+            else None
+        ),
     }

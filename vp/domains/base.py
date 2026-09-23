@@ -42,6 +42,10 @@ class Domain:
     # Whether a match's first-listed team plays at home (football fixtures),
     # which the rating signals give a home advantage.
     home_first: bool = False
+    # Its league's file in openfootball (``en.1``) and the league's time
+    # zone, when results come from there (docs/evidence.md).
+    openfootball: str = ""
+    zone: str = "UTC"
 
     @property
     def all_kinds(self) -> dict[str, tuple[str, ...]]:
