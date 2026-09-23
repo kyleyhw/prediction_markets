@@ -1334,10 +1334,11 @@ called done.
   sign-up). Every sample account is the same account.** Starting paper
   trading gives each workspace its own account running the four sample
   strategies over every parsed market of every domain. On the stand-in the
-  first cycle wrote about 14,000 ledger entries and 11,500 forecast rows
-  per person, and each later hourly cycle about 1,900 entries (after the
-  change-only recording of 2026-09-23), about 60,000 ledger rows and
-  40,000 forecast rows per person per day, some 70 MB, where the capacity
+  first cycle wrote about 11,800 ledger entries and 11,700 forecast rows
+  per person, and each later hourly cycle about 1,250 entries (after the
+  change-only recording and the cash limit of 2026-09-23), about 40,000
+  ledger rows and 39,000 forecast rows per person per day, some 55 MB,
+  where the capacity
   model assumed about a hundred entries per person per day for a person's
   own strategy on fifty markets. Every one of these accounts holds the
   same orders: same strategies, same capture, same prices, same memoised

@@ -29,7 +29,7 @@ second person sees none of it; and the measurements below are recorded.
 
 ## Unit Tests
 
-`uv run pytest -q`: 228 passed in about 10 s, against a Postgres test
+`uv run pytest -q`: 234 passed in about 10 s, against a Postgres test
 database (`vp_test`, separate from the development database since the
 fixtures delete rows). The platform files, what each proves, and why it
 matters:
@@ -46,6 +46,8 @@ matters:
 | `test_platform_llmops.py` | envelope encryption, key hints, the cross-process limiter | a person's key is never readable |
 | `test_platform_work.py` | from the web: paper trading started, a backtest estimated, run and kept private, a model backtest needing a key and fitting the budget, an own key, spending, refresh, metrics; the paper view is never stale | the "done when" in requests |
 | `test_platform_observe.py` | two processes' counters add up in one scrape | `vp serve --workers` |
+| `test_platform_console.py` | every listing of `vp jobs` and `vp admin` prints, with a workspace paused | the operator's view in an incident |
+| `test_paper.py` (engine) | a forecast is recorded again only when it moves; an account stakes only the cash it has | found by the measurements below |
 
 ## The Walk-Through in a Browser
 
@@ -58,7 +60,7 @@ repository, as earlier phases' did.
 | :--- | :--- |
 | Ada signs in | the emailed link, the confirm page, the dashboard |
 | Home offers paper trading; she accepts | account opened, two schedules in her time zone, first cycle queued; the jobs panel shows it with a progress bar ("trading cs2", "trading weather", "trading epl") |
-| First cycle | 11,506 forecasts and about 2,740 orders over the capture of 5,000 parsed markets, 62 s on the first build, 7.5 s after the fixes below |
+| First cycle | about 11,500 forecasts over the capture of 5,000 parsed markets: 62 s on the first build, 7.5 s after the fixes below; about 2,740 orders before the cash limit, 85 after it (each strategy staking exactly its $1,000) |
 | A backtest from the page (weather, market price and climatology) | estimate shown before starting ("146,151 settled markets, free"), queued, progress by market, finished run opened: 1,891 markets scored, climatology Brier 0.088 against the market's 0.078, skill -0.14, and the page says the run assumed no fees |
 | What it cost | Settings: "$0.00 of your $5.00 limit"; no model strategy was run, because the container holds no Anthropic key |
 | Bob signs in | no account, no jobs, no backtests; Ada's job id answers 404 |
@@ -96,7 +98,31 @@ Python process, was by then part of the limit. The server's own histogram
 
 ### Ingestion lag and reconnects
 
-MEASURE_INGEST
+The market-data service tracked 9,300 to 9,360 markets (about 18,600
+tokens) on 47 sockets. Lag is the gap between the venue's stamp on a change
+event and its receipt:
+
+| Run | Change events | within 50 ms | 250 ms | 1 s | 5 s | all within |
+| :--- | ---: | ---: | ---: | ---: | ---: | ---: |
+| quiet host, 13:19 to 13:21 | 357,000 | 33% | 95% | 100% | 100% | 2 s |
+| 13:49 to 14:11: a snapshot, two discovery passes, fifteen cycles | 3.6 million | 74% | 92% | 97% | 99% | 10 s |
+
+Staleness (the silence of a token's socket) stayed between 4 and 9 s at
+the 99th percentile against the 60 s objective. Every channel resolution
+of the last run (37 by 14:20) reached its record within a minute of the
+venue's stamp, against the 15-minute objective; the reconcile sweep, the
+fallback, counts from when a market was first tracked.
+
+Reconnects, as recorded (the service was restarted often during the day,
+and early runs' logs were not kept): five in one run around 12:40 whose
+reasons were not kept; in the run from 13:35, one close without a close
+frame and two with code 1013, "slow consumer", three seconds after a
+discovery pass that rewrote every market while the host was saturated;
+after the fix (below), no 1013, and seven closes without a close frame in
+the five minutes of heaviest load (14:03 to 14:08, a snapshot write and
+fifteen cycles). Each recovered within seconds and staleness stayed at
+4.4 s. Whether the proxy or the loaded host dropped those seven is not
+established; the service should have a core of its own on the host.
 
 ### Venue rate limits observed
 
@@ -123,7 +149,7 @@ taking 11 s instead of 139 s.
 
 | Kind | Jobs | p50 | p95 | max | Why |
 | :--- | ---: | ---: | ---: | ---: | :--- |
-| backtest, paper start | 4 | 0.01 s | 0.01 s | 0.01 s | `LISTEN vp_jobs` wakes a worker on insert |
+| backtest, a first paper cycle | 4 | 0.01 s | 0.01 s | 0.01 s | `LISTEN vp_jobs` wakes a worker on insert |
 | scheduler | 29 | 4.4 s | 4.9 s | 4.9 s | queued for the minute ahead; found by the five-second poll |
 | evidence (before the pools were split) | 2 | 278 s | 440 s | 458 s | queued behind two dataset builds in one pool |
 | evidence, reconcile (after) | 2 | 0.0 s | 0.0 s | 0.0 s | a pool of their own |
@@ -143,17 +169,18 @@ run here:
 | Item | First day | Why |
 | :--- | ---: | :--- |
 | Model spending | $0 | the sample strategies are statistical; no model key in the container |
-| Worker time | about 7 to 10 min | first cycle 7.5 s, later cycles 6 to 14 s, and a settlement of about 11 s, 24 of each a day |
-| Ledger rows | about 58,000 (44 MB at 759 bytes a row) | 14,000 in the first cycle, then about 1,900 a cycle |
-| Forecast rows | about 41,000 (25 MB at 619 bytes) | 11,500, then about 1,300 a cycle |
+| Worker time | about 7 to 10 min | first cycle 7.5 to 23 s, later cycles 6 to 14 s, and a settlement of about 11 s, 24 of each a day |
+| Ledger rows | about 40,000 (30 MB at 759 bytes a row) | 11,800 in the first cycle, then about 1,250 a cycle |
+| Forecast rows | about 39,000 (24 MB at 619 bytes) | 11,700, then about 1,200 a cycle |
 
-The ledger figure is after the change-only recording below; before it,
-every cycle wrote every forecast again (about 14,000 entries a cycle, some
-330,000 a person a day). It is still some 600 times the capacity model's
-assumption of about a hundred entries a person a day, because every
-person's sample account trades every market, and every one of these
-accounts holds the same orders: flag F17 in the plan proposes one shared
-sample account.
+These are after the fixes below: forecasts recorded only when they move,
+and stakes limited to cash, which cut a first cycle's orders from about
+2,700 to 85. Before them every cycle wrote every forecast again, some
+330,000 ledger entries a person a day. It is still some 400 times the
+capacity model's assumption of about a hundred entries a person a day,
+because every person's sample account forecasts every market, and every
+one of these accounts holds the same entries: flag F17 in the plan
+proposes one shared sample account.
 
 ### Restore
 
@@ -210,6 +237,9 @@ Each is in the repository with a test.
 | Queue age counted jobs scheduled for later (negative ages) | only jobs ready to run; dataset builds alert on a six-hour scale |
 | Settlement asked the venue for the same resolved market once per account | the venue's record is kept once for everyone |
 | openfootball gives some scores as a bare pair | read |
+| A paper account staked a fraction of its bankroll on every market, whatever it had already staked: $135,000 of $1,000 in one cycle, a bankroll of -$22,700 after settlement, and negative stakes (an engine fault from Phase 10) | a stake is at most the cash left after open stakes |
+| A negative stake made a fee of -0.0, which `jsonb` stores as 0, so the stored entry no longer matched its hash: fifteen chains broke at 13:07, and at 14:07 their cycles refused to trade, as designed | the Postgres ledger hashes numbers as it stores them; the fifteen test workspaces are paused and kept as a record (deleting them needs the owner) |
+| `vp admin halts` crashed on a paused workspace | fixed, and every operator listing tested |
 
 ## Observability
 

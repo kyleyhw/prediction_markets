@@ -296,14 +296,14 @@ wait for Phase 21.
 | Requests a second, four processes | 107 at 16 concurrent, p50 91 ms, p95 405 ms | 25 at the peak for 100 people |
 | Job start, interactive | 10 ms | |
 | Paper cycle, sample account | 6 s alone, about 14 s of process time under load; about 260 hourly accounts a worker process | |
-| Ledger entries per person per day, sample account | about 58,000 | about 100 (flag F17) |
+| Ledger entries per person per day, sample account | about 40,000 | about 100 (flag F17) |
 | Backtest, 146,000 weather markets, two strategies | 8 to 25 s | 15 s CPU |
 | Restore of the database (271 MB) | 3.1 s dump, 1.9 s restore | |
 
 Reading it: the design holds at this stage with two corrections. Web
 processes, not threads, carry the load (one per core). And the sample
 paper account, as built, gives every person the whole market's ledger:
-at a thousand people it would write about 58 million ledger rows a day,
+at a thousand people it would write about 40 million ledger rows a day,
 which is why flag F17 proposes one shared sample account. Without it the
 per-person figures are what a person's own strategies select.
 

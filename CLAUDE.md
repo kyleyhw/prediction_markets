@@ -125,8 +125,11 @@ budgets and own keys, observability, `vp admin`, Compose and CI; a browser
 walk-through of the "done when" and the measurements are in
 `tests/reports/phase13_platform.md`. Measuring found and fixed some twenty
 faults (the report lists them). Open from it: **flag F17** (every sample
-paper account is the same account; about 58,000 ledger rows a person a
-day; a shared sample account is proposed and needs the owner), and the
+paper account is the same account; about 40,000 ledger rows a person a
+day; a shared sample account is proposed and needs the owner), the
+fifteen stand-in test workspaces paused with broken ledger chains (from a
+negative-zero fault, now fixed; deleting them was refused and needs the
+owner), and the
 cloud deploy (task 34, F16), after which the host measurements, 48 and 49
 follow. Open-Meteo and GDELT answer 429 or time out from this container.
 Earlier,
