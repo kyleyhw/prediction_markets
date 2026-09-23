@@ -23,9 +23,14 @@ CONFIG = PACKAGE / "platform" / "config.py"
 #: `_http.py` holds the generic reader `positive_env_float`; the variable
 #: it is called with (`VP_POLYMARKET_MIN_INTERVAL`) is named by its caller
 #: in `venues/polymarket.py`, which is itself no longer a reader.
+#:
+#: `run.py` writes `PROMETHEUS_MULTIPROC_DIR` for the web processes `vp
+#: serve --workers` starts; it reads nothing, and the children read the
+#: variable through `config.py` and prometheus_client.
 ALLOWED = {
     PACKAGE / "venues" / "_http.py": "def positive_env_float",
     PACKAGE / "live" / "controls.py": "VP_STOP_FILE",
+    PACKAGE / "platform" / "run.py": "os.environ[METRICS_DIR] = metrics",
 }
 
 _READERS = {("os", "getenv"), ("os", "environ")}

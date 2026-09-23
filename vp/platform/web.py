@@ -985,7 +985,9 @@ def create_app(
         given = request.headers.get("authorization", "")
         if not token or not hmac.compare_digest(given, f"Bearer {token}"):
             raise HTTPException(404, "not found")
-        return Response(exposition(), media_type="text/plain; version=0.0.4")
+        return Response(
+            exposition(settings.metrics_dir), media_type="text/plain; version=0.0.4"
+        )
 
     # ---------------------------------------------------------------- page
 

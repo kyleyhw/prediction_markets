@@ -19,7 +19,7 @@ import uvicorn
 from fastapi import FastAPI
 from psycopg_pool import ConnectionPool
 
-from vp.platform.config import ConfigError, Settings, load_settings
+from vp.platform.config import METRICS_DIR, ConfigError, Settings, load_settings
 from vp.platform.db import connect, migrate
 from vp.platform.web import create_app, install_log_redaction
 
@@ -45,7 +45,9 @@ def serve(host: str, port: int, workers: int = 1) -> None:
     settings = load_settings()
     if workers > 1:
         metrics = tempfile.mkdtemp(prefix="vp-metrics-")
-        os.environ["PROMETHEUS_MULTIPROC_DIR"] = metrics
+        # Written, never read here: the processes uvicorn starts inherit it,
+        # and prometheus_client and `load_settings` read it there.
+        os.environ[METRICS_DIR] = metrics
         print(
             f"vp serve: http://{host}:{port}/ in {workers} processes "
             f"(public URL {settings.public_url}, "

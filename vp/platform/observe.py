@@ -25,9 +25,9 @@ from __future__ import annotations
 
 import contextlib
 import logging
-import os
 import time
 from collections.abc import Iterator
+from pathlib import Path
 from typing import Any
 
 from prometheus_client import (
@@ -122,10 +122,10 @@ LEDGER_APPEND_SECONDS = Histogram(
 ERRORS = Counter("vp_errors", "Unhandled errors", ["component"], registry=REGISTRY)
 
 
-def exposition() -> bytes:
+def exposition(multiprocess_dir: Path | None = None) -> bytes:
     """The registry in Prometheus text format; under `vp serve --workers`,
-    every web process's metrics added together."""
-    if os.environ.get("PROMETHEUS_MULTIPROC_DIR"):
+    every web process's metrics added together from `multiprocess_dir`."""
+    if multiprocess_dir is not None:
         from prometheus_client import multiprocess
 
         registry = CollectorRegistry()

@@ -117,6 +117,9 @@ class Settings:
     telemetry: Telemetry = Telemetry.NONE
     otlp_endpoint: str | None = None
     metrics_token: str | None = field(default=None, repr=False)
+    # Set by `vp serve --workers` for its processes, under the name
+    # prometheus_client itself reads; not a setting anyone configures.
+    metrics_dir: Path | None = None
 
     @property
     def store(self) -> str:
@@ -147,6 +150,10 @@ class Settings:
     def redacted_database_url(self) -> str:
         """The database URL with any password replaced, safe to log."""
         return _redact(self.database_url)
+
+
+#: The directory prometheus_client's multiprocess mode keeps metrics in.
+METRICS_DIR = "PROMETHEUS_MULTIPROC_DIR"
 
 
 def load_settings(env: Mapping[str, str] | None = None) -> Settings:
@@ -190,6 +197,7 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
         telemetry=_telemetry(source),
         otlp_endpoint=_optional(source, "OTLP_ENDPOINT"),
         metrics_token=_optional(source, "METRICS_TOKEN"),
+        metrics_dir=Path(d) if (d := source.get(METRICS_DIR, "").strip()) else None,
     )
     if settings.store.startswith("s3://") and not (
         settings.s3_access_key and settings.s3_secret_key
