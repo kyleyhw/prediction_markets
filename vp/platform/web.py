@@ -58,6 +58,7 @@ import threading
 import time
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Annotated, Any, Literal
 from urllib.parse import urlsplit
 from uuid import UUID
@@ -383,6 +384,20 @@ class KeyBody(BaseModel):
 #: The sample strategies a new paper account runs: the statistical ones,
 #: which cost nothing. The model joins them in Phase 15, as a choice.
 SAMPLE_FORECASTERS = ["market", "constant", "elo", "climatology"]
+
+
+def _eligible_kinds(path: Path) -> dict[str | None, int]:
+    """Markets a backtest can select from a dataset, counted by kind (the
+    rule of `vp.backtest.run.select_markets`)."""
+    from vp.forecast.evidence import settled_at
+    from vp.markets.store import read_markets
+
+    counts: dict[str | None, int] = {}
+    for m in read_markets(path):
+        if m.resolved_outcome is not None and settled_at(m) is not None:
+            kind = m.parsed.get("kind")
+            counts[kind] = counts.get(kind, 0) + 1
+    return counts
 
 
 def _json(value: Any) -> Response:
@@ -811,20 +826,19 @@ def create_app(
         return {"id": job_id, "cancel_requested": True}
 
     def _estimate(body: BacktestRequest) -> dict[str, Any]:
-        from vp.backtest.run import BacktestConfig, select_markets
         from vp.forecast.llm import DEFAULT_MODEL, estimate_usd
-        from vp.markets.store import read_markets
+        from vp.ui.server import cached_file
 
         path = shared.root / "markets" / body.domain / "resolved.parquet"
         if not path.exists():
             raise HTTPException(409, "this domain's data has not arrived yet")
-        config = BacktestConfig(
-            domain=body.domain,
-            forecasters=tuple(body.forecasters),
-            kinds=tuple(body.kinds),
-            max_markets=body.max_markets,
-        )
-        markets = len(select_markets(read_markets(path), config))
+        # How many markets the backtest selects depends only on each
+        # eligible market's kind, so a count per kind is kept per dataset
+        # version; parsing weather's 146,000 markets took 5.5 s a request.
+        kinds = cached_file(path, _eligible_kinds) or {}
+        markets = sum(n for k, n in kinds.items() if not body.kinds or k in body.kinds)
+        if body.max_markets is not None:
+            markets = min(markets, body.max_markets)
         usd = (
             estimate_usd(markets, body.model or DEFAULT_MODEL, batch=body.batch)
             if "llm" in body.forecasters

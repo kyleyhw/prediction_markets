@@ -376,7 +376,7 @@ line stays for developers and the operator. Built for many users from the
 first release, on one host at first (`docs/scaling.md` § 12, stage A).
 Started 2026-09-21; what is built is recorded in `docs/platform.md`.
 
-28. [in-progress] Web service over the unchanged engine.
+28. [done] Web service over the unchanged engine.
     - Landed: the configuration module, sole reader of the environment,
       with no default for any secret, redaction of the database URL, and
       `tests/test_config_gate.py` proving no second reader exists.
@@ -387,9 +387,12 @@ Started 2026-09-21; what is built is recorded in `docs/platform.md`.
       service refuses to start as any role row-level security does not
       bind. Verified by driving Chromium through the whole flow, which
       found two faults the request tests could not (`docs/platform.md`).
-    - Outstanding: the endpoints mirroring the CLI's write commands
-      (build, snapshot, backtest, paper run, settle, leakage), which
-      arrive as jobs with task 31.
+    - Landed later that day: the write endpoints as jobs (a backtest
+      with its estimate, starting paper trading, a cycle or settlement
+      now, a data refresh), the jobs list with progress and cancel,
+      spending, one's own model key, `/metrics`, and `vp serve --workers`
+      for several web processes. The dataset build and snapshot stay
+      operator and scheduler work (`vp admin refresh`), not a person's.
     - FastAPI application with a request principal on every route, health
       and readiness endpoints, the OpenAPI page as the technical user's API
       reference, JSON errors, structured logs through the redaction filter.
@@ -397,7 +400,7 @@ Started 2026-09-21; what is built is recorded in `docs/platform.md`.
       (a lint rule enforces it); typed settings; no secret has a default.
     - Endpoints mirroring the CLI (build, snapshot, backtest, paper run,
       settle, leakage) and the dashboard's read endpoints moved unchanged.
-29. [in-progress] Identity, workspaces and tenancy.
+29. [done] Identity, workspaces and tenancy.
     - Landed: the `Principal` with derived attribution, roles held within
       a workspace and an operator role that reaches no workspace data; the
       workspaces, users and memberships tables with row-level security;
@@ -411,9 +414,10 @@ Started 2026-09-21; what is built is recorded in `docs/platform.md`.
       workspace on first sign-in. Migration 0002 crosses the tenancy
       boundary only through five narrow `SECURITY DEFINER` functions, so
       the web process never holds the owner's credentials.
-    - Outstanding: OpenID Connect (prepared for, not needed yet); a
-      per-address-and-IP request limit with task 36; the expiry sweep with
-      task 31.
+    - Landed later that day: the per-address request limit on sign-in
+      (`vp_rate_limit`) and the daily sweep of expired tokens, sessions
+      and old jobs. OpenID Connect stays prepared for and unshipped, as
+      planned.
     - `Principal` with `subject`, `auth_method`, `attributable` (derived,
       never caller-set), `workspace`, `roles`; email magic-link sign-in;
       OpenID Connect prepared but not shipped; HTTP-only session cookies;
@@ -425,11 +429,16 @@ Started 2026-09-21; what is built is recorded in `docs/platform.md`.
     - API tokens hashed at rest, scoped and revocable.
     - A tenancy test suite that attempts every cross-workspace read and
       write and expects nothing.
-30. [in-progress] Storage.
+30. [done] Storage.
     - Landed: the migration runner (one transaction per file, checksummed,
       immutable once applied) and `0001_foundation.sql`.
-    - Outstanding: the remaining tables, object storage, the DuckDB read
-      path, partitioning and archival.
+    - Landed 2026-09-23: migrations 0003 to 0011; the object store (a
+      directory or S3, MinIO locally) with the shared disk cache laid out
+      as an engine data root; the ledger in Postgres with the file
+      ledger's chain, appended in one batch per cycle; monthly partitions
+      and `vp admin archive` to Parquet; DuckDB for the price series. The
+      ledger lock is the head row's lock rather than an advisory lock
+      (`docs/platform.md`).
     - Postgres schema: users, workspaces, memberships, strategies,
       strategy versions, runs and manifests, forecasts with memo keys, paper
       accounts, ledger entries, jobs, budgets and spend, settings, tokens,
@@ -442,7 +451,9 @@ Started 2026-09-21; what is built is recorded in `docs/platform.md`.
       and archives; a DuckDB read path over it; a local disk cache.
     - Monthly partitions for ledger entries and forecasts; archive-to-Parquet
       with chain hashes after the retention window.
-31. [pending] Jobs and schedules.
+31. [done] Jobs and schedules. Landed 2026-09-23 (`docs/platform.md`,
+    "Jobs"); Compose runs five pools, not the ten kinds listed, because
+    the grouping that mattered was long work away from short work.
     - A `jobs` table claimed with `SKIP LOCKED`: kind, idempotency key,
       priority, run-after, attempts, lease and heartbeat, progress, result,
       workspace, budget reservation; dead-letter state; cancellation.
@@ -453,7 +464,9 @@ Started 2026-09-21; what is built is recorded in `docs/platform.md`.
     - Cron schedules with IANA timezones for snapshots, cycles, settlements
       and refreshes; the scheduler is a job that enqueues jobs.
     - `vp jobs` for the operator: list, inspect, retry, drain.
-32. [pending] Market-data service: one subscription for everyone.
+32. [done] Market-data service: one subscription for everyone. Landed and
+    run live 2026-09-23 (about 18,600 tokens on 47 sockets); quotes are
+    written when the top of book moves, not every minute.
     - The CLOB market WebSocket for every tracked token with dynamic
       subscribe and unsubscribe, the custom `best_bid_ask`, `new_market` and
       `market_resolved` events, and the ten-second `PING`; in-memory books;
@@ -473,7 +486,9 @@ Started 2026-09-21; what is built is recorded in `docs/platform.md`.
       in the report; fan-out to consumers by `LISTEN`/`NOTIFY`.
     - Freshness objectives: newest quote under 60 s at the 99th percentile;
       resolution to label under 15 min; both measured and alerted.
-33. [pending] The evidence archive starts capturing now.
+33. [done] The evidence archive starts capturing now. Four collectors,
+    hourly; from the development container Open-Meteo and GDELT answered
+    429 (the report).
     - The collectors of Phase 17 that capture what cannot be recovered later
       (Open-Meteo forecast runs for every city in the weather markets,
       fixtures and results, CS2 schedules, daily headline sets per domain)
@@ -481,7 +496,8 @@ Started 2026-09-21; what is built is recorded in `docs/platform.md`.
       accumulates forward and every week not captured is a week no backtest
       can use honestly. Storage in object storage as Parquet with capture
       times; the readers come in Phase 17.
-34. [pending] Deploy. **Cloud deployment deferred to the end** (decided
+34. [in-progress] Deploy. The local stand-in, `vp admin` and CI landed
+    2026-09-23; the cloud part waits. **Cloud deployment deferred to the end** (decided
     2026-09-23, flag F16): the platform is built and verified on a local
     stand-in, and the Fly.io account, the region probe of F1 and the
     public deploy come when the build is otherwise done, and in any case
@@ -498,7 +514,8 @@ Started 2026-09-21; what is built is recorded in `docs/platform.md`.
       in the host's secret store; a restore drill with its time recorded.
     - `vp admin`: data refresh, budgets, costs, pause a workspace, platform
       halt; an admin page only if these turn out to be needed often.
-35. [pending] Budgets and LLM operations.
+35. [done] Budgets and LLM operations. Landed 2026-09-23; the key-management
+    service is stood in for by `VP_MASTER_KEY` until the deploy.
     - Platform key server-side; per-workspace monthly budget (proposed
       default $5, operator-adjustable); the estimated cost of a run shown
       before it starts, reserved, and debited on completion from measured
@@ -510,7 +527,9 @@ Started 2026-09-21; what is built is recorded in `docs/platform.md`.
       rate-limit responses; queue priority for interactive work.
     - Spend attributed per forecast (model, tokens, cache hits, dollars) and
       shown by workspace, forecaster and domain.
-36. [pending] Observability and the platform halt.
+36. [done] Observability and the platform halt. Landed 2026-09-23;
+    Prometheus scraped every process and evaluated every alert on the
+    stand-in.
     - OpenTelemetry traces across request, job and venue call; metrics for
       queue depth and age, job latency, LLM spend and cache hit rate,
       WebSocket lag, quote freshness, resolution delay, ledger append
@@ -518,7 +537,7 @@ Started 2026-09-21; what is built is recorded in `docs/platform.md`.
     - The platform halt as a row: while set, no worker runs a job, no LLM
       call is made and no order is prepared; a workspace halt likewise; each
       is a ledger entry with its principal.
-37. [in-progress] The existing views on the new service, and fees in paper
+37. [done] The existing views on the new service, and fees in paper
     trading.
     - Landed 2026-09-23 (F5): the client reads each market's `feesEnabled`
       and `feeSchedule` (rate and exponent) into the record and the
@@ -528,9 +547,10 @@ Started 2026-09-21; what is built is recorded in `docs/platform.md`.
       (`market`, or `assumed` when the venue states none); settlement is
       net of it because the stake already includes it. Live on that day
       every CS2, weather and EPL market stated rate 0.05, exponent 1.
-    - Outstanding: the views from tenant-scoped queries, and the backtest
-      reading per-market rates (task 77; older datasets lack the columns
-      and read as "not stated").
+    - Landed later that day: every view from the workspace's own rows
+      (`WorkspaceView`), verified in Chromium with a second person seeing
+      none of the first's. The backtest reading per-market rates stays
+      with task 77.
     - Overview, backtests, paper and markets rendered from tenant-scoped
       queries instead of a data root; the same page, fonts, charts and
       glossary; a browser end-to-end test with the preinstalled Chromium.
@@ -538,7 +558,8 @@ Started 2026-09-21; what is built is recorded in `docs/platform.md`.
       through the same fee function the backtest uses, record it per order
       and settle net of it (F5); the paper-trading page and the glossary
       say so.
-38. [pending] Phase 13 report.
+38. [done] Phase 13 report: `tests/reports/phase13_platform.md`, on the
+    stand-in; the measurements that need the host follow the deploy.
     - Measured: request latency, ingestion lag and reconnects, venue rate
       limits observed, job start latency, cost per user-day on the staging
       load, restore time. The capacity model's stage-A column replaced by
@@ -1307,3 +1328,22 @@ called done.
   every other numbered phase, including the scale proof. `docs/security.md`
   is the base for the design's version 2. The invariant stands until that
   version is agreed: no order-signing code anywhere.
+- **F17 (open, found 2026-09-23 in task 38; gating Phase 14's public
+  sign-up). Every sample account is the same account.** Starting paper
+  trading gives each workspace its own account running the four sample
+  strategies over every parsed market of every domain. On the stand-in the
+  first cycle wrote about 14,000 ledger entries and 11,500 forecast rows
+  per person, and each later hourly cycle about 1,900 entries (after the
+  change-only recording of 2026-09-23), about 60,000 ledger rows and
+  40,000 forecast rows per person per day, some 70 MB, where the capacity
+  model assumed about a hundred entries per person per day for a person's
+  own strategy on fifty markets. Every one of these accounts holds the
+  same orders: same strategies, same capture, same prices, same memoised
+  forecasts. **Proposed:** one platform-run sample account per domain that
+  every workspace reads (and the page shows as "the sample strategies"),
+  and a person's own paper account only when they have a strategy of their
+  own (Phase 15) or change something the sample cannot share, such as the
+  play-money amount. The cost of a person then falls to what their own
+  strategies select. Needs the owner's decision; until then the per-person
+  sample account stays, and the measured cost is in
+  `tests/reports/phase13_platform.md`.

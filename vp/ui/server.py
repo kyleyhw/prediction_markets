@@ -60,6 +60,23 @@ _CACHE_LOCK = threading.Lock()
 CACHE_SIZE = 64
 
 
+def cached_file(path: Path, load: Any) -> Any:
+    """`load(path)`, kept until the file changes; None if it does not exist."""
+    key = f"{path}#{load.__name__}"
+    mtime = path.stat().st_mtime if path.exists() else -1.0
+    with _CACHE_LOCK:
+        hit = _CACHE.get(key)
+        if hit is not None:
+            _CACHE.move_to_end(key)
+    if hit is None or hit[0] != mtime:
+        hit = (mtime, load(path) if path.exists() else None)
+        with _CACHE_LOCK:
+            _CACHE[key] = hit
+            while len(_CACHE) > CACHE_SIZE:
+                _CACHE.popitem(last=False)
+    return hit[1]
+
+
 class DataView:
     """Read-only queries over a data root, with mtime-keyed caching.
 
@@ -73,19 +90,7 @@ class DataView:
         self.root = root
 
     def _cached(self, path: Path, load: Any) -> Any:
-        key = f"{path}#{load.__name__}"
-        mtime = path.stat().st_mtime if path.exists() else -1.0
-        with _CACHE_LOCK:
-            hit = _CACHE.get(key)
-            if hit is not None:
-                _CACHE.move_to_end(key)
-        if hit is None or hit[0] != mtime:
-            hit = (mtime, load(path) if path.exists() else None)
-            with _CACHE_LOCK:
-                _CACHE[key] = hit
-                while len(_CACHE) > CACHE_SIZE:
-                    _CACHE.popitem(last=False)
-        return hit[1]
+        return cached_file(path, load)
 
     # -- the seams --
 

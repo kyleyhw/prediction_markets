@@ -104,6 +104,10 @@ def test_a_backtest_from_the_page_is_estimated_run_and_its_files_kept_private(
     )
     assert estimate.status_code == 200
     assert estimate.json()["estimate_usd"] == 0 and estimate.json()["markets"] == 6
+    capped = client.post(
+        "/api/backtests/estimate", json=body | {"max_markets": 2}, headers=ORIGIN
+    )
+    assert capped.json()["markets"] == 2
     started = client.post("/api/backtests", json=body, headers=ORIGIN)
     assert started.status_code == 202
     job_id = started.json()["job_id"]
