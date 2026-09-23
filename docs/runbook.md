@@ -38,6 +38,14 @@ network is unwell. Check the ingest log for the close reason. If the venue
 has changed its channel (a new subscription format, a moved URL), the fix is
 in `vp/platform/ingest.py` and the probe in `docs/platform.md`.
 
+A close with code 1013, "slow consumer: send buffer full", is ours: the
+service did not read fast enough and the venue gave up on the socket. It
+was seen on 2026-09-23 when discovery rewrote every market while the host
+was saturated. Check the ingest process's CPU (`docker stats`); the
+service needs a core of its own, and its periodic work (discovery,
+snapshots, quote flushes) must stay small, because it shares the
+interpreter with the sockets.
+
 ## Resolutions late
 
 The 90th percentile delay from the venue resolving a market to our record

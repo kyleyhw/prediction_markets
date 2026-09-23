@@ -36,7 +36,7 @@ def test_the_chain_is_the_file_ledgers_chain(
     ledger.append(
         "order", {"price": 0.1 + 0.2, "fee": 1e-7, "shares": 12.345678901234567}
     )
-    ledger.append("settlement", {"pnl": -3.57, "label": 0, "q": None})
+    ledger.append("settlement", {"pnl": -3.57, "label": 0, "q": None, "fee": -0.0})
     assert ledger.verify() is None
     assert [e["seq"] for e in ledger.entries()] == [0, 1, 2]
     last = ledger.last()

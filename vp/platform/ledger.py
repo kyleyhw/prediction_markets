@@ -37,6 +37,19 @@ from vp.platform.principal import Principal
 from vp.platform.storage import ObjectStore
 
 
+def _as_stored(value: Any) -> Any:
+    """The value as `jsonb` will give it back. Postgres numbers have no
+    negative zero, so -0.0 is stored as 0.0; hashing -0.0 would break the
+    chain the moment the entry was read (found 2026-09-23)."""
+    if isinstance(value, float) and value == 0.0:
+        return 0.0
+    if isinstance(value, dict):
+        return {k: _as_stored(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_as_stored(v) for v in value]
+    return value
+
+
 class PgLedger:
     """An account's ledger, read and written as `principal`."""
 
@@ -124,7 +137,7 @@ class PgLedger:
             "kind": kind,
             # A JSON round trip gives the stored copy the types JSON has,
             # so the hash covers what a reader will get back.
-            "data": json.loads(json.dumps(data)),
+            "data": _as_stored(json.loads(json.dumps(data))),
             "prev": prev["hash"],
         }
         entry["hash"] = entry_hash(entry)

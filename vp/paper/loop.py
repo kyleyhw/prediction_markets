@@ -17,9 +17,10 @@ One cycle of :func:`run_cycle`:
    forecaster's standing forecast over time without a copy per market per
    cycle (docs/paper_trading.md).
 4. Size a position against the **real** touch of the book (best ask of the
-   first outcome, or the complementary share at one minus the best bid), fill
-   it at that price for at most the resting size at the touch, and record an
-   ``order`` entry. Each forecaster keeps its own paper bankroll, compounded
+   first outcome, or the complementary share at one minus the best bid),
+   for no more than the cash the account has left after its open stakes,
+   fill it at that price for at most the resting size at the touch, and
+   record an ``order`` entry. Each forecaster keeps its own paper bankroll, compounded
    from its settled positions, so forecasters are compared on equal footing.
    One open position per forecaster per market.
 
@@ -59,6 +60,10 @@ logger = logging.getLogger(__name__)
 # minimum edge a position needs, so no order is ever sized on an unrecorded
 # forecast that differs from the recorded one by anything that matters.
 FORECAST_STEP = 0.005
+
+# The smallest stake worth placing, in dollars; below it an account with no
+# cash left places nothing.
+MIN_STAKE = 0.01
 
 
 @dataclass
@@ -212,7 +217,14 @@ def run_cycle(
             )
             if position is None:
                 continue
-            stake = position.fraction * account.bankroll
+            # An account spends only cash it has: its bankroll less what its
+            # open positions have staked. Sizing on the bankroll alone let an
+            # account stake 135 times its bankroll across a cycle's markets
+            # (found 2026-09-23, docs/paper_trading.md).
+            cash = account.bankroll - sum(o["stake"] for o in account.open.values())
+            stake = min(position.fraction * account.bankroll, cash)
+            if stake < MIN_STAKE:
+                continue
             shares = stake / position.price
             resting = ask_size if position.side == "yes" else bid_size
             if resting > 0:

@@ -100,7 +100,24 @@ MEASURE_INGEST
 
 ### Venue rate limits observed
 
-VENUE
+The client holds a token bucket per host (Gamma 10 a second with a burst of
+20, CLOB 20 and 40, Data API 10 and 20), set from the venue's published
+limits. Over the day no Polymarket host returned a 429: the dataset builds
+made 7,351 CLOB and 320 Gamma requests (0.22 s and 0.33 s on average; one
+connection error, retried), settlement 259 CLOB requests, discovery a
+Gamma walk every ten minutes, reconciliation 300 Data API requests an
+hour. Every one of these callers fetches one request at a time, far under
+the buckets, so the day found no limit empirically; the buckets stay at
+the documented values until a load that reaches them. Of the evidence
+sources, GDELT answered 429 on every run and Open-Meteo 429 or a 30 s
+timeout, from this container's shared address (below).
+
+Settlement had made venue requests grow with the number of people: each
+account asked about the same resolved markets (66 to 68 requests each at
+12:37). The venue's record of a resolved market is now kept once for
+everyone: at 13:37 the first two accounts, settling at the same moment,
+made about 120 requests each, and the other thirteen one or two each,
+taking 11 s instead of 139 s.
 
 ### Job start latency
 
@@ -126,7 +143,7 @@ run here:
 | Item | First day | Why |
 | :--- | ---: | :--- |
 | Model spending | $0 | the sample strategies are statistical; no model key in the container |
-| Worker time | about 3 to 6 min | first cycle 7.5 s, later cycles 6 to 14 s, 24 a day, plus settlement SETTLE_TIME |
+| Worker time | about 7 to 10 min | first cycle 7.5 s, later cycles 6 to 14 s, and a settlement of about 11 s, 24 of each a day |
 | Ledger rows | about 58,000 (44 MB at 759 bytes a row) | 14,000 in the first cycle, then about 1,900 a cycle |
 | Forecast rows | about 41,000 (25 MB at 619 bytes) | 11,500, then about 1,300 a cycle |
 
@@ -152,7 +169,20 @@ the cloud bucket must be versioned (task 34).
 
 ### Storage of the shared market data
 
-QUOTES
+| Table | Rows | Size | Bytes a row |
+| :--- | ---: | ---: | ---: |
+| `quotes` (after the fixes, per day) | about 1.1 million | about 370 MB | 335 |
+| `quotes` (as first built, per day) | 26 million | about 8.7 GB | 335 |
+| `forecast_memo` (shared) | 128,000 | 47 MB | 388 |
+
+The quote volume was measured over a clean nine minutes (13:37 to 13:46,
+6,684 rows) after the last change: first outcomes only, every five minutes
+where the top moved, every minute for held markets. Held markets were 755
+of the 9,300, because the fifteen sample accounts hold almost every market
+between them (flag F17). As first built, every token was written every
+minute; the steps in between were every book with any event (17 million a
+day), every moved top (12 million) and held markets on every move (another
+5.5 million).
 
 ## Faults Found and Fixed While Measuring
 
@@ -171,10 +201,12 @@ Each is in the repository with a test.
 | One web process topped out near 35 requests a second | `vp serve --workers`, metrics added across processes, cache writes safe to share |
 | A backtest estimate parsed 146,000 markets (5.5 s) | a count per kind kept per dataset version |
 | Estimates arriving out of order could show a stale answer | the page ignores all but the latest |
-| Quotes: every token every minute, 26 million rows a day | first outcomes only, every five minutes when the top moved, on every move when held |
+| Quotes: every token every minute, 26 million rows a day | first outcomes only, every five minutes when the top moved, every minute when held |
+| Discovery rewrote all 9,300 markets every ten minutes, holding the interpreter while the sockets went unread; the venue closed two as slow consumers (code 1013) | only changed markets written, the rest marked seen in one statement; a 1,024-frame receive buffer |
 | Ingestion lag included book pictures stamped days earlier | measured from change events only |
 | Quote age measured how long a book had been quiet, so the alert would always fire | staleness is the silence of the token's socket |
 | Resolution delay was not measured for the channel's own events | measured from the event's stamp |
+| The first reconcile counted markets resolved a month before the service existed as a month late, holding the alert pending | counted from when the market was first tracked |
 | Queue age counted jobs scheduled for later (negative ages) | only jobs ready to run; dataset builds alert on a six-hour scale |
 | Settlement asked the venue for the same resolved market once per account | the venue's record is kept once for everyone |
 | openfootball gives some scores as a bare pair | read |

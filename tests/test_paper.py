@@ -184,3 +184,43 @@ def test_a_forecast_is_recorded_again_only_when_it_moves(tmp_path: Path) -> None
     assert recorded == [1, 0, 1]
     said = [e["data"]["p_hat"] for e in ledger.entries() if e["kind"] == "forecast"]
     assert said == [0.5, 0.51]
+
+
+def test_an_account_stakes_only_the_cash_it_has(tmp_path: Path) -> None:
+    ledger = Ledger(tmp_path / "paper" / "ledger.jsonl")
+    # 98 of the 100 is already staked on another market.
+    ledger.append(
+        "order",
+        {"forecaster": "sure", "market_id": "elsewhere", "stake": 98.0, "shares": 1},
+    )
+    source = make_source([resolved_record("pending", None)])
+    counts = run_cycle(
+        CS2,
+        [Constant(0.9, name="sure")],
+        source,
+        tmp_path,
+        ledger,
+        depth=1,
+        initial_cash=100.0,
+        now=NOW,
+    )
+    assert counts["orders"] == 1
+    order = replay(ledger, 100.0)["sure"].open["6"]
+    assert order["stake"] == pytest.approx(2.0)  # not the 5 the cap allows
+    # With nothing left, the next market gets nothing.
+    ledger.append(
+        "order",
+        {"forecaster": "sure", "market_id": "more", "stake": 50.0, "shares": 1},
+    )
+    ledger.append("settlement", {"forecaster": "sure", "market_id": "6", "pnl": 0.0})
+    counts = run_cycle(
+        CS2,
+        [Constant(0.9, name="sure")],
+        source,
+        tmp_path,
+        ledger,
+        depth=1,
+        initial_cash=100.0,
+        now=NOW,
+    )
+    assert counts["orders"] == 0

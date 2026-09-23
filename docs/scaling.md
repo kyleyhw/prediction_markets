@@ -291,7 +291,7 @@ wait for Phase 21.
 | Markets and tokens tracked | 9,300 markets, 18,600 tokens on 47 sockets | three times the 3,000 assumed, for three domains |
 | Ingestion lag (venue stamp to receipt) | 95% within 250 ms, 99.5% within 500 ms | |
 | Book staleness (socket silence), 99th percentile | 8 s | objective 60 s |
-| Quote rows per day | QUOTES_DAY | 0.4 M |
+| Quote rows per day | about 1.1 M (26 M as first built) | 0.4 M |
 | Requests a second, one web process | about 35, CPU-bound | |
 | Requests a second, four processes | 107 at 16 concurrent, p50 91 ms, p95 405 ms | 25 at the peak for 100 people |
 | Job start, interactive | 10 ms | |

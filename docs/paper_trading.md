@@ -55,6 +55,14 @@ bankroll after).
    or the complementary share at one minus the best bid, sized by fractional
    Kelly on the forecaster's own paper bankroll, filled for at most the
    resting size at the touch. One open position per forecaster per market.
+   **Only cash the account has.** A stake is at most the bankroll less what
+   the open positions have already staked, and nothing below a cent is
+   placed. Until 2026-09-23 a stake was a fraction of the bankroll alone,
+   which changes only at settlement, so one cycle over the hosted capture
+   let the constant strategy stake about $135,000 of a $1,000 account on
+   2,700 markets; its bankroll went negative as they settled, and its
+   stakes with it. The chain check caught the result (a negative zero that
+   Postgres stores as zero) and the cycles refused to trade.
    The `market` forecaster never orders: it has no edge over itself and
    serves as the reference score.
 5. **Fees** are the market's own taker fee, read from its `feeSchedule`
