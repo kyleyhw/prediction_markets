@@ -73,6 +73,8 @@ def parse(question: str, event_title: str | None) -> dict[str, str] | None:
 
 CS2 = Domain(
     name="cs2",
+    title="Counter-Strike 2",
+    summary="Esports: who wins Counter-Strike matches and tournaments.",
     tag_ids=("100677", "100780", "100602"),
     tag_labels=("cs2", "counter strike 2", "counter-strike", "counter stike 2", "csgo"),
     keywords=(

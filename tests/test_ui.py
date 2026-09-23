@@ -95,8 +95,22 @@ def test_page_and_api(served: str) -> None:
         and p["accounts"][0]["open"][0]["side"] == "yes"
     )
 
+    account = p["accounts"][0]
+    assert (
+        account["fees"] == 0.0 and account["settled"] == 0 and account["skill"] is None
+    )
+    assert account["curve_at"][0] is not None  # when the first order was placed
+    assert set(p["today"]) >= {"since", "pnl"}
+
     s = json.loads(get(served, "/api/snapshots/cs2")[2])
     assert s["markets"][0]["kind"] == "match" and s["markets"][0]["ask"] == 0.51
+    assert s["markets"][0]["outcomes"] == ["Yes", "No"]
+    assert s["markets"][0]["fee_rate"] is None  # the fixture states no fee
+    detail = json.loads(get(served, "/api/markets/cs2/6")[2])
+    assert detail["book"]["asks"][0] == {"price": 0.51, "size": 7.0}
+    assert detail["series"] == [{"at": "2026-09-13T00:00:00Z", "p_yes": 0.5}]
+    assert detail["forecasts"][0]["forecaster"] == "sure"
+    assert o["domains"]["cs2"]["title"] == "Counter-Strike 2"
     assert json.loads(get(served, "/api/snapshots/epl")[2])["markets"] == []
     assert json.loads(get(served, "/api/forecasts")[2])[0]["forecaster"] == "sure"
 
@@ -107,6 +121,8 @@ def test_not_found_and_traversal(served: str) -> None:
     for path in (
         "/api/nope",
         "/api/snapshots/nba",
+        "/api/markets/cs2/404",
+        "/api/markets/nba/6",
         "/api/backtests/epl/x/../../secret.png",
     ):
         with pytest.raises(HTTPError) as err:
@@ -117,3 +133,16 @@ def test_not_found_and_traversal(served: str) -> None:
 def test_markdown_tables() -> None:
     text = "# t\n\nline\n\n| a | b |\n| :--- | ---: |\n| 1 | 2 |\n\n| c |\n| --- |\n| 3 |\n"
     assert _tables(text) == [[["a", "b"], ["1", "2"]], [["c"], ["3"]]]
+
+
+def test_today_counts_only_the_last_day(root: Path) -> None:  # noqa: F811
+    from datetime import timedelta
+
+    from vp.ui.server import DataView
+
+    ledger = Ledger(root / "paper" / "ledger.jsonl")
+    ledger.append("cycle", {"domain": "cs2", "snapshot": "x", "markets": 0})
+    view = DataView(root)
+    assert view.paper(limit=0)["today"]["cycle"] == 1
+    later = NOW.replace(year=2100) + timedelta(days=1)
+    assert "cycle" not in view.paper(limit=0, now=later)["today"]

@@ -11,7 +11,10 @@ writable. The page is ``static/index.html`` and renders four views:
 * **Paper**: ledger integrity, each forecaster's bankroll and open
   positions, settlements, and the most recent entries.
 * **Markets**: the latest snapshot of a domain with quotes and parsed
-  fields.
+  fields, and one market's book depth and price across recent snapshots.
+
+The page itself is described in ``docs/interface.md``; ``vp serve`` serves
+the same page and the same view behind sign-in.
 
 The server binds to localhost by default. It reads the same files the
 commands write and holds no state of its own, so it can be started and
@@ -24,6 +27,7 @@ import json
 import logging
 import re
 from collections import Counter
+from datetime import datetime, timedelta, timezone
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -32,13 +36,16 @@ from urllib.parse import parse_qs, urlparse
 
 import pyarrow.parquet as pq
 
+from vp.domains import DOMAINS as DOMAIN_ADAPTERS
+from vp.markets.schema import BinaryMarket
 from vp.markets.store import read_markets
 from vp.paper.ledger import Ledger
 from vp.paper.loop import replay
 
 logger = logging.getLogger(__name__)
 STATIC = Path(__file__).parent / "static"
-DOMAINS = ("cs2", "weather", "epl")
+DOMAINS = tuple(DOMAIN_ADAPTERS)
+START_CASH = 1000.0
 
 
 class DataView:
@@ -63,7 +70,10 @@ class DataView:
             counts = self._cached(resolved, _kind_counts)
             snaps = sorted((self.root / "snapshots" / domain).glob("*.parquet"))
             histories = self.root / "histories" / domain
+            adapter = DOMAIN_ADAPTERS[domain]
             domains[domain] = {
+                "title": adapter.title or domain,
+                "summary": adapter.summary,
                 "resolved": counts or {},
                 "histories": len(list(histories.glob("*.parquet")))
                 if histories.exists()
@@ -104,44 +114,31 @@ class DataView:
             )
         return runs
 
-    def paper(self, *, limit: int = 50) -> dict[str, Any]:
+    def paper(self, *, limit: int = 50, now: datetime | None = None) -> dict[str, Any]:
         ledger = Ledger(self.root / "paper" / "ledger.jsonl")
         entries = list(ledger.entries())
-        accounts = replay(ledger, 1000.0)
+        accounts = replay(ledger, START_CASH)
+        orders = [e for e in entries if e["kind"] == "order"]
         settlements = [e for e in entries if e["kind"] == "settlement"]
+        since = (now or datetime.now(tz=timezone.utc)) - timedelta(hours=24)
+        recent = [e for e in entries if _parse_at(e["at"]) >= since]
         return {
             "entries": len(entries),
             "verified": ledger.verify() is None if entries else None,
             "last_at": entries[-1]["at"] if entries else None,
+            "start_cash": START_CASH,
             "accounts": [
-                {
-                    "forecaster": name,
-                    "bankroll": round(acc.bankroll, 2),
-                    "exposure": round(sum(o["stake"] for o in acc.open.values()), 2),
-                    "realised": round(
-                        sum(
-                            s["data"]["pnl"]
-                            for s in settlements
-                            if s["data"]["forecaster"] == name
-                        ),
-                        2,
-                    ),
-                    "curve": [1000.0]
-                    + [
-                        s["data"]["bankroll_after"]
-                        for s in settlements
-                        if s["data"]["forecaster"] == name
-                    ],
-                    "open": [
-                        {k: v for k, v in o.items() if k != "forecaster"}
-                        for o in acc.open.values()
-                    ],
-                    "settled": sum(
-                        1 for s in settlements if s["data"]["forecaster"] == name
-                    ),
-                }
+                _account(name, acc, orders, settlements)
                 for name, acc in sorted(accounts.items())
             ],
+            "today": {
+                "since": since.isoformat(timespec="seconds").replace("+00:00", "Z"),
+                **Counter(e["kind"] for e in recent),
+                "pnl": round(
+                    sum(e["data"]["pnl"] for e in recent if e["kind"] == "settlement"),
+                    2,
+                ),
+            },
             "settlements": [s["data"] | {"at": s["at"]} for s in settlements[-limit:]],
             "recent": entries[-limit:] if limit else [],
         }
@@ -160,28 +157,55 @@ class DataView:
                     "cutoff": f["cutoff"],
                 }
             )
-        rows = [
-            {
-                "market_id": m.market_id,
-                "question": m.question,
-                "event": m.event_title,
-                "kind": m.parsed.get("kind"),
-                "parsed": m.parsed,
-                "has_book": bool(m.outcomes[0].bids or m.outcomes[0].asks),
-                "forecasts": forecasts.get(str(m.market_id), []),
-                "p_yes": m.p_yes,
-                "bid": m.outcomes[0].bids[0].price
-                if m.outcomes[0].bids
-                else m.best_bid,
-                "ask": m.outcomes[0].asks[0].price
-                if m.outcomes[0].asks
-                else m.best_ask,
-                "end_date": m.end_date,
-            }
-            for m in markets
-        ]
+        rows = [_market_row(m, forecasts.get(str(m.market_id), [])) for m in markets]
         rows.sort(key=lambda r: (not r["has_book"], r["end_date"] or ""))
         return {"domain": domain, "stamp": snaps[-1].stem, "markets": rows}
+
+    def market(
+        self, domain: str, market_id: str, *, history: int = 30
+    ) -> dict[str, Any] | None:
+        """One market from the latest snapshot, with its book and price series.
+
+        The series is the first outcome's price in each of the last
+        ``history`` snapshots that carry the market, which is the only price
+        history an open market has until the market-data service lands.
+        """
+        snaps = sorted((self.root / "snapshots" / domain).glob("*.parquet"))
+        found = [
+            m
+            for m in (self._cached(snaps[-1], read_markets) or [] if snaps else [])
+            if m.market_id == market_id
+        ]
+        if not found:
+            return None
+        market = found[0]
+        series = []
+        for path in snaps[-history:]:
+            for other in self._cached(path, read_markets) or []:
+                if other.market_id == market_id and other.p_yes is not None:
+                    series.append({"at": other.fetched_at, "p_yes": other.p_yes})
+                    break
+        forecasts = [
+            {"forecaster": f["forecaster"], "p_hat": f["p_hat"], "cutoff": f["cutoff"]}
+            for f in self.forecasts(limit=5000)
+            if str(f.get("market_id")) == market_id
+        ]
+        first = market.outcomes[0]
+        return _market_row(market, forecasts) | {
+            "event_id": market.event_id,
+            "slug": market.slug,
+            "status": market.status,
+            "spread": market.spread,
+            "last_trade_price": market.last_trade_price,
+            "volume_usd": market.volume_usd,
+            "liquidity_usd": market.liquidity_usd,
+            "fetched_at": market.fetched_at,
+            "book": {
+                "bids": [{"price": b.price, "size": b.size} for b in first.bids],
+                "asks": [{"price": a.price, "size": a.size} for a in first.asks],
+            },
+            "series": series,
+        }
 
     def forecasts(self, *, limit: int = 100) -> list[dict[str, Any]]:
         path = self.root / "paper" / "forecasts.jsonl"
@@ -189,6 +213,72 @@ class DataView:
             return []
         lines = path.read_text().splitlines()
         return [json.loads(ln) for ln in lines[-limit:] if ln.strip()][::-1]
+
+
+def _parse_at(value: str) -> datetime:
+    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+
+def _account(
+    name: str,
+    account: Any,
+    orders: list[dict[str, Any]],
+    settlements: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """One paper account: balance, its curve, fees paid and forward skill."""
+    own = [s for s in settlements if s["data"]["forecaster"] == name]
+    scored = [s["data"] for s in own if s["data"].get("brier_market") is not None]
+    brier = sum(d["brier"] for d in scored) / len(scored) if scored else None
+    market = sum(d["brier_market"] for d in scored) / len(scored) if scored else None
+    first = next((o["at"] for o in orders if o["data"]["forecaster"] == name), None)
+    return {
+        "forecaster": name,
+        "bankroll": round(account.bankroll, 2),
+        "exposure": round(sum(o["stake"] for o in account.open.values()), 2),
+        "realised": round(sum(s["data"]["pnl"] for s in own), 2),
+        "fees": round(
+            sum(
+                o["data"].get("fee") or 0.0
+                for o in orders
+                if o["data"]["forecaster"] == name
+            ),
+            4,
+        ),
+        "curve": [START_CASH] + [s["data"]["bankroll_after"] for s in own],
+        "curve_at": [first] + [s["at"] for s in own],
+        "open": [
+            {k: v for k, v in o.items() if k != "forecaster"}
+            for o in account.open.values()
+        ],
+        "settled": len(own),
+        "scored": len(scored),
+        "brier": brier,
+        "brier_market": market,
+        "skill": 1.0 - brier / market if brier is not None and market else None,
+    }
+
+
+def _market_row(
+    market: BinaryMarket, forecasts: list[dict[str, Any]]
+) -> dict[str, Any]:
+    first = market.outcomes[0]
+    return {
+        "market_id": market.market_id,
+        "domain": market.domain,
+        "question": market.question,
+        "event": market.event_title,
+        "outcomes": [o.name for o in market.outcomes],
+        "kind": market.parsed.get("kind"),
+        "parsed": market.parsed,
+        "has_book": bool(first.bids or first.asks),
+        "forecasts": forecasts,
+        "p_yes": market.p_yes,
+        "bid": first.bids[0].price if first.bids else market.best_bid,
+        "ask": first.asks[0].price if first.asks else market.best_ask,
+        "end_date": market.end_date,
+        "fee_rate": market.fee_rate,
+        "fee_exponent": market.fee_exponent,
+    }
 
 
 def _kind_counts(path: Path) -> dict[str, Any]:
@@ -268,6 +358,12 @@ class Handler(SimpleHTTPRequestHandler):
                 self._json(self.view.paper(limit=limit))
             case ["snapshots", domain] if domain in DOMAINS:
                 self._json(self.view.snapshot(domain))
+            case ["markets", domain, market_id] if domain in DOMAINS:
+                market = self.view.market(domain, market_id)
+                if market is None:
+                    self.send_error(404)
+                    return
+                self._json(market)
             case ["forecasts"]:
                 self._json(self.view.forecasts(limit=limit))
             case _:

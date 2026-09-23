@@ -559,40 +559,69 @@ Design: `docs/product.md` (the experience). Two people equally at home: one
 who has never seen a prediction market and one who wants the bootstrap
 interval. One backend, two reading levels.
 
-39. [pending] Simple and Detailed reading levels: one switch, remembered,
+39. [completed] Simple and Detailed reading levels: one switch, remembered,
     every screen rendered both ways; Simple never omits a fact that would
     change a decision, it changes the words and the density.
-40. [pending] Guided first run: what this is, pick interests, see your
+    - Landed 2026-09-23 (`docs/interface.md`): the switch in the side bar,
+      saved per person; the facts both levels always carry (fees, a broken
+      ledger chain, a backtest without fees or with too few markets, a
+      strategy less accurate than the market) are listed there.
+40. [completed] Guided first run: what this is, pick interests, see your
     markets, watch a sample strategy run in paper. Three to five screens, a
     button each, skippable, resumable.
-41. [pending] Brokerage-style home: play-money balance, its chart, what
+    - Landed 2026-09-23: five screens (the last picks the reading level),
+      the step reached saved with the person's settings, Home offering to
+      resume; a first visit starts it, no visit after that forces it.
+41. [completed] Brokerage-style home: play-money balance, its chart, what
     changed today, one next step; Detailed adds per-strategy P&L, exposure,
     skill and settled counts.
-42. [pending] Market cards, from the snapshot files first and from the
+    - Landed 2026-09-23 over the paper ledger: the balance is the followed
+      sample strategy's until strategies are the person's own (Phase 15).
+42. [in-progress] Market cards, from the snapshot files first and from the
     market-data service once it lands (build order, step 3): the question in
     plain words, "62% chance", closes in two days, and in Detailed the
     quotes, depth, parsed fields, forecasts and history.
-43. [pending] A P&L chart wherever money is shown, with the market-following
+    - Landed 2026-09-23 from the snapshot files, with a market page whose
+      history is the market's price across the last 30 snapshots.
+    - Outstanding: moving onto the market-data service (build order, step
+      3).
+43. [completed] A P&L chart wherever money is shown, with the market-following
     baseline drawn alongside so "better than doing nothing" is visible
     without a number; every number has a sentence in Simple mode and a
     dotted glossary term in Detailed.
-44. [pending] Fees shown in both modes. The 2026-09-13 assumption that sport
+44. [completed] Fees shown in both modes. The 2026-09-13 assumption that sport
     and weather markets carry no fee is withdrawn: the venue's 2026 schedule
     charges takers on sports (0.05), weather (0.05), crypto (0.07) and most
     other categories, at $C \cdot r \cdot p(1-p)$; the fee is read from each
     market's `feeSchedule`, never assumed, and Simple mode says what it
     costs in cents.
-45. [pending] Learn: prediction markets, why the price is a forecast, what a
+45. [completed] Learn: prediction markets, why the price is a forecast, what a
     backtest is and is not, paper trading, and why beating the market is
     hard, citing the 2026 evidence that frontier models trail
     superforecasters by about 0.02 Brier and that the market price is a
     strong forecast (Mathematical core, references).
-46. [pending] Settings: interests, play money, reading level, theme,
+46. [in-progress] Settings: interests, play money, reading level, theme,
     notifications; in Detailed the model tier, budget, own key, data
     refresh, export of every record the workspace holds.
-47. [pending] Internationalisation structure (message catalogues, locale
+    - Landed 2026-09-23: reading level, theme, language and formats,
+      interests, the strategy Home follows, the guided start again; in
+      Detailed API tokens and the export; settings per person in Postgres
+      (migration 0003) under row-level security.
+    - Outstanding, each listed on the page with where it arrives: the
+      play-money amount (the person's own paper account), notifications
+      (Phase 18), the model tier (Phase 15), budget and own key (task 35),
+      data refresh (task 31).
+47. [in-progress] Internationalisation structure (message catalogues, locale
     switch, number and date formatting) with English shipped; accessibility
     to WCAG 2.2 AA (keyboard, contrast, screen-reader labels on charts).
+    - Landed 2026-09-23: one JSON catalogue per language, plural rules and
+      `Intl` formatting, en-GB and en-US; a test that every key used
+      exists. Accessibility: skip link, landmarks, focus to the heading on
+      navigation, keyboard glossary, chart descriptions and number tables,
+      a palette measured at AA. The axe-core audit (WCAG 2.0 to 2.2, A and
+      AA) found no violations on any page in either level, theme or server.
+    - Outstanding: a pass with a real screen reader, which an automated
+      audit does not replace.
 48. [pending] Terms of use, age gate, jurisdiction notice, privacy notice
     (export and delete per workspace), and the first-screen statement that
     this is a tool for building and testing strategies, not advice.

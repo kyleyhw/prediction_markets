@@ -1,0 +1,523 @@
+{
+  "app": {
+    "tagline": "build and test forecasting strategies",
+    "skip": "Skip to content"
+  },
+  "nav": {
+    "home": "Home",
+    "markets": "Markets",
+    "strategies": "Strategies",
+    "backtests": "Backtests",
+    "learn": "Learn",
+    "settings": "Settings"
+  },
+  "level": {
+    "label": "Reading level",
+    "simple": "Simple",
+    "detailed": "Detailed"
+  },
+  "account": {
+    "sign_out": "Sign out",
+    "local": "Local view, no account"
+  },
+  "error": {
+    "title": "Something went wrong",
+    "text": "This page could not be loaded ({message}). Nothing has been changed; try again in a moment.",
+    "home": "Go to Home"
+  },
+  "empty": {
+    "command": "On this machine, {command} fills it."
+  },
+  "fmt": {
+    "cents": "{n}¢"
+  },
+  "chart": {
+    "numbers": "Show the numbers",
+    "doing_nothing": "Doing nothing",
+    "balance_summary": "{name}: balance from {start} to {now} over {n} settled positions, against doing nothing, which stays at {start}.",
+    "balances_summary": "Balances of {n} sample strategies over time, against doing nothing."
+  },
+  "col": {
+    "strategy": "Strategy",
+    "balance": "Balance",
+    "realised": "Realised",
+    "open_stake": "Open stake",
+    "fees": "Fees paid",
+    "open": "Open",
+    "settled": "Settled",
+    "forward_skill": "Skill so far",
+    "market": "Market",
+    "at": "At",
+    "market_brier": "Market Brier",
+    "size": "Size",
+    "cost": "Cost",
+    "name": "Name",
+    "scope": "Access",
+    "created": "Created"
+  },
+  "home": {
+    "title": "Home",
+    "lede": "A sample strategy trading with play money: how it is doing, what changed, and what to look at next.",
+    "resume_start": "You started the guided tour but did not finish it.",
+    "resume_button": "Pick up where you left off",
+    "chain_broken": "Warning: the record of trades failed its integrity check, so the figures on this page may have been altered. Treat them as unreliable until this is resolved.",
+    "empty_title": "No sample strategies are running yet",
+    "empty_text": "Sample strategies trade with play money on open markets and appear here once they have started. Until then you can look at the markets and read how paper trading works.",
+    "play_money_of": "Play money: {name}",
+    "since_start": "{change} ({pct}) since it started with {start}.",
+    "nothing_settled": "None of its positions has settled yet, so its balance has not moved.",
+    "level_with_nothing": "It is level with doing nothing.",
+    "ahead_of_nothing": "It is {amount} ahead of doing nothing.",
+    "behind_nothing": "It is {amount} behind doing nothing.",
+    "open": {
+      "one": "It has 1 position waiting to settle, with {stake} staked.",
+      "other": "It has {n} positions waiting to settle, with {stake} staked."
+    },
+    "fees_paid": "It has paid {fees} in fees.",
+    "chart_later": "Its chart appears once one of its positions settles.",
+    "follow_other": "Follow a different sample strategy",
+    "today_title": "In the last day",
+    "today_none": "Nothing changed in the last 24 hours.",
+    "today_settled": {
+      "one": "1 position settled, {pnl} in total.",
+      "other": "{n} positions settled, {pnl} in total."
+    },
+    "today_orders": {
+      "one": "1 new position opened.",
+      "other": "{n} new positions opened."
+    },
+    "today_forecasts": {
+      "one": "1 new forecast made.",
+      "other": "{n} new forecasts made."
+    },
+    "today_cycles": {
+      "one": "Markets were checked once.",
+      "other": "Markets were checked {n} times."
+    },
+    "next_title": "Next step",
+    "next_text": "One thing worth doing now.",
+    "all_title": "Every sample strategy",
+    "all_caption": "Each starts with {start} of play money; balance is after every settled position.",
+    "all_chart": "Balances over time",
+    "ledger_line": {
+      "one": "1 entry.",
+      "other": "{n} entries."
+    }
+  },
+  "next": {
+    "interests": "Choose what you are interested in",
+    "learn_paper": "Read how paper trading works",
+    "positions": "See the positions waiting to settle",
+    "markets": "Browse the markets"
+  },
+  "markets": {
+    "title": "Markets",
+    "lede": "Open questions people are trading on right now. The chance is the market's price: what traders together think is likely.",
+    "interests_label": "Interests",
+    "empty_title": "No {title} markets captured yet",
+    "empty_text": "The platform captures the open markets on a schedule; the first capture appears here. Meanwhile, read what a prediction market is.",
+    "search_label": "Search the markets",
+    "search_placeholder": "Search questions",
+    "show_untraded": "Also show markets no one is trading ({n})",
+    "count": {
+      "one": "1 market, showing {shown}.",
+      "other": "{n} markets, showing {shown}."
+    },
+    "more": "Show more",
+    "as_of": "Prices as captured {when} ({date}).",
+    "chance": "{pct} chance",
+    "chance_of": "{pct} chance: {outcome}",
+    "no_price": "No price yet",
+    "closes": "Closes {when}",
+    "no_close": "No closing date given",
+    "no_book": "No one is offering to trade right now"
+  },
+  "market": {
+    "back": "Back to the markets",
+    "missing_title": "This market is not in the latest capture",
+    "missing_text": "It may have closed, or the link may be old. The markets page shows what is open now.",
+    "explain": "Traders price “{outcome}” at {pct}: a share that pays $1 if it happens costs about that many cents.",
+    "closes": "Closes {when} ({date})",
+    "history_title": "Chance over time",
+    "series": "Chance of {outcome}",
+    "history_summary": "The chance across {n} captures, from {first} to {last}.",
+    "history_later": "The chance over time appears once this market has been captured more than once.",
+    "forecasts_title": "What the sample strategies think",
+    "no_forecasts": "No sample strategy has forecast this market yet.",
+    "forecast_line": "{name} put it at {pct} ({when}).",
+    "book_title": "Order book",
+    "book_caption": "Offers to buy (bids) and to sell (asks) shares of “{outcome}”, best first.",
+    "fields_title": "Fields",
+    "outcomes": "Outcomes",
+    "volume": "Traded so far",
+    "liquidity": "Liquidity",
+    "market_id": "Market id",
+    "captured": "Captured"
+  },
+  "fees": {
+    "unknown": "The venue does not state a fee for this market.",
+    "none": "No fee to buy.",
+    "simple": "Fee to buy: about {cents} a share.",
+    "detailed": "At rate {rate}, a share bought at the ask of {ask} pays a fee of {fee}; the effective price is the ask plus the fee. Only takers pay."
+  },
+  "strategies": {
+    "title": "Strategies",
+    "lede": "Sample strategies trading with play money against the real order book, settled when the markets resolve.",
+    "own_soon": "Making your own strategy by describing it in a conversation is being built next; it will appear here.",
+    "never_bets": "It never bets: it is the yardstick the others are measured against.",
+    "counts": "{n} positions settled, {open} waiting.",
+    "waiting": "Waiting to settle",
+    "side_yes": "the outcome happening",
+    "side_no": "the outcome not happening",
+    "position": "Bet on {side} in “{question}” at {price} a share: {stake} staked, {fee} of it fees.",
+    "and_more": {
+      "one": "And 1 more.",
+      "other": "And {n} more."
+    },
+    "open_title": "Open positions",
+    "none_open": "No open positions.",
+    "fee_unrecorded": "not recorded",
+    "assumed": "assumed rate",
+    "settled_title": "Settled positions",
+    "none_settled": "None yet. Positions settle when the venue resolves the market.",
+    "settled_caption": "Each settled position scores the forecast and the market price it traded against, with the same measure as a backtest.",
+    "ledger_caption": {
+      "one": "1 entry, newest first; open one for its full record.",
+      "other": "{n} entries, newest first; open one for its full record."
+    },
+    "chain_broken_pill": "chain broken"
+  },
+  "bt": {
+    "title": "Backtests",
+    "lede": "How the sample strategies would have done on markets that have already settled, forecasting only with what was known before a cutoff.",
+    "empty_title": "No backtests yet",
+    "empty_text": "A backtest replays settled markets to see how a strategy would have done. None has been run here yet; read what one is and is not.",
+    "pick": "Run",
+    "compare": "compare with",
+    "compare_none": "none",
+    "scored": {
+      "one": "1 market",
+      "other": "{n} markets"
+    },
+    "run_line": {
+      "one": "Forecasts made {hours} hours before 1 {title} market settled.",
+      "other": "Forecasts made {hours} hours before each of {n} {title} markets settled."
+    },
+    "nothing_scored": "None of the {title} markets in this run had a price {hours} hours before it settled, so nothing could be scored. A run over markets with price histories fills this in.",
+    "small_sample": "Only {n} markets: too few to tell skill from luck. Telling a small edge from luck takes about {enough}.",
+    "no_fees": "This run assumed no fees. The venue charges a fee on these markets, so real results would be lower.",
+    "turned": {
+      "one": "Would have turned {start} into {end} over 1 bet.",
+      "other": "Would have turned {start} into {end} over {n} bets."
+    },
+    "better_than_nothing": "Better than doing nothing.",
+    "worse_than_nothing": "Worse than doing nothing.",
+    "same_as_nothing": "About the same as doing nothing.",
+    "no_bets": "Never found a price worth betting at.",
+    "more_accurate": "Its forecasts were more accurate than the market's own prices on these {n} markets.",
+    "less_accurate": "Its forecasts were less accurate than the market's own prices on these {n} markets.",
+    "as_accurate": "Its forecasts were exactly as accurate as the market's own prices.",
+    "cost": "The forecasts cost {cost} to make.",
+    "equity_title": "Play money through the run",
+    "equity_summary": "Balance of each strategy as its simulated bets settle, from {start}, against doing nothing.",
+    "equity_x": "bets in settlement order",
+    "equity_caption": "The simulated balance from the starting amount as each bet settles, against doing nothing. A second run, when compared, is dashed with (B).",
+    "config": "Cutoff {hours} before settlement · market types: {kinds} · {candidates} markets selected, {priced} with a price at the cutoff, {scored} scored · {seconds} s",
+    "hours": "{n} h",
+    "all_kinds": "all",
+    "sizing": "Bets: {kelly} Kelly, at most {cap} per bet, minimum edge {edge}, half-spread {spread}, fee rate {fee}, from {start}.",
+    "scores_title": "Scores",
+    "scores_caption": "Arrows show the better direction. The market row is the reference, so its skill is 0 by definition.",
+    "bets_title": "Simulated bets",
+    "bets_caption": "Bets are placed where the forecast beats the price by the minimum edge, sized by fractional Kelly, settled in the order the markets resolved. P(Sharpe > 0) near 0.5 is no evidence of edge.",
+    "charts_title": "Charts",
+    "reliability_title": "Reliability diagram",
+    "reliability_summary": "Forecasts grouped into ten bins against how often the outcome happened; the diagonal is perfect calibration.",
+    "reliability_x": "mean forecast",
+    "reliability_y": "observed frequency",
+    "reliability_caption": "On the diagonal is calibrated; above it under-confident, below it over-confident.",
+    "advantage_title": "Cumulative advantage over the market",
+    "advantage_summary": "Running sum of the market's Brier score minus the strategy's, market by market.",
+    "advantage_x": "markets in settlement order",
+    "advantage_caption": "Rising means the strategy is beating the market as a forecaster; falling means the market is winning."
+  },
+  "learn": {
+    "title": "Learn",
+    "lede": "Short pages on what everything here means, from the start.",
+    "back": "All pages",
+    "in_detail": "In detail",
+    "references": "References",
+    "more_in_detailed": "Switch the reading level to Detailed for the formulas and references.",
+    "next": "Next: {title}",
+    "figure_price_yes": "A “Yes” share costs {price} and pays $1 if it happens.",
+    "figure_price_no": "A “No” share costs {price} and pays $1 if it does not.",
+    "figure_price_caption": "A price of 62¢ is the market saying 62% chance.",
+    "figure_backtest_summary": "A timeline: everything before the cutoff is known to the forecast; the market settles later.",
+    "figure_backtest_known": "what the forecast may use",
+    "figure_backtest_cutoff": "cutoff",
+    "figure_backtest_settled": "settled",
+    "figure_backtest_caption": "A backtest pretends to stand at the cutoff: it may use only what was known before it, and is scored on what happened after.",
+    "figure_fees_series": "fee per share",
+    "figure_fees_summary": "The fee per share at a rate of 0.05, from zero at a price of 0 or 1 to 1.25 cents at 50 cents.",
+    "figure_fees_x": "price paid",
+    "figure_fees_y": "fee, cents a share",
+    "figure_fees_caption": "At the 2026 rate for sports and weather, 0.05, a share costs at most 1.25¢ in fees, at a price of 50¢.",
+    "topics": {
+      "markets": {
+        "title": "What is a prediction market?",
+        "blurb": "A place where people trade on whether something will happen.",
+        "simple": [
+          "A prediction market asks a question with a yes-or-no answer that will be settled later: will it rain in London on Friday, will this team win on Sunday.",
+          "People buy and sell shares in each answer. A share of the answer that turns out right pays one dollar; a share of the wrong answer pays nothing.",
+          "Because a right share pays a dollar, the price of a share is what traders together think the chance is. A share at 62 cents is the market saying 62% chance.",
+          "Here you do not trade real money. You watch strategies make forecasts and trade with play money, and see how they would have done in the past."
+        ],
+        "detailed": [
+          "A binary contract on event A pays 1 if A occurs and 0 otherwise. Its price q in (0, 1) is the market-implied probability of A, up to the spread and fees.",
+          "Every market here has exactly two outcomes, and the first outcome is the event forecast: “Yes” for a yes/no question, the first-named side otherwise. Forecasts, prices and labels all refer to it.",
+          "A market's label is set only from the venue's settlement, never from a price: a market that has stopped trading is not yet resolved."
+        ],
+        "doc": "docs/data_layer.md",
+        "refs": []
+      },
+      "price": {
+        "title": "Why the price is a forecast",
+        "blurb": "A market's price is a chance, and usually a good one.",
+        "simple": [
+          "If a share paying a dollar costs 62 cents, anyone who thought the true chance was higher could expect to profit by buying, and anyone who thought it lower by selling. The price settles where those views balance.",
+          "That makes the price a forecast, and often a hard one to beat: it pools what many people know and they put money behind it.",
+          "Every strategy here is measured against the market's own price. Beating it is the test; matching it is what you get for doing nothing."
+        ],
+        "detailed": [
+          "Forecasts are scored with the Brier score, the mean of (p − y)² over settled markets, where p is the forecast and y is 1 if the event happened. Lower is better; always saying 0.5 scores 0.25.",
+          "Skill against the market is 1 − Brier(strategy) / Brier(market) on the same markets. Positive means the strategy forecast better than the price; the market's own skill is 0 by definition.",
+          "The Brier score is strictly proper: a forecaster minimises its expected score only by reporting what it believes, so it cannot be gamed by shading forecasts."
+        ],
+        "doc": "docs/scoring.md",
+        "refs": [
+          "Brier, G. W. (1950). Verification of forecasts expressed in terms of probability. Monthly Weather Review 78(1), 1–3.",
+          "Gneiting, T. and Raftery, A. E. (2007). Strictly proper scoring rules, prediction, and estimation. JASA 102(477), 359–378."
+        ]
+      },
+      "backtest": {
+        "title": "What a backtest is, and is not",
+        "blurb": "Replaying the past to see how a strategy would have done.",
+        "simple": [
+          "A backtest takes markets that have already settled, goes back to a moment before they settled (the cutoff), and asks a strategy for its forecast using only what was known then.",
+          "It then pretends to bet on those forecasts and adds up how the bets would have turned out. That gives a score and a play-money result.",
+          "A backtest is not a promise. A strategy that did well on a few dozen markets may have been lucky, and one that had seen the answers, even by accident, will look better than it is. This is why every strategy here is also run forward, on markets that have not settled yet."
+        ],
+        "detailed": [
+          "Every forecaster takes an explicit information cutoff and must not read anything after it; the backtest places it a fixed number of hours before each market settled.",
+          "A claim of skill needs enough markets. Detecting a mean Brier edge δ at 5% with 80% power needs about 7.85 σ²/δ² settled markets, where σ is the spread of the per-market difference; with σ near 0.13 a two-point edge needs about 350.",
+          "A language model may already know how any market that resolved before its training cutoff turned out, so its backtest counts as evidence only on markets that resolved after that date."
+        ],
+        "doc": "docs/scoring.md",
+        "refs": [
+          "Murphy, A. H. (1973). A new vector partition of the probability score. Journal of Applied Meteorology 12(4), 595–600."
+        ]
+      },
+      "paper": {
+        "title": "Paper trading",
+        "blurb": "Trading with play money on markets that have not settled yet.",
+        "simple": [
+          "Paper trading runs a strategy forward: it forecasts markets that are open now and places pretend orders against the real prices on offer, paying the fees a real order would pay.",
+          "When a market settles, the position is settled too, and the strategy's play-money balance goes up or down.",
+          "Because nothing about the future is known yet, paper trading cannot peek at the answer. It is the fairest test a strategy can have short of real money, and nothing here uses real money."
+        ],
+        "detailed": [
+          "Orders are filled at the touch (the best ask, or one minus the best bid for the other side) for at most the size resting there, sized by a quarter of the Kelly fraction and capped at 5% of the balance.",
+          "The fee is each market's own taker fee, read from the venue with the prices, through the same fee model the backtest uses.",
+          "Every cycle, forecast, order and settlement is an entry in an append-only ledger in which each entry's hash covers the previous one, so any edit, deletion or reordering shows."
+        ],
+        "doc": "docs/paper_trading.md",
+        "refs": []
+      },
+      "fees": {
+        "title": "What trading costs",
+        "blurb": "The fee a buyer pays, and why it matters most at 50–50.",
+        "simple": [
+          "The venue charges a small fee to whoever takes an existing offer. It is largest on a 50–50 market, about 1.25 cents a share on today's sports and weather markets, and shrinks towards nothing as the price nears 0 or 100 cents.",
+          "Fees matter because an edge has to be bigger than the fee to be worth anything. Every price and result shown here includes them.",
+          "Some older backtests assumed no fees; they say so, because their results would be lower with fees."
+        ],
+        "detailed": [
+          "The fee on C shares matched at price p is C · r · (p(1 − p))^e, with the rate r and exponent e published per market in its fee schedule (in 2026: r = 0.05 and e = 1 for sports and weather).",
+          "It enters sizing through the effective price a + r(a(1 − a))^e: a trade is taken only if the forecast beats the effective price, not the quoted one.",
+          "Makers pay nothing and may receive a rebate; the platform's simulated orders always take, so they always pay."
+        ],
+        "doc": "docs/sizing.md",
+        "refs": []
+      },
+      "hard": {
+        "title": "Why beating the market is hard",
+        "blurb": "The honest benchmark every strategy faces.",
+        "simple": [
+          "The market's price already reflects what many traders know, so a strategy only earns money when it knows something the price does not, by more than the fee.",
+          "The sample strategies here are simple on purpose, and none of them beats the market on the markets tested so far. They are the benchmark a new strategy has to clear.",
+          "The best forecasters in the world, and the best AI models, find this hard too. That is why every result here is shown next to the market and next to doing nothing."
+        ],
+        "detailed": [
+          "On this platform's own backtests (Phase 9) no baseline beat the market: skill was −0.19 for weather climatology, −0.02 for Premier League Elo and −0.12 for Counter-Strike Elo.",
+          "On ForecastBench, the Forecasting Research Institute's benchmark, a leading language model (GPT-4.5) scored a Brier of about 0.101 in the October 2025 update, against about 0.081 for superforecasters: a gap of about 0.02.",
+          "A two-point Brier edge is also about the smallest a few hundred settled markets can detect; a claimed edge smaller than that, on fewer markets, is indistinguishable from luck."
+        ],
+        "doc": "tests/reports/phase9_backtest.md",
+        "refs": [
+          "Karger, E. et al. (2025). ForecastBench: A dynamic benchmark of AI forecasting capabilities. ICLR 2025; leaderboard update, Forecasting Research Institute, October 2025.",
+          "Project report for Phase 9: live baseline results against the market."
+        ]
+      }
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "lede": "How the app looks and what it shows you. Changes are saved as you make them.",
+    "saved": "Saved.",
+    "not_saved": "Could not save that change; try again.",
+    "level": "Reading level",
+    "level_simple": "Plain words and the numbers that matter, each with a sentence.",
+    "level_detailed": "Everything: scores, intervals, fees, order books and the full record, with a definition behind every term.",
+    "theme": "Theme",
+    "theme_system": "Same as this device",
+    "theme_light": "Light",
+    "theme_dark": "Dark",
+    "language": "Language and formats",
+    "language_browser": "Same as this browser",
+    "language_note": "Dates and numbers follow this choice, for example {example}. English is the only language so far.",
+    "interests": "Interests",
+    "interests_note": "Your interests come first on the markets page and in the guided start.",
+    "follow": "Sample strategy on Home",
+    "start": "Guided start",
+    "start_note": "The five-screen tour of what this is and how it works.",
+    "start_again": "Take the tour again",
+    "tokens": "API tokens",
+    "tokens_note": "A token lets a script read your workspace (or change it, with write access) without signing in. The token is shown once when it is created; revoke it here at any time.",
+    "no_tokens": "No tokens.",
+    "token_placeholder": "Name, for example laptop",
+    "scope_read": "Read only",
+    "scope_write": "Read and write",
+    "create_token": "Create token",
+    "revoke": "Revoke",
+    "token_once": "Copy this token now; it will not be shown again.",
+    "export": "Export",
+    "export_note": "Download every record this app holds for you as one JSON file: your account, settings, API tokens (without their secrets), the paper-trading record and the forecasts.",
+    "export_button": "Download everything",
+    "later": "Not here yet",
+    "later_play_money": "Your own play-money amount: arrives with your own paper account, when strategies become yours to make.",
+    "later_notifications": "Email and chat summaries: arrive with delivery (plan, Phase 18).",
+    "later_model": "Choosing the AI model tier: arrives with research sessions (Phase 15).",
+    "later_budget": "Your monthly AI budget: arrives with budgets (Phase 13, task 35).",
+    "later_own_key": "Using your own AI key: arrives with budgets.",
+    "later_refresh": "Refreshing data on demand: arrives with background jobs (Phase 13, task 31).",
+    "account": "Account",
+    "email": "Email",
+    "workspace": "Workspace"
+  },
+  "start": {
+    "step": "Step {n} of {total}",
+    "titles": {
+      "0": "Build and test forecasting strategies, with play money",
+      "1": "What are you interested in?",
+      "2": "Your markets",
+      "3": "Watch a sample strategy",
+      "4": "How much detail do you want?"
+    },
+    "what_1": "Prediction markets let people trade on questions like “Will it be warmer than 17°C in London on Friday?”. The price of a share is the market's chance that the answer is yes.",
+    "what_2": "Here you can watch strategies make forecasts on those questions, see how they would have done in the past, and follow them trading with play money.",
+    "what_3": "This is a tool for building and testing strategies, not advice. No real money is involved.",
+    "interests_q": "Pick any that interest you",
+    "interests_note": "You can change these at any time in Settings.",
+    "markets_intro": "Some open {title} markets. The chance is the market's price; the fee is what a buyer pays.",
+    "markets_note": "Open any of them later from Markets.",
+    "markets_none": "No markets have been captured for your interests yet. They appear under Markets once they are.",
+    "sample_q": "Which one should Home follow?",
+    "sample_balance": "Balance now: {balance}.",
+    "sample_none": "No sample strategies are running yet. Home will show one as soon as they start.",
+    "level_q": "Choose a reading level",
+    "level_note": "Switch at any time from the side bar.",
+    "begin": "Start",
+    "next": "Next",
+    "back": "Back",
+    "finish": "Finish",
+    "skip": "Skip the tour"
+  },
+  "forecasters_unknown": "A sample strategy.",
+  "forecasters": {
+    "market": {
+      "name": "Market price",
+      "simple": "Uses the market's own chance as its forecast. It never bets, so it is the yardstick the others are measured against."
+    },
+    "constant": {
+      "name": "Coin flip",
+      "simple": "Always says 50–50. It shows what betting with no information does."
+    },
+    "elo": {
+      "name": "Team ratings",
+      "simple": "Rates teams from their past results and bets when its rating disagrees with the price."
+    },
+    "climatology": {
+      "name": "Past weather",
+      "simple": "Bets on temperatures using how often each one happened on the same dates in earlier years."
+    },
+    "llm": {
+      "name": "AI model",
+      "simple": "Asks a Claude model, which reads evidence from before the forecast, for a chance."
+    }
+  },
+  "kinds": {
+    "match": { "name": "Match winner" },
+    "daily_temperature": { "name": "Daily temperature" },
+    "season_winner": { "name": "Season winner" },
+    "tournament_winner": { "name": "Tournament winner" },
+    "global_anomaly": { "name": "Global temperature" },
+    "record_rank": { "name": "Record rank" },
+    "unparsed": { "name": "Other" }
+  },
+  "glossary_doc": "Derivation: {doc}",
+  "glossary": {
+    "brier": { "name": "Brier score", "text": "Mean of (forecast − outcome)² over the scored markets. 0 is perfect, 0.25 is what forecasting 0.5 every time earns, 1 is confidently wrong every time. Lower is better.", "doc": "docs/scoring.md" },
+    "log": { "name": "Log score", "text": "Mean of −log(probability given to what happened). Punishes confident misses without bound, so forecasts are clipped to [0.01, 0.99]. Lower is better.", "doc": "docs/scoring.md" },
+    "skill": { "name": "Skill against the market", "text": "1 − (forecaster Brier ÷ market Brier) on the same markets. Positive means the forecaster beat the market price as a forecast, zero equal, negative worse. On paper accounts it is computed from the settled positions so far.", "doc": "docs/scoring.md" },
+    "reliability": { "name": "Reliability", "text": "Calibration error from the Murphy decomposition: how far each bin's forecasts sit from the frequency that actually happened. Lower is better.", "doc": "docs/scoring.md" },
+    "resolution": { "name": "Resolution", "text": "How much the forecasts separate outcomes: the spread of observed frequencies across bins around the base rate. Higher is better.", "doc": "docs/scoring.md" },
+    "ece": { "name": "Expected calibration error", "text": "Average absolute gap between forecast and observed frequency across bins, weighted by bin size. Lower is better.", "doc": "docs/scoring.md" },
+    "cost": { "name": "Cost", "text": "Dollars of API usage spent on these forecasts, from token counts at the model's price. Zero for everything but the AI model.", "doc": "docs/forecasters.md" },
+    "n": { "name": "n", "text": "Markets scored: those every forecaster in the run answered and that had a market price at the cutoff, so all are compared on the same set.", "doc": "docs/scoring.md" },
+    "bets": { "name": "Bets", "text": "Simulated positions placed: one per market where the forecast beat the effective price by at least the minimum edge.", "doc": "docs/sizing.md" },
+    "return": { "name": "Return", "text": "Change in the simulated balance over the run, compounding bet by bet in settlement order.", "doc": "docs/sizing.md" },
+    "drawdown": { "name": "Max drawdown", "text": "Worst peak-to-trough fall of the balance as a fraction of the peak.", "doc": "docs/scoring.md" },
+    "winrate": { "name": "Win rate", "text": "Fraction of settled bets that paid out.", "doc": "docs/scoring.md" },
+    "pf": { "name": "Profit factor", "text": "Gross profit divided by gross loss. Above 1 is net profitable.", "doc": "docs/scoring.md" },
+    "sharpe": { "name": "Per-bet Sharpe", "text": "Mean per-bet return divided by its standard deviation. Not annualised: bets have no fixed time base.", "doc": "docs/scoring.md" },
+    "sharpeci": { "name": "Sharpe 95% interval", "text": "Bootstrap confidence interval for the per-bet Sharpe ratio. If it includes 0 the edge is not demonstrated.", "doc": "docs/scoring.md" },
+    "psharpe": { "name": "P(Sharpe > 0)", "text": "Fraction of bootstrap resamples with a positive Sharpe ratio. Near 0.5 is no evidence of edge; near 1 the edge survived resampling.", "doc": "docs/scoring.md" },
+    "cutoff": { "name": "Cutoff", "text": "The moment a forecast is made as of. Every forecaster reads only evidence from before it; in a backtest it is a fixed number of hours before each market settled.", "doc": "docs/forecasters.md" },
+    "hours": { "name": "Hours before settlement", "text": "Where the backtest placed the cutoff: this many hours before each market settled.", "doc": "docs/scoring.md" },
+    "q": { "name": "Market price q", "text": "The market's price for the first outcome, which is its implied probability; the baseline every forecaster is scored against.", "doc": "docs/scoring.md" },
+    "phat": { "name": "Forecast p̂", "text": "The forecaster's probability that the first outcome occurs.", "doc": "docs/forecasters.md" },
+    "kind": { "name": "Market type", "text": "What the question parser read from the question: a match winner, a daily temperature, a season winner, and so on. Forecasters act only on types they understand.", "doc": "docs/data_layer.md" },
+    "market": { "name": "market (forecaster)", "text": "The market's own price as a forecast. The reference: skill is measured against it and it never bets.", "doc": "docs/forecasters.md" },
+    "constant": { "name": "constant (forecaster)", "text": "Always 0.5. A scale anchor: it scores 0.25 Brier by construction, and its bets show what the sizing rule does with no information.", "doc": "docs/forecasters.md" },
+    "elo": { "name": "elo (forecaster)", "text": "Elo ratings fitted on results settled before the cutoff, replayed in order from 1500; a home advantage in football; draws from the empirical draw rate.", "doc": "docs/forecasters.md" },
+    "climatology": { "name": "climatology (forecaster)", "text": "For a temperature bucket: how often that bucket happened at the same city on nearby dates in earlier years, from the venue's own resolved markets.", "doc": "docs/forecasters.md" },
+    "llm": { "name": "llm (forecaster)", "text": "A Claude model given the question, the cutoff and tools that return evidence from before the cutoff, answering with a probability and a rationale.", "doc": "docs/forecasters.md" },
+    "ledger": { "name": "Ledger", "text": "The append-only record of paper trading: every cycle, forecast, order and settlement, each entry hashed together with the previous one.", "doc": "docs/paper_trading.md" },
+    "verified": { "name": "Chain verified", "text": "Every ledger entry's hash matches its content and its predecessor, so nothing has been edited, deleted or reordered.", "doc": "docs/paper_trading.md" },
+    "bankroll": { "name": "Balance", "text": "The strategy's paper account: starts at the starting amount and changes with each settled position.", "doc": "docs/paper_trading.md" },
+    "realised": { "name": "Realised", "text": "Profit and loss from positions that have settled.", "doc": "docs/paper_trading.md" },
+    "exposure": { "name": "Open stake", "text": "Money currently tied up in open positions.", "doc": "docs/paper_trading.md" },
+    "fee": { "name": "Fee", "text": "The venue's taker fee, C · r · (p(1 − p))^e on C shares at price p, with the market's own rate r and exponent e. Included in the effective price and recorded on every paper order.", "doc": "docs/sizing.md" },
+    "side": { "name": "Side", "text": "yes buys the first outcome's share; no buys the complementary share, which pays if the first outcome does not happen.", "doc": "docs/sizing.md" },
+    "price": { "name": "Price", "text": "Effective price paid per share, fee included. A share pays 1 if its side wins.", "doc": "docs/sizing.md" },
+    "shares": { "name": "Shares", "text": "Number of shares bought: stake ÷ price, capped at the size resting at the touch of the book.", "doc": "docs/paper_trading.md" },
+    "stake": { "name": "Stake", "text": "Dollars committed, fee included: a fraction of the balance from fractional Kelly, capped at 5% per position.", "doc": "docs/sizing.md" },
+    "label": { "name": "Label", "text": "How the market resolved: 1 if the first outcome happened, 0 if not. Set only from the venue's settlement, never from a price.", "doc": "docs/data_layer.md" },
+    "pnl": { "name": "P&L", "text": "Profit or loss of the settled position: shares − stake on a win, −stake on a loss. Net of the fee, which is in the stake.", "doc": "docs/sizing.md" },
+    "bid": { "name": "Bid", "text": "Best resting offer to buy the first outcome's share.", "doc": "docs/data_layer.md" },
+    "ask": { "name": "Ask", "text": "Best resting offer to sell the first outcome's share; what a buyer pays before the fee.", "doc": "docs/data_layer.md" },
+    "minedge": { "name": "Minimum edge", "text": "Smallest gap between forecast and effective price worth a bet.", "doc": "docs/sizing.md" },
+    "kelly": { "name": "Fractional Kelly", "text": "Stake as a fraction of the balance: this multiple of the growth-optimal Kelly fraction, which gives up a little growth for much less drawdown.", "doc": "docs/sizing.md" },
+    "spread": { "name": "Half-spread", "text": "Historical records carry the last price, not the book, so the backtest assumes a bid and ask this far either side of it.", "doc": "docs/sizing.md" }
+  }
+}

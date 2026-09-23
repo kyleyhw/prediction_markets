@@ -21,9 +21,11 @@ strategy has to clear, not a result the project is trying to explain away.
 - **The hosted web app is being built.** An account, a browser, strategies
   described in conversation and no terminal anywhere: that is Phase 13 onward
   of [the plan](PROJECT_PLAN.md), designed in [docs/product.md](docs/product.md).
-  Email sign-in and the dashboard behind it already run on a development
-  machine with `vp serve` ([docs/platform.md](docs/platform.md)); it is not
-  deployed anywhere yet. When it is, it is how most people will use this, and
+  Email sign-in and the friendly interface (a guided start, a home screen,
+  market cards, plain-language and detailed reading levels, Learn) already
+  run on a development machine with `vp serve`
+  ([docs/interface.md](docs/interface.md), [docs/platform.md](docs/platform.md));
+  it is not deployed anywhere yet. When it is, it is how most people will use this, and
   this page will point at it.
 - **Live execution is last, and gated.** Nothing in this repository can sign
   or send a real order, and nothing will until the hosted security design is
@@ -170,11 +172,11 @@ the check that the backtest is not quietly optimistic.
 uv run vp ui --root data      # http://127.0.0.1:8765/
 ```
 
-A local, read-only page over the data root: what is on disk per domain, every
-backtest run with its tables and charts, the paper ledger with accounts and
-settlements, and the latest snapshot. It writes nothing and holds no state, so
-it can be started and stopped freely. Every metric and market type on the page
-is clickable for a definition. See [the dashboard page](docs/ui.md).
+The same page as the hosted app, read-only over the data root and without
+accounts: a home screen for a sample strategy, market cards from the latest
+snapshot, the paper ledger, every backtest with its charts, and Learn, in a
+Simple or a Detailed reading level. It writes nothing on the server, so it
+can be started and stopped freely. See [the interface page](docs/interface.md).
 
 ### What lands in the data root
 
@@ -236,7 +238,8 @@ print(market["question"], market["resolution"]["state"])
 - [Scaling](docs/scaling.md): the multi-user architecture and capacity model.
 - [Vibe-Trading review](docs/vibe_trading.md): the reference implementation, its collaborative tools, the capability mapping, non-infringement rules.
 - [Documentation site](docs/site.md): the public site's structure and default visual style.
-- [Browser dashboard](docs/ui.md): `vp ui`, a read-only local page over the data root.
+- [Interface](docs/interface.md): the browser app, its two reading levels, words and accessibility.
+- [Browser dashboard](docs/ui.md): the Phase 12 page the interface grew from.
 - [Security design](docs/security.md): proposed gate for live execution.
 - [Provenance](docs/provenance.md): code adapted from Vibe-Trading and how it was changed.
 - [Project plan](PROJECT_PLAN.md): phases, tasks and their status.

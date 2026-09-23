@@ -30,6 +30,8 @@ class Domain:
     keywords: tuple[str, ...]
     exclude: tuple[str, ...]
     parse: Parser
+    title: str = ""  # what a person calls it, for the interface
+    summary: str = ""  # one plain sentence on what its markets are about
 
     def matches(
         self, question: str, event_title: str | None, tags: tuple[str, ...]

@@ -97,6 +97,8 @@ def parse(question: str, event_title: str | None) -> dict[str, str] | None:
 
 WEATHER = Domain(
     name="weather",
+    title="Weather",
+    summary="How hot it gets: daily highs in cities and global temperature records.",
     tag_ids=("84",),
     tag_labels=(
         "weather",

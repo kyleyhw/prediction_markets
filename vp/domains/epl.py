@@ -79,6 +79,8 @@ def parse(question: str, event_title: str | None) -> dict[str, str] | None:
 
 EPL = Domain(
     name="epl",
+    title="Premier League",
+    summary="English football: match results and the title race.",
     tag_ids=("306", "82"),
     tag_labels=("epl", "premier league"),
     keywords=("premier league", "epl "),

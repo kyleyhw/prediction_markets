@@ -345,6 +345,9 @@ def test_figure_paths_cannot_leave_the_data_root(
         "/api/backtests/epl/stamp/..png",
         "/api/backtests/nowhere/stamp/reliability.png",
         "/api/snapshots/nowhere",
+        "/api/markets/nowhere/1",
+        "/api/markets/epl/..%2Fx",
+        "/api/markets/epl/12345",
     ):
         assert client.get(path).status_code == 404, path
 
@@ -356,6 +359,76 @@ def test_every_response_carries_the_security_headers(client: TestClient) -> None
     assert response.headers["X-Frame-Options"] == "DENY"
     verify = client.get("/auth/verify?token=x")
     assert verify.headers["Cache-Control"] == "no-store"
+    # Scripts from this origin only, and no inline script, on every page but
+    # FastAPI's API reference, which loads its own.
+    csp = response.headers["Content-Security-Policy"]
+    assert "script-src 'self';" in csp and "unsafe-inline" not in csp.split(";")[1]
+    assert "Content-Security-Policy" not in client.get("/docs").headers
+
+
+def test_the_server_path_is_not_shown(client: TestClient, mailer: OutboxMailer) -> None:
+    _as(client, _sign_in(client, mailer, _email()))
+    overview = client.get("/api/overview").json()
+    assert "root" not in overview and "epl" in overview["domains"]
+    assert overview["domains"]["epl"]["title"] == "Premier League"
+
+
+# ---------------------------------------------------------------- settings
+
+
+def test_settings_start_at_the_defaults_and_are_your_own(
+    client: TestClient, mailer: OutboxMailer
+) -> None:
+    ada, bob = _sign_in(client, mailer, _email()), _sign_in(client, mailer, _email())
+    defaults = _as(client, ada).get("/api/settings").json()
+    assert defaults["level"] == "simple" and defaults["interests"] == []
+    assert defaults["start"] == {"step": 0, "done": False}
+
+    chosen = defaults | {
+        "level": "detailed",
+        "interests": ["weather", "epl", "weather"],
+        "follow": "elo",
+        "start": {"step": 3, "done": True},
+    }
+    saved = client.put("/api/settings", json=chosen, headers=ORIGIN)
+    assert saved.status_code == 200 and saved.json()["interests"] == ["weather", "epl"]
+    assert client.get("/api/settings").json()["level"] == "detailed"
+    # Saving twice replaces the document rather than adding a row.
+    client.put("/api/settings", json=chosen | {"theme": "dark"}, headers=ORIGIN)
+    assert client.get("/api/settings").json()["theme"] == "dark"
+    # Bob sees his own defaults, not Ada's choices.
+    assert _as(client, bob).get("/api/settings").json()["level"] == "simple"
+
+
+def test_settings_refuse_what_they_do_not_name(
+    client: TestClient, mailer: OutboxMailer
+) -> None:
+    _as(client, _sign_in(client, mailer, _email()))
+    for body in (
+        {"level": "expert"},
+        {"interests": ["nba"]},
+        {"surprise": True},
+        {"follow": "<script>"},
+        {"start": {"step": 99}},
+    ):
+        assert client.put("/api/settings", json=body, headers=ORIGIN).status_code == (
+            422
+        ), body
+
+
+def test_an_api_token_reads_settings_but_cannot_change_them(
+    client: TestClient, mailer: OutboxMailer
+) -> None:
+    cookie = _sign_in(client, mailer, _email())
+    secret = (
+        _as(client, cookie)
+        .post("/api/tokens", json={"name": "t", "scope": "write"}, headers=ORIGIN)
+        .json()["token"]
+    )
+    bearer = {"Authorization": f"Bearer {secret}"}
+    _as(client, None)
+    assert client.get("/api/settings", headers=bearer).status_code == 200
+    assert client.put("/api/settings", json={}, headers=bearer).status_code == 403
 
 
 def test_nothing_personal_is_left_in_the_browser_cache(

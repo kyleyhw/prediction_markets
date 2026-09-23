@@ -1,5 +1,11 @@
 # Browser Dashboard
 
+> **Superseded as a page on 2026-09-23 by [the interface](interface.md)**,
+> which keeps this page's charts, glossary, fonts and server and replaces
+> the single hand-written page with the app described there. The server
+> design below still holds for `vp ui`; the views and the palette are now
+> the interface's.
+
 `vp ui` serves a local, read-only dashboard over the data root: what is on
 disk, every backtest run with its tables and charts, the paper ledger with
 accounts, positions and settlements, and the latest market snapshot per

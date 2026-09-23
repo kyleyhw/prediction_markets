@@ -31,8 +31,11 @@ Polymarket, scored by backtest and paper trading before any live execution. The
   project's phases, and the non-infringement rules.
 - [Documentation site](site.md): the public site's structure, build rules
   and the default "paper" visual style, with the alternatives to trial.
-- [Browser dashboard](ui.md): `vp ui`, a read-only local page over the
-  data root: datasets, backtests with figures, the paper ledger, markets.
+- [Interface](interface.md): the browser app for everyone: guided start,
+  home, market cards, strategies, backtests, Learn and Settings in Simple
+  and Detailed reading levels; words, formats and accessibility.
+- [Browser dashboard](ui.md): the Phase 12 page the interface grew from,
+  and `vp ui`, the developer's local view over a data root.
 - [Security design](security.md): the proposed design for live execution
   and its implemented safety layer; agreement is required before any
   order-signing code.

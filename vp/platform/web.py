@@ -30,6 +30,10 @@ Five rules, each enforced here rather than left to the routes:
   is never sent to another site. Not `no-referrer`: under that policy a
   browser sends `Origin: null` even on our own form posts, which the
   cross-site check above would then refuse; a real browser run found it.
+* **The page runs only its own scripts.** Every page but the OpenAPI
+  reference carries a Content-Security-Policy allowing scripts from this
+  origin alone, with no inline script, so text from a market question or a
+  ledger entry that slipped past escaping still could not run.
 * **Nothing personal is cached by the browser.** Every response except the
   fonts carries `Cache-Control: no-store`. Without it, Chromium served the
   dashboard from its cache after sign-out without asking the server; the
@@ -64,8 +68,9 @@ from fastapi.responses import (
     Response,
 )
 from fastapi.staticfiles import StaticFiles
+from psycopg.types.json import Jsonb
 from psycopg_pool import ConnectionPool
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
 from vp.domains import DOMAINS
 from vp.platform import auth
@@ -83,6 +88,13 @@ _SECURITY_HEADERS = {
     "Referrer-Policy": "same-origin",
     "X-Frame-Options": "DENY",
 }
+_CSP = (
+    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
+    "img-src 'self' data:; object-src 'none'; base-uri 'none'; "
+    "form-action 'self'; frame-ancestors 'none'"
+)
+_API_REFERENCE = ("/docs", "/redoc")  # FastAPI's pages load their own scripts
+_MARKET_ID = re.compile(r"^[0-9A-Za-z_-]{1,80}$")
 _STAMP = re.compile(r"^[0-9A-Za-z_-]{1,64}$")
 _FIGURE = re.compile(r"^[a-z_]{1,64}\.png$")
 _SECRET_QUERY = re.compile(r"([?&]token=)[^&\s\"']+")
@@ -117,7 +129,8 @@ def check_database(conn: psycopg.Connection) -> None:
             "row-level security does not bind; connect as vp_app"
         )
     ready = conn.execute(
-        "select to_regprocedure('vp_auth_sign_in(text, text)') is not null"
+        "select to_regprocedure('vp_auth_sign_in(text, text)') is not null "
+        "and to_regclass('public.user_settings') is not null"
     ).fetchone()
     if not ready or not ready[0]:
         raise DatabaseRoleError("the schema is not migrated; run: vp db migrate")
@@ -178,6 +191,41 @@ class TokenRequest(BaseModel):
 
     name: str = Field(min_length=1, max_length=100, pattern=r"\S")
     scope: Literal["read", "write"] = "read"
+
+
+class Progress(BaseModel):
+    """Where a person is in the guided start."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    step: int = Field(default=0, ge=0, le=10)
+    done: bool = False
+
+
+class SettingsBody(BaseModel):
+    """A person's interface settings, as the page stores them.
+
+    Unknown keys are refused, so the stored document only ever holds what
+    this model names; every field has a default, so an empty document is
+    a valid one.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    level: Literal["simple", "detailed"] = "simple"
+    theme: Literal["system", "light", "dark"] = "system"
+    locale: Literal["en-GB", "en-US"] | None = None  # None: the browser's
+    interests: list[str] = Field(default_factory=list, max_length=50)
+    follow: str | None = Field(default=None, pattern=r"^[a-z0-9_.-]{1,64}$")
+    start: Progress = Field(default_factory=Progress)
+
+    @field_validator("interests")
+    @classmethod
+    def known_domains(cls, value: list[str]) -> list[str]:
+        unknown = sorted(set(value) - set(DOMAINS))
+        if unknown:
+            raise ValueError(f"unknown interests: {', '.join(unknown)}")
+        return list(dict.fromkeys(value))
 
 
 # ---------------------------------------------------------------- principal
@@ -300,6 +348,8 @@ def create_app(
         response = await call_next(request)
         for name, value in _SECURITY_HEADERS.items():
             response.headers.setdefault(name, value)
+        if not request.url.path.startswith(_API_REFERENCE):
+            response.headers.setdefault("Content-Security-Policy", _CSP)
         # Nothing but the fonts may sit in a browser's cache: pages and data
         # are per person, and a cached page outlives signing out.
         if not request.url.path.startswith("/fonts/"):
@@ -460,12 +510,39 @@ def create_app(
             raise HTTPException(404, "no such token")
         return Response(status_code=204)
 
+    # ------------------------------------------------------------ settings
+
+    @app.get("/api/settings")
+    def get_settings(principal: Reader) -> SettingsBody:
+        """Your interface settings; the defaults until you save any."""
+        with pool.connection() as conn, tenant_session(conn, principal):
+            row = conn.execute("select settings from user_settings").fetchone()
+        try:
+            return SettingsBody.model_validate(row[0] if row else {})
+        except ValidationError:
+            # A document saved under an older shape (a domain since removed,
+            # say) falls back to the defaults rather than failing the page.
+            return SettingsBody()
+
+    @app.put("/api/settings")
+    def put_settings(body: SettingsBody, principal: BrowserSession) -> SettingsBody:
+        """Replace your interface settings."""
+        with pool.connection() as conn, tenant_session(conn, principal):
+            conn.execute(
+                "insert into user_settings (user_id, settings) "
+                "values (vp_current_user_id(), %s) on conflict (user_id) do "
+                "update set settings = excluded.settings, updated_at = now()",
+                (Jsonb(body.model_dump()),),
+            )
+        return body
+
     # ----------------------------------------------------------- dashboard
 
     @app.get("/api/overview")
     def overview(principal: Reader) -> Any:
         """Per-domain counts and the paper accounts."""
-        return view.overview()
+        # The data root's path is the server's business, not the reader's.
+        return {k: v for k, v in view.overview().items() if k != "root"}
 
     @app.get("/api/backtests")
     def backtests(principal: Reader) -> Any:
@@ -501,6 +578,18 @@ def create_app(
             raise HTTPException(404, "no such domain")
         return view.snapshot(domain)
 
+    @app.get("/api/markets/{domain}/{market_id}")
+    def market(domain: str, market_id: str, principal: Reader) -> Any:
+        """One market: book depth, fee, forecasts and its recent prices."""
+        found = (
+            view.market(domain, market_id)
+            if domain in DOMAINS and _MARKET_ID.match(market_id)
+            else None
+        )
+        if found is None:
+            raise HTTPException(404, "no such market")
+        return found
+
     @app.get("/api/forecasts")
     def forecasts(
         principal: Reader, limit: Annotated[int, Query(ge=1, le=1000)] = 100
@@ -511,6 +600,7 @@ def create_app(
     # ---------------------------------------------------------------- page
 
     app.mount("/fonts", StaticFiles(directory=STATIC / "fonts"), name="fonts")
+    app.mount("/app", StaticFiles(directory=STATIC / "app"), name="app")
 
     @app.get("/", include_in_schema=False, response_model=None)
     def index(principal: CurrentPrincipal) -> Response:
