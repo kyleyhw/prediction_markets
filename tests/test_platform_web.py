@@ -506,3 +506,118 @@ def test_signing_in_needs_the_age_and_the_terms_and_records_them(
         page = client.get(path)
         assert page.status_code == 200 and legal.TERMS_VERSION in page.text
     assert legal.STATEMENT[:40] in _as(client, None).get("/sign-in").text
+
+
+# -------------------------------------------------------------- strategies
+
+
+def test_a_strategy_is_confirmed_previewed_backtested_and_papered_by_its_owner(
+    client: TestClient, mailer: OutboxMailer, owner
+) -> None:
+    from psycopg.types.json import Jsonb
+
+    from tests.test_strategy_compiler import GOOD
+
+    ada, bob = _email(), _email()
+    ada_cookie, bob_cookie = (
+        _sign_in(client, mailer, ada),
+        _sign_in(client, mailer, bob),
+    )
+    _as(client, ada_cookie)
+    # No model key anywhere: the compiler is not offered rather than failing.
+    refused = client.post(
+        "/api/strategies/compile", json={"words": "Arsenal by Elo"}, headers=ORIGIN
+    )
+    assert refused.status_code == 409
+    # A proposed spec, as the compile job would have stored it.
+    workspace = client.get("/auth/me").json()["workspace"]["id"]
+    (user,) = owner.execute("select id from users where email = %s", (ada,)).fetchone()
+    with owner.transaction():
+        (convo,) = owner.execute(
+            "insert into conversations (workspace_id, user_id) values (%s, %s) "
+            "returning id",
+            (workspace, user),
+        ).fetchone()
+        (turn,) = owner.execute(
+            "insert into conversation_turns (conversation_id, workspace_id, role, "
+            "content) values (%s, %s, 'assistant', %s) returning id",
+            (convo, workspace, Jsonb({"kind": "spec", "spec": GOOD})),
+        ).fetchone()
+    made = client.post(
+        "/api/strategies/confirm",
+        json={"conversation_id": str(convo), "turn_id": turn},
+        headers=ORIGIN,
+    )
+    assert made.status_code == 201, made.text
+    sid = made.json()["strategy_id"]
+    assert [s["id"] for s in client.get("/api/strategies").json()] == [sid]
+    got = client.get(f"/api/strategies/{sid}").json()
+    assert got["versions"][0]["rendering"][0].startswith("Markets: Premier League")
+    preview = client.get(f"/api/strategies/{sid}/preview")
+    assert preview.status_code == 200 and preview.json()["bets_needed"] == 2178
+    assert client.get(f"/api/strategies/{sid}").json()["status"] == "previewed"
+    queued = client.post(f"/api/strategies/{sid}/backtest", json={}, headers=ORIGIN)
+    assert queued.status_code == 202 and queued.json()["estimate_usd"] == 0
+    assert (
+        client.post(f"/api/strategies/{sid}/paper", headers=ORIGIN).status_code == 201
+    )
+    paper = client.get(f"/api/strategies/{sid}/paper")
+    assert paper.status_code == 200 and paper.json()["account"]["version"] == 1
+    # Leave nothing queued or scheduled for the other tests' workers.
+    job = queued.json()["job_id"]
+    assert client.post(f"/api/jobs/{job}/cancel", headers=ORIGIN).status_code == 202
+    assert (
+        client.post(f"/api/strategies/{sid}/retire", headers=ORIGIN).status_code == 204
+    )
+    assert client.get(f"/api/strategies/{sid}").json()["status"] == "retired"
+    # Bob sees none of it and can confirm nothing of Ada's.
+    _as(client, bob_cookie)
+    assert client.get("/api/strategies").json() == []
+    assert client.get(f"/api/strategies/{sid}").status_code == 404
+    assert client.get(f"/api/conversations/{convo}").status_code == 404
+    stolen = client.post(
+        "/api/strategies/confirm",
+        json={"conversation_id": str(convo), "turn_id": turn},
+        headers=ORIGIN,
+    )
+    assert stolen.status_code == 404
+    # A spec is never taken from the browser.
+    sneaky = client.post(
+        "/api/strategies/confirm",
+        json={"conversation_id": str(convo), "turn_id": turn, "spec": GOOD},
+        headers=ORIGIN,
+    )
+    assert sneaky.status_code == 422
+
+
+def test_memory_and_packs_through_the_api(
+    client: TestClient, mailer: OutboxMailer
+) -> None:
+    ada, bob = _email(), _email()
+    ada_cookie, bob_cookie = (
+        _sign_in(client, mailer, ada),
+        _sign_in(client, mailer, bob),
+    )
+    _as(client, ada_cookie)
+    note = client.post("/api/memory", json={"note": "small stakes"}, headers=ORIGIN)
+    assert note.status_code == 201
+    assert [m["note"] for m in client.get("/api/memory").json()] == ["small stakes"]
+    pack = client.get("/api/packs/epl").json()
+    assert pack["workspace"] is None and pack["platform"]["body"].startswith("---")
+    wrong = client.put(
+        "/api/packs/epl",
+        json={"body": "---\ndomain: cs2\n---\n## Fields\n"},
+        headers=ORIGIN,
+    )
+    assert wrong.status_code == 422
+    mine = "---\ndomain: epl\ntitle: Ours\n---\n## Fields\nnotes\n"
+    saved = client.put("/api/packs/epl", json={"body": mine}, headers=ORIGIN)
+    assert saved.status_code == 200
+    assert client.get("/api/packs/epl").json()["workspace"]["body"] == mine
+    _as(client, bob_cookie)
+    assert client.get("/api/memory").json() == []
+    assert client.get("/api/packs/epl").json()["workspace"] is None
+    other = note.json()["id"]
+    assert client.delete(f"/api/memory/{other}", headers=ORIGIN).status_code == 404
+    _as(client, ada_cookie)
+    assert client.delete(f"/api/memory/{other}", headers=ORIGIN).status_code == 204

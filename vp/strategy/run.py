@@ -140,18 +140,26 @@ def backtest(
     max_markets: int | None = None,
     seed: int = 0,
     progress: Callable[[float, str], None] | None = None,
+    wrap: Callable[[Forecaster, str], Forecaster] | None = None,
+    made: list[Forecaster] | None = None,
     **llm: Any,
 ) -> dict[str, BacktestResult]:
     """Backtest the spec on each of its domains, one run directory per domain.
 
     The market's own price is always run beside the belief, as the
-    reference every run card scores against.
+    reference every run card scores against. ``wrap`` may wrap the belief
+    (the platform memoises statistical ones); the beliefs used are appended
+    to ``made``, so a caller can read what they spent.
     """
     results: dict[str, BacktestResult] = {}
     for domain in spec.selector.domains:
         if not (root / "markets" / domain / "resolved.parquet").exists():
             continue
         forecaster = belief(spec, domain, **llm)
+        if made is not None:
+            made.append(forecaster)
+        if wrap is not None:
+            forecaster = wrap(forecaster, domain)
         config = BacktestConfig(
             domain=domain,
             forecasters=("market", forecaster.name),
@@ -196,5 +204,4 @@ def paper_options(spec: Spec) -> dict[str, Any]:
         "policy": policy(spec),
         "where": selects(spec.selector, live=True),
         "window_hours": spec.schedule.hours_before_close,
-        "initial_cash": spec.sizing.initial_cash,
     }

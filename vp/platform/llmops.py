@@ -172,9 +172,17 @@ class LimitedMessages:
             return self._messages.create(**kwargs)
 
 
+class LimitedBeta:
+    """`client.beta`, for the compiler's refusal fallback, under the same slots."""
+
+    def __init__(self, beta: Any, slots: Slots) -> None:
+        self.messages = LimitedMessages(beta.messages, slots)
+
+
 class LimitedClient:
     def __init__(self, client: Any, slots: Slots) -> None:
         self.messages = LimitedMessages(client.messages, slots)
+        self.beta = LimitedBeta(client.beta, slots)
 
 
 def client_for(

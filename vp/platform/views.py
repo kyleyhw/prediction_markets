@@ -17,6 +17,7 @@ from collections import OrderedDict
 from collections.abc import Iterator
 from datetime import datetime
 from typing import Any
+from uuid import UUID
 
 from psycopg.rows import dict_row
 from psycopg_pool import ConnectionPool
@@ -51,13 +52,23 @@ class NoLedger:
         return None
 
 
-def paper_account(pool: ConnectionPool, principal: Principal) -> dict[str, Any] | None:
-    """The workspace's paper account (the first opened), or None."""
+def paper_account(
+    pool: ConnectionPool, principal: Principal, account_id: UUID | None = None
+) -> dict[str, Any] | None:
+    """A paper account of the workspace: the one named, or else the first
+    opened that belongs to no strategy; None when there is none."""
     with pool.connection() as conn, tenant_session(conn, principal):
         cur = conn.cursor(row_factory=dict_row)
+        if account_id is not None:
+            return cur.execute(
+                "select id, name, domains, forecasters, initial_cash, created_at "
+                "from paper_accounts where id = %s",
+                (account_id,),
+            ).fetchone()
         return cur.execute(
             "select id, name, domains, forecasters, initial_cash, created_at "
-            "from paper_accounts order by created_at limit 1"
+            "from paper_accounts where strategy_version_id is null "
+            "order by created_at limit 1"
         ).fetchone()
 
 
@@ -70,12 +81,13 @@ class WorkspaceView(DataView):
         pool: ConnectionPool,
         principal: Principal,
         store: ObjectStore,
+        account_id: UUID | None = None,
     ) -> None:
         super().__init__(shared.root)
         self.pool = pool
         self.principal = principal
         self.store = store
-        self.account = paper_account(pool, principal)
+        self.account = paper_account(pool, principal, account_id)
         # Without an account of its own, a workspace reads the sample
         # strategies' account, which the platform runs for everyone (F17).
         self.sample = sample_account(pool) if self.account is None else None

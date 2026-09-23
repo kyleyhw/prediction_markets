@@ -78,7 +78,8 @@ from psycopg_pool import ConnectionPool
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
 from vp.domains import DOMAINS
-from vp.platform import audit, auth, budgets, jobs, legal, llmops
+from vp.domains.pack import PACKS
+from vp.platform import audit, auth, budgets, jobs, legal, llmops, strategies
 from vp.platform.config import Settings
 from vp.platform.db import tenant_session
 from vp.platform.mail import Mailer, Message, OutboxMailer
@@ -87,6 +88,11 @@ from vp.platform.principal import AuthMethod, Principal
 from vp.platform.storage import ObjectStore, SharedRoot, open_store
 from vp.platform.views import WorkspaceView
 from vp.ui.server import STATIC
+
+# Previews by spec hash and the data's modification times; a preview reads
+# every resolved market of its domains, which is seconds for weather.
+_PREVIEWS: dict[tuple[Any, ...], dict[str, Any]] = {}
+_PREVIEW_LOCK = threading.Lock()
 
 logger = logging.getLogger(__name__)
 
@@ -360,6 +366,43 @@ class BacktestRequest(BaseModel):
         if value is not None and value not in PRICES:
             raise ValueError(f"unknown model {value!r}")
         return value
+
+
+class CompileBody(BaseModel):
+    """One message of a strategy conversation."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    words: str = Field(min_length=1, max_length=2000)
+    conversation_id: UUID | None = None
+    strategy_id: UUID | None = None
+
+
+class ConfirmBody(BaseModel):
+    """Which proposed spec to freeze as a version: never the spec itself."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    conversation_id: UUID
+    turn_id: int
+
+
+class StrategyBacktestBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    max_markets: int | None = Field(default=None, ge=1, le=5000)
+
+
+class MemoryBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    note: str = Field(min_length=1, max_length=300)
+
+
+class PackBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    body: str = Field(min_length=1, max_length=60000)
 
 
 class KeyBody(BaseModel):
@@ -998,6 +1041,196 @@ def create_app(
     @app.delete("/api/keys", status_code=204)
     def delete_key(principal: BrowserSession) -> Response:
         llmops.delete_key(pool, principal)
+        return Response(status_code=204)
+
+    # ------------------------------------------------------------ strategies
+
+    def _found(fn: Callable[[], Any]) -> Any:
+        try:
+            return fn()
+        except strategies.NotFound as exc:
+            raise HTTPException(404, str(exc)) from None
+
+    @app.post("/api/strategies/compile", status_code=202)
+    def compile_strategy(body: CompileBody, principal: Writer) -> dict[str, Any]:
+        """Send one message to the strategy compiler; the answer arrives as a
+        turn of the conversation when the job is done."""
+        paid_by_platform = llmops.key_hint(pool, principal) is None
+        if paid_by_platform and not settings.anthropic_api_key:
+            raise HTTPException(409, "no model key is available for this workspace")
+        convo = body.conversation_id or _found(
+            lambda: strategies.open_conversation(pool, principal, body.strategy_id)
+        )
+        _found(lambda: strategies.conversation(pool, principal, convo))
+        reserved = strategies.COMPILE_RESERVE_USD if paid_by_platform else 0.0
+        try:
+            budgets.reserve(pool, principal, reserved)
+        except budgets.OverBudget as exc:
+            raise HTTPException(402, str(exc)) from None
+        job_id = jobs.enqueue(
+            pool,
+            principal,
+            "compile",
+            {"conversation_id": str(convo), "words": body.words},
+            reserved_usd=reserved,
+        )
+        return {"job_id": job_id, "conversation_id": convo}
+
+    @app.get("/api/conversations/{conversation_id}")
+    def get_conversation(conversation_id: UUID, principal: Reader) -> dict[str, Any]:
+        return _found(lambda: strategies.conversation(pool, principal, conversation_id))
+
+    @app.post("/api/strategies/confirm", status_code=201)
+    def confirm_strategy(body: ConfirmBody, principal: Writer) -> dict[str, Any]:
+        """Freeze a proposed spec as a new version, exactly as rendered."""
+        try:
+            return _found(
+                lambda: strategies.confirm(
+                    pool, principal, body.conversation_id, body.turn_id
+                )
+            )
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from None
+
+    @app.get("/api/strategies")
+    def list_strategies(principal: Reader) -> list[dict[str, Any]]:
+        return strategies.listing(pool, principal)
+
+    @app.get("/api/strategies/{strategy_id}")
+    def get_strategy(strategy_id: UUID, principal: Reader) -> dict[str, Any]:
+        return _found(lambda: strategies.detail(pool, principal, strategy_id))
+
+    @app.get("/api/strategies/{strategy_id}/preview")
+    def preview_strategy(strategy_id: UUID, principal: Reader) -> dict[str, Any]:
+        """What the newest version would touch and cost, from data only."""
+        head = _found(lambda: strategies.latest(pool, principal, strategy_id))
+        out = _preview(head["spec"], head["spec_hash"])
+        if principal.may_write:
+            strategies.advance(pool, principal, strategy_id, "previewed")
+        return out | {"version": head["version"], "spec_hash": head["spec_hash"]}
+
+    def _preview(spec: Any, digest: str) -> dict[str, Any]:
+        from vp.strategy.preview import preview
+
+        stamp = tuple(
+            (p.stat().st_mtime_ns if p.exists() else 0)
+            for d in spec.selector.domains
+            for p in (
+                shared.root / "markets" / d / "resolved.parquet",
+                shared.root / "snapshots" / d,
+            )
+        )
+        key = (digest, stamp)
+        with _PREVIEW_LOCK:
+            hit = _PREVIEWS.get(key)
+        if hit is None:
+            hit = preview(spec, shared.root).as_json()
+            with _PREVIEW_LOCK:
+                _PREVIEWS[key] = hit
+                while len(_PREVIEWS) > 128:
+                    _PREVIEWS.pop(next(iter(_PREVIEWS)))
+        return hit
+
+    @app.post("/api/strategies/{strategy_id}/backtest", status_code=202)
+    def backtest_strategy(
+        strategy_id: UUID, body: StrategyBacktestBody, principal: Writer
+    ) -> dict[str, Any]:
+        """Backtest the newest version on each of its domains."""
+        head = _found(lambda: strategies.latest(pool, principal, strategy_id))
+        estimate = _preview(head["spec"], head["spec_hash"])["backtest_usd"]
+        paid_by_platform = llmops.key_hint(pool, principal) is None
+        if estimate and paid_by_platform and not settings.anthropic_api_key:
+            raise HTTPException(409, "no model key is available for this workspace")
+        reserved = estimate if paid_by_platform else 0.0
+        try:
+            budgets.reserve(pool, principal, reserved)
+        except budgets.OverBudget as exc:
+            raise HTTPException(402, str(exc)) from None
+        job_id = jobs.enqueue(
+            pool,
+            principal,
+            "backtest",
+            {
+                "strategy_version_id": str(head["version_id"]),
+                "max_markets": body.max_markets,
+            },
+            reserved_usd=reserved,
+        )
+        return {"job_id": job_id, "estimate_usd": estimate, "version": head["version"]}
+
+    @app.post("/api/strategies/{strategy_id}/paper", status_code=201)
+    def paper_strategy(strategy_id: UUID, principal: Writer) -> dict[str, Any]:
+        """Open the newest version's paper account; it trades on schedule."""
+        try:
+            return _found(lambda: strategies.start_paper(pool, principal, strategy_id))
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from None
+
+    @app.post("/api/strategies/{strategy_id}/retire", status_code=204)
+    def retire_strategy(strategy_id: UUID, principal: Writer) -> Response:
+        _found(lambda: strategies.retire(pool, principal, strategy_id))
+        return Response(status_code=204)
+
+    @app.get("/api/strategies/{strategy_id}/paper")
+    def strategy_paper(strategy_id: UUID, principal: Reader) -> dict[str, Any]:
+        """The paper record of the strategy's newest account."""
+        found = _found(lambda: strategies.detail(pool, principal, strategy_id))
+        if not found["accounts"]:
+            raise HTTPException(404, "this strategy has not traded in paper")
+        account = found["accounts"][-1]
+        view = WorkspaceView(
+            shared, pool, principal, store, account_id=UUID(account["id"])
+        )
+        return {"account": account, "paper": view.paper()}
+
+    @app.get("/api/memory")
+    def get_memory(principal: Reader) -> list[dict[str, Any]]:
+        """What the person asked the assistant to remember; theirs alone."""
+        return strategies.memory(pool, principal)
+
+    @app.post("/api/memory", status_code=201)
+    def add_memory(body: MemoryBody, principal: Reader) -> dict[str, Any]:
+        try:
+            return {"id": strategies.remember(pool, principal, body.note)}
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from None
+
+    @app.delete("/api/memory/{note_id}", status_code=204)
+    def delete_memory(note_id: UUID, principal: Reader) -> Response:
+        if not strategies.forget(pool, principal, note_id):
+            raise HTTPException(404, "no such note")
+        return Response(status_code=204)
+
+    @app.get("/api/packs/{domain}")
+    def get_pack(domain: str, principal: Reader) -> dict[str, Any]:
+        """The platform's pack for a domain and the workspace's copy, if any."""
+        from vp.domains.pack import load
+
+        platform_pack = load(domain)
+        if platform_pack is None:
+            raise HTTPException(404, "no pack for that domain")
+        own = strategies.workspace_packs(pool, principal).get(domain)
+        own_pack = load(domain, own) if own else None
+        return {
+            "platform": {
+                "body": (PACKS / f"{domain}.md").read_text(),
+                "sha256": platform_pack.sha256,
+            },
+            "workspace": {"body": own, "sha256": own_pack.sha256} if own_pack else None,
+        }
+
+    @app.put("/api/packs/{domain}")
+    def put_pack(domain: str, body: PackBody, principal: Writer) -> dict[str, Any]:
+        if domain not in DOMAINS:
+            raise HTTPException(404, "no such domain")
+        try:
+            return {"sha256": strategies.save_pack(pool, principal, domain, body.body)}
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from None
+
+    @app.delete("/api/packs/{domain}", status_code=204)
+    def delete_pack(domain: str, principal: Writer) -> Response:
+        strategies.drop_pack(pool, principal, domain)
         return Response(status_code=204)
 
     @app.get("/metrics", include_in_schema=False)

@@ -49,7 +49,7 @@ from vp.platform.principal import AuthMethod, Principal, Role
 logger = logging.getLogger(__name__)
 
 #: Kinds a person may start from the page or the API, in their workspace.
-WORKSPACE_KINDS = frozenset({"backtest", "paper_cycle", "settle", "leakage"})
+WORKSPACE_KINDS = frozenset({"backtest", "compile", "paper_cycle", "settle", "leakage"})
 #: Kinds the platform runs for everyone.
 PLATFORM_KINDS = frozenset(
     {

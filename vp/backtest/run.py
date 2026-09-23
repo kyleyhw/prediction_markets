@@ -289,6 +289,7 @@ def results_json(
                 "log": r.log,
                 "skill": r.skill,
                 "cost_usd": r.cost_usd,
+                "fees_usd": sum(b.fee for b in r.bets),
                 "calibration": {
                     "reliability": r.calibration.reliability,
                     "resolution": r.calibration.resolution,

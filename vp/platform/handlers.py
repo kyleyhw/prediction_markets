@@ -13,6 +13,14 @@ the workspace's tables and the object store, as the job's principal:
 * `settle`: `vp.paper.loop.settle`, asking the venue only about markets the
   resolutions table already says have resolved.
 * `leakage`: `vp.paper.leakage` between a backtest run and an account.
+* `compile`: one message of a person's strategy conversation through the
+  compiler (`vp.strategy.compiler`), stored as two turns and charged.
+
+A `backtest` naming a strategy version runs that spec on each of its
+domains (`vp.strategy.run.backtest`) and stores one run per domain with its
+manifest and run card; a paper account opened for a strategy version trades
+by its spec (selector, policy, window) rather than by the account's list of
+forecasters.
 
 and for the platform, as `system`:
 
@@ -53,7 +61,7 @@ from vp.markets.schema import BinaryMarket, utc_now_iso
 from vp.markets.snapshot import collect_snapshot
 from vp.paper import leakage
 from vp.paper.loop import run_cycle, settle
-from vp.platform import budgets, llmops
+from vp.platform import budgets, llmops, strategies
 from vp.platform.config import Settings
 from vp.platform.db import tenant_session
 from vp.platform.jobs import Handler, JobContext, run_scheduler
@@ -171,7 +179,194 @@ def _dataset_version(store: ObjectStore, domain: str) -> str:
 # ------------------------------------------------------------ workspace jobs
 
 
+def _charges(forecasters: Sequence[Any], domain: str | None) -> list[dict[str, Any]]:
+    """Spend records from the model calls the forecasters made."""
+    charges = []
+    for f in forecasters:
+        calls = getattr(f, "calls", None)
+        if not calls:
+            continue
+        charges.append(
+            {
+                "forecaster": f.name,
+                "domain": domain,
+                "model": getattr(f, "model", None),
+                "input_tokens": sum(c["input_tokens"] for c in calls),
+                "output_tokens": sum(c["output_tokens"] for c in calls),
+                "cache_read_tokens": sum(c.get("cache_read_tokens", 0) for c in calls),
+                "cache_write_tokens": sum(
+                    c.get("cache_write_tokens", 0) for c in calls
+                ),
+                "usd": sum(c["cost_usd"] for c in calls),
+            }
+        )
+    return charges
+
+
+def compile_turn(ctx: JobContext) -> dict[str, Any]:
+    """One message of a strategy conversation through the compiler."""
+    from vp.strategy.compiler import as_json, compile_spec
+
+    svc: Services = ctx.services
+    p = ctx.job.payload
+    convo_id = UUID(str(p["conversation_id"]))
+    words = str(p["words"])
+    convo = strategies.conversation(svc.pool, ctx.principal, convo_id)
+    current = None
+    if convo["strategy_id"]:
+        current = strategies.latest(
+            svc.pool, ctx.principal, UUID(convo["strategy_id"])
+        )["spec"]
+    client, paid_by = llmops.client_for(
+        svc.pool, ctx.principal, svc.settings.anthropic_api_key, svc.settings.master_key
+    )
+    ctx.progress(0.1, "reading your description")
+    out = compile_spec(
+        words,
+        client=client,
+        history=strategies.history(convo),
+        current=current,
+        memory=[m["note"] for m in strategies.memory(svc.pool, ctx.principal)],
+        packs=strategies.workspace_packs(svc.pool, ctx.principal),
+    )
+    strategies.add_turns(
+        svc.pool,
+        ctx.principal,
+        convo_id,
+        [("user", {"words": words}), ("assistant", as_json(out))],
+        out.cost_usd,
+    )
+    charged = budgets.settle_job(
+        svc.pool,
+        ctx.principal,
+        ctx.job.id,
+        ctx.job.reserved_usd,
+        [
+            {
+                "forecaster": "compiler",
+                "model": out.model,
+                "input_tokens": out.input_tokens,
+                "output_tokens": out.output_tokens,
+                "usd": out.cost_usd,
+            }
+        ],
+        paid_by,
+    )
+    return {
+        "conversation_id": str(convo_id),
+        "kind": out.kind,
+        "cost_usd": float(charged),
+    }
+
+
+def strategy_backtest(ctx: JobContext) -> dict[str, Any]:
+    """Backtest a confirmed strategy version on each of its domains."""
+    from vp.strategy import card
+    from vp.strategy import run as strategy_run
+    from vp.strategy.preview import LLM_SAMPLE
+    from vp.strategy.spec import validate
+
+    svc: Services = ctx.services
+    p = ctx.job.payload
+    version_id = UUID(str(p["strategy_version_id"]))
+    spec, digest, strategy_id = strategies.version_spec(
+        svc.pool, ctx.principal, version_id
+    )
+    problems = validate(spec)
+    if problems:
+        raise ValueError(" ".join(problems))
+    domains = [d for d in spec.selector.domains if d in DOMAINS]
+    ctx.progress(0.0, "getting the data")
+    svc.refresh(domains)
+    packs = strategies.workspace_packs(svc.pool, ctx.principal)
+    llm: dict[str, Any] = {}
+    paid_by = "platform"
+    uses_model = spec.belief.forecaster == "llm" and spec.rule.kind == "edge"
+    if uses_model:
+        client, paid_by = llmops.client_for(
+            svc.pool,
+            ctx.principal,
+            svc.settings.anthropic_api_key,
+            svc.settings.master_key,
+        )
+        llm = {"client": client, "batch": bool(p.get("batch", True))}
+    max_markets = p.get("max_markets") or (LLM_SAMPLE if uses_model else None)
+    made: list[Forecaster] = []
+    salts = {d: _dataset_version(svc.store, d) for d in domains}
+    run_ids = []
+    with tempfile.TemporaryDirectory(dir=svc.work_dir) as tmp:
+        root = svc.shared.workroot(Path(tmp) / "root")
+        out = Path(tmp) / "out"
+        results = strategy_run.backtest(
+            spec,
+            root,
+            out,
+            max_markets=max_markets,
+            progress=lambda f, m: ctx.progress(0.05 + 0.85 * f, m),
+            wrap=(
+                None
+                if uses_model
+                else lambda f, d: Memoised(f, svc.pool, salts.get(d, "none"))
+            ),
+            made=made,
+            **llm,
+        )
+        ctx.progress(0.92, "saving the runs")
+        for domain, result in results.items():
+            folder = out / domain
+            manifest = card.manifest(
+                spec, domain=domain, dataset_version=salts[domain], packs=packs
+            )
+            data = json.loads((folder / "results.json").read_text())
+            data["card"] = card.run_card(
+                data, manifest, sees_price=spec.belief.sees_price and uses_model
+            )
+            (folder / "manifest.json").write_text(json.dumps(manifest, indent=1))
+            (folder / "card.json").write_text(json.dumps(data["card"], indent=1))
+            run_id = uuid4()
+            prefix = f"workspaces/{ctx.principal.workspace}/runs/{run_id}"
+            for path in sorted(folder.iterdir()):
+                if path.is_file():
+                    svc.store.put_file(f"{prefix}/{path.name}", path)
+            with svc.pool.connection() as conn, tenant_session(conn, ctx.principal):
+                conn.execute(
+                    "insert into runs (id, workspace_id, kind, job_id, config, "
+                    "results, summary, artifacts, created_by, strategy_version_id, "
+                    "manifest, manifest_hash) values (%s, %s, 'backtest', %s, %s, "
+                    "%s, %s, %s, %s, %s, %s, %s)",
+                    (
+                        run_id,
+                        ctx.principal.workspace,
+                        ctx.job.id,
+                        Jsonb(
+                            asdict(result.config)
+                            | {"strategy_version_id": str(version_id)}
+                        ),
+                        Jsonb(data),
+                        (folder / "summary.md").read_text(),
+                        prefix,
+                        ctx.principal.user_id,
+                        version_id,
+                        Jsonb(manifest),
+                        manifest["hash"],
+                    ),
+                )
+            run_ids.append(str(run_id))
+    charged = budgets.settle_job(
+        svc.pool,
+        ctx.principal,
+        ctx.job.id,
+        ctx.job.reserved_usd,
+        _charges(made, None),
+        paid_by,
+    )
+    strategies.advance(svc.pool, ctx.principal, strategy_id, "backtested")
+    return {"run_ids": run_ids, "spec_hash": digest, "cost_usd": float(charged)}
+
+
 def backtest(ctx: JobContext) -> dict[str, Any]:
+    if ctx.job.payload.get("strategy_version_id"):
+        return strategy_backtest(ctx)
     svc: Services = ctx.services
     p = ctx.job.payload
     domain = str(p["domain"])
@@ -237,25 +432,7 @@ def backtest(ctx: JobContext) -> dict[str, Any]:
                 ctx.principal.user_id,
             ),
         )
-    charges = []
-    for f in forecasters:
-        calls = getattr(f, "calls", None)
-        if not calls:
-            continue
-        charges.append(
-            {
-                "forecaster": f.name,
-                "domain": domain,
-                "model": getattr(f, "model", None),
-                "input_tokens": sum(c["input_tokens"] for c in calls),
-                "output_tokens": sum(c["output_tokens"] for c in calls),
-                "cache_read_tokens": sum(c.get("cache_read_tokens", 0) for c in calls),
-                "cache_write_tokens": sum(
-                    c.get("cache_write_tokens", 0) for c in calls
-                ),
-                "usd": sum(c["cost_usd"] for c in calls),
-            }
-        )
+    charges = _charges(forecasters, domain)
     charged = budgets.settle_job(
         svc.pool, ctx.principal, ctx.job.id, ctx.job.reserved_usd, charges, paid_by
     )
@@ -270,8 +447,8 @@ def backtest(ctx: JobContext) -> dict[str, Any]:
 def _account(svc: Services, principal: Principal, account_id: UUID) -> dict[str, Any]:
     with svc.pool.connection() as conn, tenant_session(conn, principal):
         row = conn.execute(
-            "select id, domains, forecasters, initial_cash from paper_accounts "
-            "where id = %s",
+            "select id, domains, forecasters, initial_cash, strategy_version_id "
+            "from paper_accounts where id = %s",
             (account_id,),
         ).fetchone()
     if row is None:
@@ -284,6 +461,7 @@ def _account(svc: Services, principal: Principal, account_id: UUID) -> dict[str,
         else [d for d in row[1] if d in DOMAINS],
         "forecasters": row[2],
         "cash": float(row[3]),
+        "strategy_version_id": row[4],
     }
 
 
@@ -308,6 +486,30 @@ def _trade(ctx: JobContext, principal: Principal, account_id: UUID) -> dict[str,
     svc.refresh(account["domains"])
     counts: dict[str, Any] = {}
     domains = account["domains"]
+    # A strategy's account trades by its spec: its belief, selector, rule,
+    # caps and window (vp.strategy.run.paper_options).
+    spec = None
+    options: dict[str, Any] = {}
+    llm: dict[str, Any] = {}
+    paid_by = "platform"
+    made: list[Forecaster] = []
+    if account["strategy_version_id"] is not None:
+        from vp.strategy import run as strategy_run
+
+        spec, _, _ = strategies.version_spec(
+            svc.pool, principal, account["strategy_version_id"]
+        )
+        options = strategy_run.paper_options(spec)
+        if spec.belief.forecaster == "llm" and spec.rule.kind == "edge":
+            if budgets.standing(svc.pool, principal).remaining_usd <= 0:
+                return {"account_id": str(account["id"]), "skipped": "over budget"}
+            client, paid_by = llmops.client_for(
+                svc.pool,
+                principal,
+                svc.settings.anthropic_api_key,
+                svc.settings.master_key,
+            )
+            llm = {"client": client}
     for i, domain in enumerate(domains):
         ctx.progress(i / max(len(domains), 1), f"trading {domain}")
         snaps = sorted((svc.shared.root / "snapshots" / domain).glob("*.parquet"))
@@ -316,9 +518,16 @@ def _trade(ctx: JobContext, principal: Principal, account_id: UUID) -> dict[str,
             continue
         with tempfile.TemporaryDirectory(dir=svc.work_dir) as tmp:
             root = svc.shared.workroot(Path(tmp))
-            forecasters = forecasters_for(
-                account["forecasters"], domain, svc.pool, snaps[-1].stem
-            )
+            if spec is None:
+                forecasters = forecasters_for(
+                    account["forecasters"], domain, svc.pool, snaps[-1].stem
+                )
+            else:
+                belief = strategy_run.belief(spec, domain, **llm)
+                made.append(belief)
+                forecasters = [
+                    belief if llm else Memoised(belief, svc.pool, snaps[-1].stem)
+                ]
             # The information cutoff is the capture's time: what was known
             # when the prices traded against were seen, never later than now.
             # Every account trading this capture then asks the same question,
@@ -335,6 +544,7 @@ def _trade(ctx: JobContext, principal: Principal, account_id: UUID) -> dict[str,
                     initial_cash=account["cash"],
                     snapshot=root / "snapshots" / domain / snaps[-1].name,
                     now=_captured_at(snaps[-1].stem),
+                    **options,
                 )
             _store_forecasts(
                 ctx,
@@ -343,6 +553,9 @@ def _trade(ctx: JobContext, principal: Principal, account_id: UUID) -> dict[str,
                 domain,
                 account["id"],
             )
+    charges = _charges(made, None)
+    if charges:
+        budgets.settle_job(svc.pool, principal, ctx.job.id, 0.0, charges, paid_by)
     return {"account_id": str(account["id"]), "domains": counts}
 
 
@@ -561,6 +774,7 @@ def handlers(extra: dict[str, Handler] | None = None) -> dict[str, Handler]:
     evidence collectors', which live with their services)."""
     table: dict[str, Handler] = {
         "backtest": backtest,
+        "compile": compile_turn,
         "paper_cycle": paper_cycle,
         "settle": settle_account,
         "sample_cycle": sample_cycle,

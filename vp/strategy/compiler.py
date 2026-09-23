@@ -219,6 +219,8 @@ class Compiled:
     problems: list[str] = field(default_factory=list)
     cost_usd: float = 0.0
     model: str = COMPILER_MODEL
+    input_tokens: int = 0
+    output_tokens: int = 0
 
 
 def compile_spec(
@@ -253,6 +255,7 @@ def compile_spec(
     ]
     messages.append({"role": "user", "content": words})
     cost = 0.0
+    tokens = [0, 0]
     problems: list[str] = []
     for attempt in range(REPAIRS + 1):
         response = client.beta.messages.create(
@@ -268,12 +271,16 @@ def compile_spec(
             messages=messages,
         )
         cost += usage_usd(response.usage, model)
+        tokens[0] += response.usage.input_tokens
+        tokens[1] += response.usage.output_tokens
         if response.stop_reason == "refusal":
             return Compiled(
                 "declined",
                 "The model declined to translate this request.",
                 cost_usd=cost,
                 model=model,
+                input_tokens=tokens[0],
+                output_tokens=tokens[1],
             )
         text = next(b.text for b in response.content if b.type == "text")
         try:
@@ -292,6 +299,8 @@ def compile_spec(
                 answer.remember,
                 cost_usd=cost,
                 model=model,
+                input_tokens=tokens[0],
+                output_tokens=tokens[1],
             )
         if answer is not None and answer.spec is not None:
             spec = answer.spec.model_copy(
@@ -308,6 +317,8 @@ def compile_spec(
                     changes=diff(current, spec) if current else [],
                     cost_usd=cost,
                     model=model,
+                    input_tokens=tokens[0],
+                    output_tokens=tokens[1],
                 )
         elif answer is not None:
             problems = ["the answer was a spec but carried none"]
@@ -329,6 +340,8 @@ def compile_spec(
         problems=problems,
         cost_usd=cost,
         model=model,
+        input_tokens=tokens[0],
+        output_tokens=tokens[1],
     )
 
 

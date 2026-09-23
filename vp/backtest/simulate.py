@@ -50,6 +50,7 @@ class Bet:
     shares: float
     pnl: float
     bankroll_after: float
+    fee: float = 0.0  # taker fee paid, in dollars
 
 
 def simulate(
@@ -85,6 +86,7 @@ def simulate(
         won = opp.label == (1 if position.side == "yes" else 0)
         pnl = shares - stake if won else -stake
         bankroll += pnl
+        quote = ask if position.side == "yes" else 1.0 - bid
         bets.append(
             Bet(
                 opp.market_id,
@@ -95,6 +97,7 @@ def simulate(
                 shares,
                 pnl,
                 bankroll,
+                fee=shares * (position.price - quote),
             )
         )
     return bets
