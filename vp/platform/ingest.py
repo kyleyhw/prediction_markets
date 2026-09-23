@@ -304,22 +304,29 @@ class Ingest:
 
     # -- quotes and snapshots --
 
-    def flush_quotes(self, moved: Iterable[str] | None = None) -> int:
-        """Write first outcomes' tops: those whose best bid or ask moved
-        since the last flush to this minute's row, or `moved` now.
+    def flush_quotes(self, held_only: bool = False) -> int:
+        """Write first outcomes' tops whose best bid or ask moved since the
+        last flush, to this minute's row; with `held_only`, only markets
+        someone holds.
 
         Only a market's first outcome is written: the second token of a
         binary market trades on the same book, mirrored, so its quote is the
         first's complement. A book whose top has not moved writes no row: the
         quote at any minute is the latest row at or before it. The service
-        flushes every `quote_seconds` (five minutes), and a held market on
-        every move of its top. Measured on 2026-09-23 with 18,600 tokens:
+        flushes every market every `quote_seconds` (five minutes) and held
+        markets every minute. Measured on 2026-09-23 with 18,600 tokens:
         every token every minute was 26 million rows a day, every book that
-        saw any event 17 million, every moved top 12 million.
+        saw any event 17 million, every moved top 12 million; held markets
+        written on every move of their top were another 5.5 million, a held
+        book's top moving about five times a minute.
         """
         now = datetime.now(tz=UTC)
-        minute = now.replace(second=0, microsecond=0) if moved is None else now
-        tokens = list(self.state.books) if moved is None else list(moved)
+        minute = now.replace(second=0, microsecond=0)
+        tokens = [
+            t
+            for t in self.state.books
+            if not held_only or self.state.token_market.get(t) in self.held
+        ]
         rows = []
         for token in tokens:
             book = self.state.books.get(token)
@@ -330,7 +337,7 @@ class Ingest:
             if record is not None and record.outcomes[0].clob_token_id != token:
                 continue
             bid, ask = book.top()
-            if moved is None and self._flushed.get(token) == (bid, ask):
+            if self._flushed.get(token) == (bid, ask):
                 continue
             self._flushed[token] = (bid, ask)
             bid_size = book.bids.get(bid) if bid is not None else None
@@ -462,11 +469,10 @@ class Ingest:
             data = json.loads(raw)
         except ValueError:
             return
-        moved: set[str] = set()
         for event in data if isinstance(data, list) else [data]:
             if isinstance(event, dict):
                 self.messages += 1
-                moved |= self.state.apply(event)
+                self.state.apply(event)
                 # The venue stamps each event in milliseconds; for a change
                 # the gap to now is the ingestion lag. A `book` message is a
                 # picture of the book, stamped with its last change, which
@@ -474,10 +480,6 @@ class Ingest:
                 stamp = _num(event.get("timestamp"))
                 if stamp and self.metrics and event.get("event_type") in CHANGES:
                     self.metrics.lag(time.time() - stamp / 1000)
-        held = {t for t in moved if self.state.token_market.get(t) in self.held}
-        if held:
-            with contextlib.suppress(Exception):
-                self.flush_quotes(held)
 
     def assign(self, tokens: list[str]) -> list[tuple[set[str], list[str]]]:
         """Spread new tokens over the sockets, opening more as they fill."""
@@ -542,6 +544,9 @@ class Ingest:
         tasks += [
             asyncio.create_task(discover_and_subscribe()),
             asyncio.create_task(every(self.quote_seconds, self.flush_quotes, "quotes")),
+            asyncio.create_task(
+                every(60.0, lambda: self.flush_quotes(held_only=True), "held quotes")
+            ),
             asyncio.create_task(every(300.0, self.refresh_held, "held markets")),
             asyncio.create_task(every(30.0, self.record_resolutions, "resolutions")),
             asyncio.create_task(every(15.0, self._measure, "metrics")),

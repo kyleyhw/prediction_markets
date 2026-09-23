@@ -145,7 +145,11 @@ def test_the_service_records_markets_quotes_snapshots_and_resolutions(
             ],
         }
     )
-    assert service.flush_quotes() == 1  # the same minute is updated, not duplicated
+    # The minute pass writes held markets only; this one is not held yet.
+    assert service.flush_quotes(held_only=True) == 0
+    service.held = {"6"}
+    assert service.flush_quotes(held_only=True) == 1
+    assert service.flush_quotes() == 0  # already written this minute
     (n,) = pg_owner.execute("select count(*) from quotes").fetchone()
     assert n == 1
     key = service.write_snapshot("cs2")

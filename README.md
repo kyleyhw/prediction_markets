@@ -21,12 +21,16 @@ strategy has to clear, not a result the project is trying to explain away.
 - **The hosted web app is being built.** An account, a browser, strategies
   described in conversation and no terminal anywhere: that is Phase 13 onward
   of [the plan](PROJECT_PLAN.md), designed in [docs/product.md](docs/product.md).
-  Email sign-in and the friendly interface (a guided start, a home screen,
-  market cards, plain-language and detailed reading levels, Learn) already
-  run on a development machine with `vp serve`
-  ([docs/interface.md](docs/interface.md), [docs/platform.md](docs/platform.md));
-  it is not deployed anywhere yet. When it is, it is how most people will use this, and
-  this page will point at it.
+  The platform under it runs on one machine under Docker Compose
+  (`deploy/compose.yaml`): email sign-in, the friendly interface, paper
+  trading and backtests started from the page with their progress and
+  cost, per-person storage in Postgres and an object store, a job queue
+  with worker pools, one live market-data subscription for everyone, and
+  metrics and alerts ([docs/platform.md](docs/platform.md),
+  [docs/interface.md](docs/interface.md), measured in
+  [the Phase 13 report](tests/reports/phase13_platform.md)). It is not
+  deployed anywhere yet. When it is, it is how most people will use this,
+  and this page will point at it.
 - **Live execution is last, and gated.** Nothing in this repository can sign
   or send a real order, and nothing will until the hosted security design is
   agreed (Phase 22). Paper trading is play money against real prices.
@@ -234,7 +238,9 @@ print(market["question"], market["resolution"]["state"])
 - [Scoring](docs/scoring.md) and [sizing](docs/sizing.md): proper scores, calibration, fees, Kelly.
 - [Paper trading](docs/paper_trading.md): ledger, forward loop, settlement, leakage check.
 - [Product design](docs/product.md): the hosted app for everyone, Phases 13 to 23.
-- [Platform](docs/platform.md): configuration, the principal, tenancy and migrations.
+- [Platform](docs/platform.md): configuration, tenancy, storage, jobs, the
+  market-data service, budgets, observability and the local stand-in.
+- [Runbook](docs/runbook.md): what each alert means and what to do.
 - [Scaling](docs/scaling.md): the multi-user architecture and capacity model.
 - [Vibe-Trading review](docs/vibe_trading.md): the reference implementation, its collaborative tools, the capability mapping, non-infringement rules.
 - [Documentation site](docs/site.md): the public site's structure and default visual style.

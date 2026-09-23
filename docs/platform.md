@@ -372,9 +372,10 @@ open, and a dropped socket reconnects with exponential backoff.
 Books are kept in memory. Every five minutes each market whose best bid or
 ask moved has its first outcome written to `quotes` (the second outcome
 trades on the same book, mirrored, and a change of size alone writes
-nothing); a market someone holds is written on every change of its top of
-book. Writing every token every minute, as first built, came to 26
-million rows a day for the 18,600 tokens tracked. Every
+nothing); a market someone holds is written every minute its top moved.
+Writing every token every minute, as first built, came to 26 million rows
+a day for the 18,600 tokens tracked, and held markets written on every
+move of their top another 5.5 million. Every
 fifteen minutes each domain's snapshot is written from memory in the
 engine's own format to the object store, and `NOTIFY vp_data` tells the
 web processes to refresh their caches. Resolutions come from the

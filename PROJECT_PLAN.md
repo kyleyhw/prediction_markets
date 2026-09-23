@@ -466,7 +466,9 @@ Started 2026-09-21; what is built is recorded in `docs/platform.md`.
     - `vp jobs` for the operator: list, inspect, retry, drain.
 32. [done] Market-data service: one subscription for everyone. Landed and
     run live 2026-09-23 (about 18,600 tokens on 47 sockets); quotes are
-    written when the top of book moves, not every minute.
+    written for first outcomes when the top of book moves, every five
+    minutes, or every minute for a held market (every move of a held top
+    was 5.5 million rows a day).
     - The CLOB market WebSocket for every tracked token with dynamic
       subscribe and unsubscribe, the custom `best_bid_ask`, `new_market` and
       `market_resolved` events, and the ten-second `PING`; in-memory books;

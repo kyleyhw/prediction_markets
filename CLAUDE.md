@@ -38,14 +38,20 @@ The original `prediction_markets` project is archived unchanged under
   pages `product.md`, `scaling.md`, `site.md`, plus `vibe_trading.md`, the
   full review of the reference implementation with the capability mapping
   and the non-infringement rules.
-- `vp/platform/`: the hosted platform around the engine (Phase 13, in
-  progress): `config.py` (the only reader of the environment),
-  `principal.py`, `db.py` (migrations, `tenant_session`), `auth.py`
-  (sign-in, sessions, API tokens), `mail.py` (the development outbox),
-  `web.py` (the FastAPI service), `run.py` (`vp serve`, `vp db migrate`)
-  and `migrations/*.sql`. Reasoning in `docs/platform.md`. The engine must
+- `vp/platform/`: the hosted platform around the engine (Phase 13, built
+  on the local stand-in): `config.py` (the only reader of the
+  environment), `principal.py`, `db.py` (migrations, `tenant_session`),
+  `auth.py`, `mail.py`, `web.py` (the FastAPI service), `views.py` (the
+  dashboard over a workspace's rows), `storage.py` (object store and the
+  shared disk cache), `ledger.py` and `archive.py` (the paper ledger in
+  Postgres), `jobs.py` and `handlers.py` (the queue and what it runs),
+  `ingest.py` (the market-data service), `evidence.py`, `budgets.py`,
+  `llmops.py` (keys and the model limiter), `observe.py`, `audit.py`,
+  `ops.py` and `console.py` (`vp jobs`, `vp admin`), `run.py` (process
+  entry points) and `migrations/*.sql`. Reasoning in `docs/platform.md`,
+  alerts in `docs/runbook.md`, deploy files in `deploy/`. The engine must
   never import it (`tests/test_platform_boundary.py`); `vp/cli.py`, the
-  composition root, imports it only inside `serve` and `db`.
+  composition root, imports it only inside its platform commands.
 - `vp/`: the engine. `venues/polymarket.py` (read-only client with the
   closed-is-not-resolved evidence ladder), `domains/` (cs2, weather, epl),
   `markets/` (record, source, Parquet store, dataset, snapshot),
@@ -112,9 +118,17 @@ and `vp ui`, with Simple and Detailed reading levels, a guided start,
 home, market cards, Learn and per-person settings (migration 0003); every
 word in `app/locales/en.json`; zero axe-core violations at WCAG 2.2 AA.
 What is left of step 2: a real screen-reader pass (47), the settings that
-wait on later tasks (46). Next is build-order step 3, the rest of Phase 13
-(tasks 30 to 33, 35, 36), starting with task 30, per-workspace storage,
-since everyone on one `vp serve` still sees the same sample strategies.
+wait on later tasks (46). **Phase 13 was built the same day** (step 3) and
+verified on the local stand-in: storage, jobs and five worker pools, the
+market-data service live on about 18,600 tokens, evidence collectors,
+budgets and own keys, observability, `vp admin`, Compose and CI; a browser
+walk-through of the "done when" and the measurements are in
+`tests/reports/phase13_platform.md`. Measuring found and fixed some twenty
+faults (the report lists them). Open from it: **flag F17** (every sample
+paper account is the same account; about 58,000 ledger rows a person a
+day; a shared sample account is proposed and needs the owner), and the
+cloud deploy (task 34, F16), after which the host measurements, 48 and 49
+follow. Open-Meteo and GDELT answer 429 or time out from this container.
 Earlier,
 the decisions each phase needed were taken on 2026-09-19 as proposed
 (Fly.io with Amsterdam as the first region, magic-link sign-in, quarter
@@ -175,6 +189,21 @@ Things a future session should know:
 - The SessionStart hook refreshes `uv` (the container's is too old for the
   pinned Python 3.14.7) and sets the git identity to the repository owner.
   Commits carry that identity and no assistant attribution.
+- Running the whole platform: start `dockerd` as a background task, build
+  with `docker build --network host --secret
+  id=extra_ca,src=/root/.ccr/ca-bundle.crt --build-arg
+  BASE=public.ecr.aws/docker/library/python:3.14-slim -t vibe-predict:dev .`
+  (Docker Hub pulls are refused here), then `docker compose -f
+  deploy/compose.yaml -f deploy/compose.proxy.yaml up -d` with
+  `VP_DB_HOST=localhost VP_DB_PORT=5433 VP_S3_HOST=localhost
+  VP_POSTGRES_IMAGE=public.ecr.aws/docker/library/postgres:16
+  VP_PUBLIC_URL=http://127.0.0.1:8000` and a generated `VP_MASTER_KEY`
+  exported. Sign-in links are in the web container's `/data/outbox`; the
+  owner's database is `psql -h 127.0.0.1 -p 5433 -U postgres -d vp` inside
+  the Postgres container. Restart only the services a change touches
+  (`up -d --no-deps web`): recreating the data worker cuts a dataset build
+  short (it resumes, but a job dies after three attempts). Sign-in allows
+  twenty requests an hour per address; reuse session cookies in scripts.
 - Checking the platform visually: start `vp serve` from a script file,
   then drive Chromium as below through sign-in (read the link from
   `<data root>/outbox/`). Real-browser runs have found faults request tests

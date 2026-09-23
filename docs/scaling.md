@@ -120,10 +120,9 @@ talking to the venue.
   behind the custom-feature flag, and a `PING` every ten seconds. Books are
   kept in memory per token. Quotes are written for each market's first
   outcome only (the second trades on the same book, mirrored), every five
-  minutes for a market whose best bid or ask moved, and on every
-  top-of-book change for markets a strategy holds; a book whose top has not
-  moved writes nothing, and the quote at a moment is the latest row at or
-  before it.
+  minutes for a market whose best bid or ask moved, and every minute for
+  markets a strategy holds; a book whose top has not moved writes nothing,
+  and the quote at a moment is the latest row at or before it.
 - **Resolutions.** The `market_resolved` event, the Data API v2
   `/v2/resolutions` endpoint, and the CLOB `winner` flag, in that order of
   speed and the reverse order of authority; a sweep reconciles anything a
@@ -278,6 +277,35 @@ users' budgets. The step to a million users is a step in the ledger volume
 (a hundred million appends a day), which is why the ledger is partitioned
 and archived from the start and why workspaces are the sharding key; the
 engine, the queue model and the market-data service do not change shape.
+
+### Stage A, measured (2026-09-23)
+
+Phase 13 measured stage A on the local stand-in: one 4-core machine
+running Postgres, MinIO, the web service, five worker pools and the
+market-data service together (`tests/reports/phase13_platform.md`). The
+figures replace the estimates above for this stage; the larger columns
+wait for Phase 21.
+
+| Quantity | Measured | Against the estimate |
+| :--- | :--- | :--- |
+| Markets and tokens tracked | 9,300 markets, 18,600 tokens on 47 sockets | three times the 3,000 assumed, for three domains |
+| Ingestion lag (venue stamp to receipt) | 95% within 250 ms, 99.5% within 500 ms | |
+| Book staleness (socket silence), 99th percentile | 8 s | objective 60 s |
+| Quote rows per day | QUOTES_DAY | 0.4 M |
+| Requests a second, one web process | about 35, CPU-bound | |
+| Requests a second, four processes | 107 at 16 concurrent, p50 91 ms, p95 405 ms | 25 at the peak for 100 people |
+| Job start, interactive | 10 ms | |
+| Paper cycle, sample account | 6 s alone, about 14 s of process time under load; about 260 hourly accounts a worker process | |
+| Ledger entries per person per day, sample account | about 58,000 | about 100 (flag F17) |
+| Backtest, 146,000 weather markets, two strategies | 8 to 25 s | 15 s CPU |
+| Restore of the database (271 MB) | 3.1 s dump, 1.9 s restore | |
+
+Reading it: the design holds at this stage with two corrections. Web
+processes, not threads, carry the load (one per core). And the sample
+paper account, as built, gives every person the whole market's ledger:
+at a thousand people it would write about 58 million ledger rows a day,
+which is why flag F17 proposes one shared sample account. Without it the
+per-person figures are what a person's own strategies select.
 
 ## 12. Growth Path
 
