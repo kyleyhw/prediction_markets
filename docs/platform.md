@@ -487,6 +487,6 @@ for an afternoon with live venue data: the walk-through of the phase's
 "done when" in Chromium, request latency under load, ingestion lag,
 staleness and reconnects, venue requests, job start latency, cost per
 person-day, a restore drill, and the storage of the shared market data.
-The figures, and the twenty faults the measuring found and fixed, are in
+The figures, and the 23 faults the measuring found and fixed, are in
 `tests/reports/phase13_platform.md`; the stage-A column of
 [scaling.md](scaling.md) § 11 now holds them.

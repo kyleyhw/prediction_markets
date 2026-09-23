@@ -123,7 +123,7 @@ verified on the local stand-in: storage, jobs and five worker pools, the
 market-data service live on about 18,600 tokens, evidence collectors,
 budgets and own keys, observability, `vp admin`, Compose and CI; a browser
 walk-through of the "done when" and the measurements are in
-`tests/reports/phase13_platform.md`. Measuring found and fixed some twenty
+`tests/reports/phase13_platform.md`. Measuring found and fixed 23
 faults (the report lists them). Open from it: **flag F17** (every sample
 paper account is the same account; about 40,000 ledger rows a person a
 day; a shared sample account is proposed and needs the owner), the
