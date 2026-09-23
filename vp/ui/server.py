@@ -28,6 +28,7 @@ import logging
 import re
 import threading
 from collections import Counter
+from collections.abc import Iterator
 from datetime import datetime, timedelta, timezone
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -142,10 +143,9 @@ class DataView:
         return runs
 
     def paper(self, *, limit: int = 50, now: datetime | None = None) -> dict[str, Any]:
-        ledger = self.ledger()
-        entries = list(ledger.entries())
+        entries = list(self.ledger().entries())
         cash = self.start_cash()
-        accounts = replay(ledger, cash)
+        accounts = replay(_Read(entries), cash)
         orders = [e for e in entries if e["kind"] == "order"]
         settlements = [e for e in entries if e["kind"] == "settlement"]
         since = (now or datetime.now(tz=timezone.utc)) - timedelta(hours=24)
@@ -253,6 +253,16 @@ def market_series(paths: list[Path], market_id: str) -> list[dict[str, Any]]:
         [[str(p) for p in paths], market_id],
     ).fetchall()
     return [{"at": at, "p_yes": price} for at, price in rows]
+
+
+class _Read:
+    """Entries already read, so a replay does not read the ledger again."""
+
+    def __init__(self, entries: list[dict[str, Any]]) -> None:
+        self._entries = entries
+
+    def entries(self) -> Iterator[dict[str, Any]]:
+        return iter(self._entries)
 
 
 def _parse_at(value: str) -> datetime:

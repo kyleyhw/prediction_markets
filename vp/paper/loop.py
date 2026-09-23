@@ -51,7 +51,7 @@ from vp.markets.polymarket import PolymarketSource
 from vp.markets.schema import BinaryMarket
 from vp.markets.snapshot import collect_snapshot
 from vp.markets.store import read_markets
-from vp.paper.ledger import ChainLedger
+from vp.paper.ledger import ChainLedger, Entries
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +76,7 @@ class MarketLookup(Protocol):
     def market(self, identifier: str, *, depth: int = 0) -> BinaryMarket: ...
 
 
-def replay(ledger: ChainLedger, initial_cash: float) -> dict[str, Account]:
+def replay(ledger: Entries, initial_cash: float) -> dict[str, Account]:
     """Bankrolls and open positions per forecaster from the ledger entries."""
     accounts: dict[str, Account] = {}
     for entry in ledger.entries():

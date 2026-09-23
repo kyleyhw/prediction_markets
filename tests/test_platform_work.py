@@ -184,3 +184,25 @@ def test_spending_refresh_and_metrics(world) -> None:
     assert client.get("/metrics").status_code == 404
     scraped = client.get("/metrics", headers={"Authorization": "Bearer scrape-me"})
     assert scraped.status_code == 200 and "vp_http_requests_total" in scraped.text
+
+
+def test_the_paper_view_is_kept_per_ledger_head_and_never_stale(
+    world, app_pool
+) -> None:
+    from uuid import UUID
+
+    from vp.platform.auth import resolve_session
+    from vp.platform.ledger import PgLedger
+
+    client = world["client"]
+    ada, _ = people(world)
+    _as(client, ada).post("/api/paper/start", json={}, headers=ORIGIN)
+    account = UUID(client.get("/api/overview").json()["account"]["id"])
+    assert client.get("/api/paper").json()["entries"] == 0
+    with app_pool.connection() as conn:
+        principal = resolve_session(conn, ada)
+    assert principal is not None
+    PgLedger(app_pool, principal, account).append("cycle", {"domain": "epl"})
+    # The head moved, so the next answer is computed afresh.
+    assert client.get("/api/paper").json()["entries"] == 1
+    assert client.get("/api/overview").json()["paper"]["entries"] == 1

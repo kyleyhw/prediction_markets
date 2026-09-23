@@ -11,7 +11,11 @@ every query here runs in a tenant session.
 
 from __future__ import annotations
 
+import threading
+import time
+from collections import OrderedDict
 from collections.abc import Iterator
+from datetime import datetime
 from typing import Any
 
 from psycopg.rows import dict_row
@@ -23,6 +27,11 @@ from vp.platform.ledger import PgLedger
 from vp.platform.principal import Principal
 from vp.platform.storage import ObjectStore, SharedRoot
 from vp.ui.server import START_CASH, DataView
+
+PAPER_TTL_SECONDS = 60.0
+PAPER_CACHE_SIZE = 512
+_PAPER: OrderedDict[tuple[Any, int, int], tuple[float, dict[str, Any]]] = OrderedDict()
+_PAPER_LOCK = threading.Lock()
 
 
 class NoLedger:
@@ -72,6 +81,34 @@ class WorkspaceView(DataView):
         if self.account is None:
             return NoLedger()
         return PgLedger(self.pool, self.principal, self.account["id"], store=self.store)
+
+    def paper(self, *, limit: int = 50, now: datetime | None = None) -> dict[str, Any]:
+        """The paper view, computed once per ledger head and minute.
+
+        Computing it reads, decodes and verifies the whole chain (about a
+        second for 14,000 entries), and every page asks for it. The ledger
+        changes only when a cycle or settlement appends, which moves the
+        head, so the view is kept per account and head, and recomputed at
+        most once a minute for the last-24-hours figures.
+        """
+        if self.account is None or now is not None:
+            return super().paper(limit=limit, now=now)
+        with self.pool.connection() as conn, tenant_session(conn, self.principal):
+            row = conn.execute(
+                "select seq from ledger_heads where account_id = %s",
+                (self.account["id"],),
+            ).fetchone()
+        key = (self.account["id"], row[0] if row else -1, limit)
+        with _PAPER_LOCK:
+            hit = _PAPER.get(key)
+        if hit is not None and time.monotonic() - hit[0] < PAPER_TTL_SECONDS:
+            return hit[1]
+        view = super().paper(limit=limit)
+        with _PAPER_LOCK:
+            _PAPER[key] = (time.monotonic(), view)
+            while len(_PAPER) > PAPER_CACHE_SIZE:
+                _PAPER.popitem(last=False)
+        return view
 
     def start_cash(self) -> float:
         return float(self.account["initial_cash"]) if self.account else START_CASH

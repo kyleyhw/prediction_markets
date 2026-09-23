@@ -28,13 +28,17 @@ from vp.markets.schema import utc_now_iso
 GENESIS = "0" * 64
 
 
-class ChainLedger(Protocol):
+class Entries(Protocol):
+    """Anything that yields ledger entries in chain order."""
+
+    def entries(self) -> Iterator[dict[str, Any]]: ...
+
+
+class ChainLedger(Entries, Protocol):
     """What the paper loop needs of a ledger: this file's, or the
     platform's in Postgres, which stores the same chain."""
 
     def append(self, kind: str, data: dict[str, Any]) -> dict[str, Any]: ...
-
-    def entries(self) -> Iterator[dict[str, Any]]: ...
 
     def last(self) -> dict[str, Any] | None: ...
 
