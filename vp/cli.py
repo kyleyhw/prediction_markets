@@ -110,8 +110,11 @@ def main() -> None:
         "--forecasters",
         nargs="+",
         default=["market", "constant"],
-        choices=FORECASTER_NAMES,
-        help="forecasters to run; market is the reference (default: market constant)",
+        type=_forecaster,
+        help="forecasters to run: one of "
+        + ", ".join(FORECASTER_NAMES)
+        + ", signal:<id> or blend:<id>+<id>; market is the reference "
+        "(default: market constant)",
     )
     back.add_argument(
         "--hours-before-close",
@@ -479,6 +482,14 @@ def _strategy(args: argparse.Namespace) -> None:
         for domain, result in results.items():
             print(f"{domain}: {result.common} markets scored; {out / domain}")
             print((out / domain / "summary.md").read_text())
+
+
+def _forecaster(name: str) -> str:
+    from vp.forecast import known
+
+    if not known(name):
+        raise argparse.ArgumentTypeError(f"no forecaster, signal or blend {name!r}")
+    return name
 
 
 def _signals(args: argparse.Namespace) -> None:

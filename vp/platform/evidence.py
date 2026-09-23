@@ -22,9 +22,10 @@ their terms (flag F9) are in `docs/evidence.md`; in short:
   with attribution, at most one request every five seconds.
 * `open_meteo_ensemble`: the ECMWF ensemble at every station an open
   market names (Phase 17, `vp.sources.open_meteo`).
-* `open_meteo_runs`, daily: the point-in-time forecasts of the last three
-  days at the same stations, each row with the latest moment it can have
-  existed (`available_at`); rows not yet final are left for tomorrow.
+* `open_meteo_runs`, daily: the point-in-time forecasts from three days
+  ago to tomorrow at the same stations, each row with the latest moment it
+  can have existed (`available_at`); rows not yet final are left for the
+  next run.
 
 Every capture has a manifest beside it (`<stamp>.json`: source, time,
 rows, SHA-256, licence, the request made), which the engine checks before
@@ -303,8 +304,10 @@ def open_meteo_runs(store: ObjectStore, pool: Any, key: str | None) -> dict:
     rows: list[dict[str, Any]] = []
     requests = []
     for site in named_stations(store, pool).values():
+        # Through tomorrow: a forecast for tomorrow issued two days ahead is
+        # final by this morning, and `_store` drops what is not yet.
         got, request = om.previous_runs(
-            site, today - timedelta(days=3), today - timedelta(days=1), key=key
+            site, today - timedelta(days=3), today + timedelta(days=1), key=key
         )
         rows += got
         requests.append(request)

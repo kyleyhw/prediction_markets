@@ -97,7 +97,7 @@ market, not at a geocoded city centre.
   for delivery, so a day's maximum or minimum from `previous_dayN` has
   `available_at` = the last hour of the local day $- 24N + 6$ hours. The
   backfill (`vp evidence weather-runs`) reads days one and two for every
-  station a market has named; the collector adds each new day.
+  station a market has named; the daily collector reads from three days back to tomorrow, and keeps a row only once its moment has passed.
 - **`open_meteo_ensemble`, forward only.** The Ensemble API's members
   (ECMWF IFS, 51 members) for the next days at each station, captured
   hourly with `available_at = captured_at`, since the provider keeps no

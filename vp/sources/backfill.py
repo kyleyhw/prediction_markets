@@ -3,8 +3,9 @@
 ``weather_runs`` finds every station a weather market in the root names,
 records the stations, then reads each station's point-in-time forecasts
 from the first market day (less ``lead_in`` days, for the error fit) to
-yesterday, one capture per station. It resumes: a station whose captures
-already reach a day is continued from the day after.
+tomorrow, keeping only rows already final, one capture per station. It
+resumes: a station whose captures reach a day is read again from two days
+before it, so a lead that was not yet final is picked up.
 """
 
 from __future__ import annotations
@@ -65,7 +66,8 @@ def weather_runs(
     only: list[str] | None = None,
     say: Callable[[str], None] = print,
 ) -> dict[str, Any]:
-    until = until or (datetime.now(tz=UTC).date() - timedelta(days=1))
+    # Through tomorrow; `write_capture` keeps only rows already final.
+    until = until or (datetime.now(tz=UTC).date() + timedelta(days=1))
     first = station_days(weather_markets(root, domain))
     if only:
         first = {k: v for k, v in first.items() if k in only}
@@ -96,7 +98,8 @@ def weather_runs(
             continue
         start = max(FIRST, first[code] - timedelta(days=lead_in))
         if code in reached:
-            start = max(start, reached[code] + timedelta(days=1))
+            # Two days back: a lead not yet final last time is read again.
+            start = max(start, reached[code] - timedelta(days=2))
         rows = 0
         while start <= until:
             end = min(until, start + CHUNK)
