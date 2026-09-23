@@ -91,6 +91,28 @@ function refreshData(domains) {
     <p class="small" id="refresh-status" role="status"></p>`;
 }
 
+// Deleting the account: in both levels, because it is a right rather than
+// an expert's option, behind the exact words typed.
+const DELETE_WORDS = 'delete my account';
+
+function deletion() {
+  after(() => document.getElementById('delete-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const typed = document.getElementById('delete-words').value.trim().toLowerCase();
+    const status = document.getElementById('delete-status');
+    if (typed !== DELETE_WORDS) { status.textContent = tp('settings.delete_mismatch'); return; }
+    try {
+      await send('DELETE', 'account', { confirm: DELETE_WORDS });
+      location.href = '/sign-in';
+    } catch (err) { status.textContent = err.message; }
+  }));
+  return `<h2>${t('settings.delete_title')}</h2><p class="muted measure">${t('settings.delete_text')}</p>
+    <form id="delete-form" class="row"><label for="delete-words" class="sr-only">${t('settings.delete_label')}</label>
+      <input type="text" id="delete-words" autocomplete="off" placeholder="${tp('settings.delete_label')}" style="min-width:18em">
+      <button class="btn" type="submit">${t('settings.delete_button')}</button></form>
+    <p class="small" id="delete-status" role="status"></p>`;
+}
+
 export default async function settings() {
   const o = await api('overview');
   const p = prefs();
@@ -125,6 +147,7 @@ export default async function settings() {
     h += `<h2>${t('settings.account')}</h2><dl class="kv"><dt>${t('settings.email')}</dt><dd>${esc(session.me.email)}</dd>
       <dt>${t('settings.workspace')}</dt><dd>${esc(session.me.workspace?.name ?? '')}</dd></dl>
       <form method="post" action="/auth/sign-out" style="margin-top:12px"><button class="btn" type="submit">${t('account.sign_out')}</button></form>`;
+    h += deletion();
   }
   after(() => {
     const form = document.getElementById('prefs'), status = document.getElementById('saved');

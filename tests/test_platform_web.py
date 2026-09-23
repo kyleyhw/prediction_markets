@@ -78,7 +78,10 @@ def _sign_in(client: TestClient, mailer: OutboxMailer, email: str) -> str:
     token = _link_token(mailer, email)
     assert client.get(f"/auth/verify?token={token}").status_code == 200
     done = client.post(
-        "/auth/verify", data={"token": token}, headers=ORIGIN, follow_redirects=False
+        "/auth/verify",
+        data={"token": token, "agree": "on"},
+        headers=ORIGIN,
+        follow_redirects=False,
     )
     assert done.status_code == 303 and done.headers["location"] == "/"
     cookie = done.cookies.get(SESSION_COOKIE)
@@ -146,7 +149,10 @@ def test_opening_the_link_does_not_spend_it(
     for _ in range(3):
         assert client.get(f"/auth/verify?token={token}").status_code == 200
     done = client.post(
-        "/auth/verify", data={"token": token}, headers=ORIGIN, follow_redirects=False
+        "/auth/verify",
+        data={"token": token, "agree": "on"},
+        headers=ORIGIN,
+        follow_redirects=False,
     )
     assert done.status_code == 303
 
@@ -156,7 +162,7 @@ def test_a_link_works_once(client: TestClient, mailer: OutboxMailer) -> None:
     _sign_in(client, mailer, email)
     token = _link_token(mailer, email)
     again = _as(client, None).post(
-        "/auth/verify", data={"token": token}, headers=ORIGIN
+        "/auth/verify", data={"token": token, "agree": "on"}, headers=ORIGIN
     )
     assert again.status_code == 400
     assert "expired" in again.text
@@ -174,7 +180,9 @@ def test_an_expired_link_is_refused(
             "where token_hash = %s",
             (digest(token),),
         )
-    refused = client.post("/auth/verify", data={"token": token}, headers=ORIGIN)
+    refused = client.post(
+        "/auth/verify", data={"token": token, "agree": "on"}, headers=ORIGIN
+    )
     assert refused.status_code == 400
 
 
@@ -241,14 +249,17 @@ def test_another_site_cannot_sign_you_into_its_account(
     token = _link_token(mailer, email)
     forged = client.post(
         "/auth/verify",
-        data={"token": token},
+        data={"token": token, "agree": "on"},
         headers={"Origin": "https://evil.example"},
         follow_redirects=False,
     )
     assert forged.status_code == 403
     # Refused before it was spent: the owner of the link can still use it.
     ok = client.post(
-        "/auth/verify", data={"token": token}, headers=ORIGIN, follow_redirects=False
+        "/auth/verify",
+        data={"token": token, "agree": "on"},
+        headers=ORIGIN,
+        follow_redirects=False,
     )
     assert ok.status_code == 303
 
@@ -459,3 +470,39 @@ def test_one_address_cannot_ask_for_links_without_limit(
             for _ in range(3)
         ]
     assert codes == [200, 200, 429]
+
+
+def test_signing_in_needs_the_age_and_the_terms_and_records_them(
+    client: TestClient, mailer: OutboxMailer
+) -> None:
+    from vp.platform import legal
+
+    email = _email()
+    _as(client, None).post("/auth/sign-in", data={"email": email}, headers=ORIGIN)
+    token = _link_token(mailer, email)
+    page = client.get(f"/auth/verify?token={token}").text
+    assert "18 or older" in page and 'href="/terms"' in page
+    # Without the box ticked nothing is spent: the same link still works.
+    refused = client.post("/auth/verify", data={"token": token}, headers=ORIGIN)
+    assert refused.status_code == 422
+    done = client.post(
+        "/auth/verify",
+        data={"token": token, "agree": "on"},
+        headers=ORIGIN,
+        follow_redirects=False,
+    )
+    assert done.status_code == 303
+    consent = client.get("/auth/me").json()["consent"]
+    assert consent == {
+        "version": legal.TERMS_VERSION,
+        "required": legal.TERMS_VERSION,
+        "current": True,
+    }
+    old = client.post(
+        "/api/consent", json={"version": "1999-01-01", "adult": True}, headers=ORIGIN
+    )
+    assert old.status_code == 409
+    for path in ("/terms", "/privacy"):
+        page = client.get(path)
+        assert page.status_code == 200 and legal.TERMS_VERSION in page.text
+    assert legal.STATEMENT[:40] in _as(client, None).get("/sign-in").text

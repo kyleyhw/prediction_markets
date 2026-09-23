@@ -108,3 +108,26 @@ def _rows_for(data: bytes, account_id: str) -> list[tuple[str]]:
     return con.execute(
         "select entry from archived where account_id = ? order by seq", [account_id]
     ).fetchall()
+
+
+def purge_workspace(store: ObjectStore, workspace_id: UUID) -> int:
+    """Remove a deleted workspace's rows from every archived month; returns
+    the rows removed. An archived month holds every workspace's rows, so
+    deleting a person rewrites the months that held theirs."""
+    removed = 0
+    for table in TABLES:
+        for key in store.keys(f"archive/{table}/"):
+            data = store.get_bytes(key)
+            if data is None:
+                continue
+            archived = pq.read_table(io.BytesIO(data))
+            owners = archived["workspace_id"].to_pylist()
+            keep = [w != str(workspace_id) for w in owners]
+            kept = archived.filter(pa.array(keep))
+            if kept.num_rows == archived.num_rows:
+                continue
+            buffer = io.BytesIO()
+            pq.write_table(kept, buffer)
+            store.put_bytes(key, buffer.getvalue())
+            removed += archived.num_rows - kept.num_rows
+    return removed

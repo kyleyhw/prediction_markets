@@ -18,7 +18,9 @@
   },
   "account": {
     "sign_out": "Sign out",
-    "local": "Local view, no account"
+    "local": "Local view, no account",
+    "terms": "Terms",
+    "privacy": "Privacy"
   },
   "error": {
     "title": "Something went wrong",
@@ -456,7 +458,12 @@
     "refresh_note": "Markets are captured every fifteen minutes. Ask for a fresh capture now; if one was asked for in the last fifteen minutes, that one is used.",
     "refresh_button": "Refresh {title}",
     "refresh_queued": "Asked for. The markets page shows it when it arrives.",
-    "refresh_recent": "A refresh was already asked for in the last fifteen minutes."
+    "refresh_recent": "A refresh was already asked for in the last fifteen minutes.",
+    "delete_title": "Delete your account",
+    "delete_text": "This deletes your workspace and everything in it, your settings, sessions, tokens and email address, at once and for good. Download your records first if you want to keep them.",
+    "delete_label": "Type “delete my account” to confirm",
+    "delete_button": "Delete my account",
+    "delete_mismatch": "Type the words exactly as shown."
   },
   "start": {
     "step": "Step {n} of {total}",
@@ -777,5 +784,12 @@
       "dead": "Failed",
       "cancelled": "Cancelled"
     }
+  },
+  "consent": {
+    "title": "Before you carry on",
+    "text": "The terms of use or the privacy notice have changed since you last accepted them, or you have not accepted them yet.",
+    "adult": "I am 18 or older, and I accept the terms of use and the privacy notice.",
+    "button": "Carry on",
+    "needed": "Please tick the box first."
   }
 }

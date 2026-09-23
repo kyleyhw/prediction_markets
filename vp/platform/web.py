@@ -78,7 +78,7 @@ from psycopg_pool import ConnectionPool
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
 from vp.domains import DOMAINS
-from vp.platform import auth, budgets, jobs, llmops
+from vp.platform import audit, auth, budgets, jobs, legal, llmops
 from vp.platform.config import Settings
 from vp.platform.db import tenant_session
 from vp.platform.mail import Mailer, Message, OutboxMailer
@@ -195,6 +195,21 @@ def install_log_redaction() -> None:
     """Attach the filter to the server's loggers."""
     for name in ("uvicorn.access", "uvicorn.error"):
         logging.getLogger(name).addFilter(RedactSecrets())
+
+
+class ConsentBody(BaseModel):
+    """Accepting the terms and confirming one's age, from the app."""
+
+    model_config = ConfigDict(extra="forbid")
+    version: str
+    adult: Literal[True]
+
+
+class DeleteAccountBody(BaseModel):
+    """Deleting one's account: the words typed must be exactly these."""
+
+    model_config = ConfigDict(extra="forbid")
+    confirm: Literal["delete my account"]
 
 
 class TokenRequest(BaseModel):
@@ -569,16 +584,20 @@ def create_app(
     @app.get("/auth/verify", include_in_schema=False)
     def confirm(token: str = "") -> HTMLResponse:
         """A button, not a sign-in: link scanners must not spend the token."""
-        return _page(
-            "Sign in",
-            "<h1>Sign in to vibe-predict</h1>"
-            '<form method="post" action="/auth/verify">'
-            f'<input type="hidden" name="token" value="{html.escape(token)}">'
-            "<button type=submit>Sign in</button></form>",
-        )
+        return _page("Sign in", _confirm_form(token))
 
     @app.post("/auth/verify", include_in_schema=False, response_model=None)
-    def verify(token: Annotated[str, Form()] = "") -> Response:
+    def verify(
+        token: Annotated[str, Form()] = "", agree: Annotated[str, Form()] = ""
+    ) -> Response:
+        # The age and the terms are confirmed before the token is spent, so
+        # a person who has not ticked the box can still use the same link.
+        if agree != "on":
+            return _page(
+                "Sign in",
+                _confirm_form(token, "Please confirm your age and the terms first."),
+                status=422,
+            )
         with pool.connection() as conn:
             result = auth.sign_in(conn, token) if token else None
         if result is None:
@@ -588,6 +607,11 @@ def create_app(
                 'for 15 minutes. <a href="/sign-in">Ask for a new one</a>.</p>',
                 status=400,
             )
+        with pool.connection() as conn:
+            signed_in = auth.resolve_session(conn, result.session)
+        if signed_in is not None:
+            with pool.connection() as conn, tenant_session(conn, signed_in):
+                conn.execute("select vp_accept_terms(%s)", (legal.TERMS_VERSION,))
         response = RedirectResponse("/", status_code=303)
         response.set_cookie(
             auth.SESSION_COOKIE,
@@ -616,7 +640,15 @@ def create_app(
         with pool.connection() as conn, tenant_session(conn, principal):
             user = conn.execute("select email from users").fetchone()
             workspace = conn.execute("select id, name from workspaces").fetchone()
+            consent = conn.execute("select * from vp_consent()").fetchone()
+        accepted = consent[0] if consent else None
         return {
+            "consent": {
+                "version": accepted,
+                "required": legal.TERMS_VERSION,
+                "current": accepted == legal.TERMS_VERSION
+                and bool(consent and consent[2]),
+            },
             "email": user[0] if user else None,
             "workspace": {"id": workspace[0], "name": workspace[1]}
             if workspace
@@ -624,6 +656,52 @@ def create_app(
             "roles": sorted(principal.roles),
             "auth_method": principal.auth_method,
         }
+
+    @app.post("/api/consent", status_code=204)
+    def accept_terms(body: ConsentBody, principal: BrowserSession) -> None:
+        """Accept the current terms and confirm one's age (18 or older)."""
+        if body.version != legal.TERMS_VERSION:
+            raise HTTPException(409, "the terms have changed; reload to read them")
+        with pool.connection() as conn, tenant_session(conn, principal):
+            conn.execute("select vp_accept_terms(%s)", (legal.TERMS_VERSION,))
+
+    @app.delete("/api/account", response_model=None)
+    def delete_account(
+        body: DeleteAccountBody, principal: BrowserSession, request: Request
+    ) -> Response:
+        """Delete the signed-in person: their workspace and everything in it
+        when they are its only member, their own rows, their stored files and
+        archived rows, and their user. It cannot be undone."""
+        from vp.platform.archive import purge_workspace
+
+        with pool.connection() as conn, tenant_session(conn, principal):
+            (deleted,) = conn.execute("select vp_delete_account()").fetchone() or (
+                None,
+            )
+        files = 0
+        if deleted is not None:
+            for key in store.keys(f"workspaces/{deleted}/"):
+                store.delete(key)
+                files += 1
+            files += purge_workspace(store, deleted)
+        with pool.connection() as conn:
+            audit.append(
+                conn,
+                "account.delete",
+                {"workspace": principal.workspace, "workspace_deleted": bool(deleted)},
+                principal,
+            )
+        response = JSONResponse({"deleted": True, "files_and_rows_purged": files})
+        response.delete_cookie(auth.SESSION_COOKIE, path="/")
+        return response
+
+    @app.get("/terms", include_in_schema=False)
+    def terms_page() -> HTMLResponse:
+        return _page("Terms of use", legal.render("Terms of use", legal.TERMS))
+
+    @app.get("/privacy", include_in_schema=False)
+    def privacy_page() -> HTMLResponse:
+        return _page("Privacy", legal.render("Privacy notice", legal.PRIVACY))
 
     # ---------------------------------------------------------- API tokens
 
@@ -965,6 +1043,29 @@ def _sign_in_form(error: str = "") -> str:
         'action="/auth/sign-in"><label for=email>Email</label>'
         "<input id=email name=email type=email autocomplete=email required "
         "autofocus><button type=submit>Send me a link</button></form>"
+        f"<p class=note>{html.escape(legal.STATEMENT)} "
+        f"{html.escape(legal.JURISDICTION)}</p>" + _LEGAL_LINKS
+    )
+
+
+_LEGAL_LINKS = (
+    '<p class=note><a href="/terms">Terms of use</a> · '
+    '<a href="/privacy">Privacy</a></p>'
+)
+
+
+def _confirm_form(token: str, error: str = "") -> str:
+    message = f"<p class=error role=alert>{html.escape(error)}</p>" if error else ""
+    return (
+        "<h1>Sign in to vibe-predict</h1>"
+        f"<p>{html.escape(legal.STATEMENT)}</p>" + message + '<form method="post" '
+        'action="/auth/verify">'
+        f'<input type="hidden" name="token" value="{html.escape(token)}">'
+        "<label class=check><input type=checkbox name=agree required> "
+        f"I am {legal.MINIMUM_AGE} or older, and I accept the "
+        '<a href="/terms" target="_blank">terms of use</a> and the '
+        '<a href="/privacy" target="_blank">privacy notice</a>.</label>'
+        "<button type=submit>Sign in</button></form>"
     )
 
 
@@ -999,6 +1100,11 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   outline: 2px solid var(--accent); outline-offset: 2px; }
 a { color: var(--accent); }
 .error { color: var(--bad); }
+label.check { display: flex; gap: 10px; align-items: flex-start; font-weight: 400;
+  margin-bottom: 16px; }
+label.check input { width: 20px; height: 20px; margin: 2px 0 0; flex: none; }
+main:has(h2) { max-width: 680px; }
+h2 { font-size: 17px; margin: 22px 0 6px; }
 .note { font-size: 13px; }
 code { font-size: 12px; word-break: break-all; }
 """

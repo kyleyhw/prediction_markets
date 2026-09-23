@@ -3,10 +3,10 @@
 // the router puts it in <main>, runs the view's hooks, names the page in
 // the title and, after a navigation, moves focus to the page heading so a
 // screen reader announces where the person has arrived.
-import { api, session, whoAmI } from './api.js';
+import { api, send, session, whoAmI } from './api.js';
 import { esc, setLocale, t, tp } from './i18n.js';
 import { loadLocal, loadRemote, prefs, save } from './prefs.js';
-import { installGlossary, runHooks } from './ui.js';
+import { after, installGlossary, runHooks } from './ui.js';
 import backtests from './views/backtests.js';
 import home from './views/home.js';
 import learn from './views/learn.js';
@@ -37,7 +37,8 @@ export function shell() {
   const foot = document.getElementById('foot');
   if (session.hosted) {
     foot.innerHTML = `<span class="who" title="${esc(session.me.email)}">${esc(session.me.email)}</span>
-      <form method="post" action="/auth/sign-out"><button class="btn quiet" type="submit" style="padding:4px 0;min-height:24px">${t('account.sign_out')}</button></form>`;
+      <form method="post" action="/auth/sign-out"><button class="btn quiet" type="submit" style="padding:4px 0;min-height:24px">${t('account.sign_out')}</button></form>
+      <span class="small"><a href="/terms">${t('account.terms')}</a> · <a href="/privacy">${t('account.privacy')}</a></span>`;
   } else {
     foot.innerHTML = `<span>${t('account.local')}</span><code id="root"></code>`;
     api('overview').then((o) => { if (o?.root) document.getElementById('root').textContent = o.root; }).catch(() => {});
@@ -67,7 +68,8 @@ export async function render(moveFocus = true) {
   });
   const main = document.getElementById('main');
   try {
-    main.innerHTML = await ROUTES[route](args);
+    // Nothing else shows until the current terms are accepted (task 48).
+    main.innerHTML = session.hosted && !session.me.consent?.current ? consent() : await ROUTES[route](args);
   } catch (e) {
     main.innerHTML = `<h1 id="page-title" tabindex="-1">${t('error.title')}</h1><p class="lede">${t('error.text', { message: e.message })}</p>
       <a class="btn primary" href="#home">${t('error.home')}</a>`;
@@ -76,6 +78,25 @@ export async function render(moveFocus = true) {
   const title = document.getElementById('page-title');
   document.title = `${title ? title.textContent : ''} · vibe-predict`;
   if (moveFocus && title) title.focus();
+}
+
+// The terms, the privacy notice and the age, when a person's acceptance is
+// missing or older than the current version.
+function consent() {
+  after(() => document.getElementById('consent')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.currentTarget, status = document.getElementById('consent-status');
+    if (!form.adult.checked) { status.textContent = tp('consent.needed'); return; }
+    try {
+      await send('POST', 'consent', { version: session.me.consent.required, adult: true });
+      await whoAmI();
+      await render(true);
+    } catch (err) { status.textContent = err.message; }
+  }));
+  return `<h1 id="page-title" tabindex="-1">${t('consent.title')}</h1><p class="lede">${t('consent.text')}</p>
+    <p><a href="/terms" target="_blank">${t('account.terms')}</a> · <a href="/privacy" target="_blank">${t('account.privacy')}</a></p>
+    <form id="consent" class="measure"><label class="check"><input type="checkbox" name="adult"> <span>${t('consent.adult')}</span></label>
+    <button class="btn primary" type="submit" style="margin-top:12px">${t('consent.button')}</button><p class="small" id="consent-status" role="status"></p></form>`;
 }
 
 async function boot() {

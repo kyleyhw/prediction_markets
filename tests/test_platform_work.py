@@ -229,3 +229,56 @@ def test_the_paper_view_is_kept_per_ledger_head_and_never_stale(
     # The head moved, so the next answer is computed afresh.
     assert client.get("/api/paper").json()["entries"] == before + 1
     assert client.get("/api/overview").json()["paper"]["entries"] == before + 1
+
+
+def test_deleting_an_account_removes_everything_of_it_and_nothing_else(
+    world, app_pool, pg_owner
+) -> None:
+    client = world["client"]
+    ada, bob = people(world)
+    body = {"domain": "epl", "forecasters": ["market", "constant"], "kinds": ["match"]}
+    _as(client, ada).post("/api/backtests", json=body, headers=ORIGIN)
+    services = Services(
+        settings=world["settings"],
+        pool=app_pool,
+        store=world["store"],
+        shared=SharedRoot(world["store"], world["root"] / "worker-cache"),
+        work_dir=world["root"],
+    )
+    Worker(app_pool, handlers(), ("backtest",), services=services).run_once()
+    client.put("/api/settings", json={"theme": "dark"}, headers=ORIGIN)
+    client.post("/api/tokens", json={"name": "laptop"}, headers=ORIGIN)
+    me = client.get("/auth/me").json()
+    workspace, email = me["workspace"]["id"], me["email"]
+    assert world["store"].keys(f"workspaces/{workspace}/")
+    _as(client, bob).post("/api/backtests", json=body, headers=ORIGIN)
+    _as(client, ada)
+    wrong = client.request(
+        "DELETE", "/api/account", json={"confirm": "yes"}, headers=ORIGIN
+    )
+    assert wrong.status_code == 422
+    done = client.request(
+        "DELETE", "/api/account", json={"confirm": "delete my account"}, headers=ORIGIN
+    )
+    assert done.status_code == 200
+    assert _as(client, ada).get("/api/overview").status_code == 401
+    left = {
+        table: pg_owner.execute(
+            f"select count(*) from {table} where workspace_id = %s",  # noqa: S608
+            (workspace,),
+        ).fetchone()[0]
+        for table in ("runs", "jobs", "api_tokens", "sessions", "memberships")
+    }
+    assert left == dict.fromkeys(left, 0)
+    assert pg_owner.execute(
+        "select count(*) from users where email = %s", (email,)
+    ).fetchone() == (0,)
+    assert world["store"].keys(f"workspaces/{workspace}/") == []
+    (logged,) = pg_owner.execute(
+        "select count(*) from audit_entries where entry->>'kind' = 'account.delete' "
+        "and entry->'data'->>'workspace' = %s",
+        (workspace,),
+    ).fetchone()
+    assert logged == 1
+    # Bob's work is untouched.
+    assert len(_as(client, bob).get("/api/jobs").json()) == 1

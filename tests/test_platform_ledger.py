@@ -173,6 +173,11 @@ def test_an_archived_month_leaves_postgres_and_the_chain_still_verifies(
     assert [e["seq"] for e in PgLedger(app_pool, ada, account).entries()] == [2]
     assert [e["seq"] for e in ledger.entries()] == [0, 1, 2]
     assert ledger.verify() is None
+    # Deleting the workspace rewrites the month without its rows.
+    from vp.platform.archive import archived_entries, purge_workspace
+
+    assert purge_workspace(store, ada.workspace) >= 2
+    assert list(archived_entries(store, account)) == []
 
 
 def test_a_batch_chains_as_single_appends_do_and_lands_whole(
