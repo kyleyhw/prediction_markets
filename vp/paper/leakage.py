@@ -25,7 +25,7 @@ import numpy as np
 from vp.backtest.scoring import brier_one
 from vp.forecast.base import clip
 from vp.markets.store import read_markets
-from vp.paper.ledger import Ledger
+from vp.paper.ledger import ChainLedger
 
 
 @dataclass(frozen=True)
@@ -62,7 +62,7 @@ def backtest_scores(
     return {k: np.array(v) for k, v in scores.items()}
 
 
-def forward_scores(ledger: Ledger) -> dict[str, np.ndarray]:
+def forward_scores(ledger: ChainLedger) -> dict[str, np.ndarray]:
     """Per-forecaster Brier scores of settled paper positions."""
     scores: dict[str, list[float]] = {}
     for entry in ledger.entries():

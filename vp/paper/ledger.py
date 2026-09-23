@@ -21,11 +21,24 @@ import hashlib
 import json
 from collections.abc import Iterable, Iterator
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
 
 from vp.markets.schema import utc_now_iso
 
 GENESIS = "0" * 64
+
+
+class ChainLedger(Protocol):
+    """What the paper loop needs of a ledger: this file's, or the
+    platform's in Postgres, which stores the same chain."""
+
+    def append(self, kind: str, data: dict[str, Any]) -> dict[str, Any]: ...
+
+    def entries(self) -> Iterator[dict[str, Any]]: ...
+
+    def last(self) -> dict[str, Any] | None: ...
+
+    def verify(self) -> int | None: ...
 
 
 def entry_hash(entry: dict[str, Any]) -> str:

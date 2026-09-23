@@ -21,7 +21,7 @@ from __future__ import annotations
 import json
 import logging
 import time
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -113,8 +113,14 @@ def run_backtest(
     *,
     forecasters: Sequence[Forecaster] | None = None,
     llm_options: dict[str, object] | None = None,
+    progress: Callable[[float, str], None] | None = None,
 ) -> BacktestResult:
-    """Run the backtest and write its outputs; returns the result."""
+    """Run the backtest and write its outputs; returns the result.
+
+    ``progress``, when given, is called with the fraction of markets done
+    and a short message as the forecasting loop advances, so a caller that
+    runs this in the background can report how far it has got.
+    """
     started = time.monotonic()
     out_dir.mkdir(parents=True, exist_ok=True)
     resolved = read_markets(root / "markets" / config.domain / "resolved.parquet")
@@ -133,7 +139,9 @@ def run_backtest(
     scored: list[tuple[BinaryMarket, float, str]] = []
     forecasts: dict[str, list[Forecast]] = {f.name: [] for f in forecasters}
     with_price = 0
-    for market in markets:
+    for index, market in enumerate(markets):
+        if progress is not None and index % 10 == 0:
+            progress(index / max(len(markets), 1), f"{index} of {len(markets)} markets")
         when = settled_at(market)
         assert when is not None
         cutoff = when - timedelta(hours=config.hours_before_close)

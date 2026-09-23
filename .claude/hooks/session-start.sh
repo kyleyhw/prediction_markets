@@ -27,13 +27,14 @@ uv sync --frozen
 # without it, so a failure here warns rather than stopping the session.
 if bash "$CLAUDE_PROJECT_DIR/.claude/hooks/postgres.sh"; then
   DB='postgresql:///vp_dev?host=/var/run/postgresql'
+  TEST='postgresql:///vp_test?host=/var/run/postgresql'
   export VP_DATABASE_URL="$DB&user=vp_app"
   export VP_MIGRATION_DATABASE_URL="$DB&user=postgres"
   {
     echo "export VP_DATABASE_URL='$VP_DATABASE_URL'"
     echo "export VP_MIGRATION_DATABASE_URL='$VP_MIGRATION_DATABASE_URL'"
-    echo "export VP_TEST_DATABASE_URL='$VP_MIGRATION_DATABASE_URL'"
-    echo "export VP_TEST_APP_DATABASE_URL='$VP_DATABASE_URL'"
+    echo "export VP_TEST_DATABASE_URL='$TEST&user=postgres'"
+    echo "export VP_TEST_APP_DATABASE_URL='$TEST&user=vp_app'"
   } >> "$CLAUDE_ENV_FILE"
   uv run vp db migrate || echo "warning: platform migrations failed" >&2
 else

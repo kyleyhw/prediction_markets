@@ -106,6 +106,8 @@ from collections.abc import Iterator
 from datetime import datetime, timezone
 from typing import Any, Literal
 
+import requests
+
 from vp.venues._http import positive_env_float, throttled_get_json
 
 logger = logging.getLogger(__name__)
@@ -116,11 +118,15 @@ _GAMMA_MARKETS_URL = "https://gamma-api.polymarket.com/markets"
 _CLOB_BOOK_URL = "https://clob.polymarket.com/book"
 _CLOB_MARKETS_URL = "https://clob.polymarket.com/markets"
 _CLOB_HISTORY_URL = "https://clob.polymarket.com/prices-history"
+_GAMMA_EVENTS_KEYSET_URL = "https://gamma-api.polymarket.com/events/keyset"
+_DATA_HISTORY_URL = "https://data-api.polymarket.com/v2/prices-history"
+_DATA_RESOLUTIONS_URL = "https://data-api.polymarket.com/v2/resolutions"
 
 # Separate throttle buckets: the catalogue and the book are different hosts and
 # must not share a rate budget.
 _GAMMA_HOST_KEY = "polymarket_gamma"
 _CLOB_HOST_KEY = "polymarket_clob"
+_DATA_HOST_KEY = "polymarket_data"
 _MIN_INTERVAL_ENV = "VP_POLYMARKET_MIN_INTERVAL"
 # Polymarket publishes no rate limit for these endpoints. 0.35 s (about three
 # requests per second per host) is the spacing the upstream project settled on
@@ -711,12 +717,21 @@ def fetch_history(
     """
     token_id, context = _resolve_history_token(identifier, outcome)
     bar_minutes = fidelity if fidelity is not None else _FIDELITY_MINUTES[interval]
-    payload = _get_json(
-        _CLOB_HISTORY_URL,
-        host_key=_CLOB_HOST_KEY,
-        params={"market": token_id, "interval": interval, "fidelity": bar_minutes},
-    )
-    raw_points = payload.get("history") if isinstance(payload, dict) else None
+    source = "clob"
+    try:
+        payload = _get_json(
+            _CLOB_HISTORY_URL,
+            host_key=_CLOB_HOST_KEY,
+            params={"market": token_id, "interval": interval, "fidelity": bar_minutes},
+        )
+        raw_points = payload.get("history") if isinstance(payload, dict) else None
+    except requests.HTTPError as exc:
+        # Where the CLOB endpoint is retired (404 or 410), the same series is
+        # served by the Data API v2 host, paged by cursor.
+        status = exc.response.status_code if exc.response is not None else None
+        if status not in (404, 410):
+            raise
+        raw_points, source = _history_v2(token_id, bar_minutes), "data-api-v2"
     if not isinstance(raw_points, list):
         raise ValueError("unexpected history payload shape")
 
@@ -740,8 +755,37 @@ def fetch_history(
         **context,
         "interval": interval,
         "bar_minutes": bar_minutes,
+        "source": source,
         "points": points,
     }
+
+
+def _history_v2(token_id: str, bar_minutes: int) -> list[dict[str, Any]]:
+    """A token's full price series from the Data API v2, in the CLOB's shape."""
+    points: list[dict[str, Any]] = []
+    cursor: str | None = None
+    for _ in range(200):  # a bound: 200 pages of 500 is 100,000 bars
+        params: dict[str, Any] = {
+            "tokenId": token_id,
+            "bucketSeconds": bar_minutes * 60,
+            "limit": 500,
+        }
+        if cursor:
+            params["cursor"] = cursor
+        payload = _get_json(_DATA_HISTORY_URL, host_key=_DATA_HOST_KEY, params=params)
+        rows = payload.get("data") if isinstance(payload, dict) else None
+        if not isinstance(rows, list):
+            raise ValueError("unexpected v2 history payload shape")
+        points.extend(
+            {"t": r.get("timestamp"), "p": r.get("price")}
+            for r in rows
+            if isinstance(r, dict)
+        )
+        page = payload.get("pagination") or {}
+        cursor = page.get("next_cursor") if page.get("has_more") else None
+        if not cursor:
+            break
+    return points
 
 
 def search_events(
@@ -860,40 +904,59 @@ def list_events(
 def iter_events(
     *, tag_id: str | None = None, closed: bool | None = None, page_size: int = 100
 ) -> Iterator[dict[str, Any]]:
-    """Walk the catalogue in end-date order until an empty or short page ends it.
+    """Walk the catalogue by keyset pagination until the venue has no next page.
 
-    The venue's offset cap (:data:`_OFFSET_CAP`) would stop a walk at 2000
-    events, which a busy tag exceeds. When the next page would cross it, the
-    walk restarts at offset 0 with ``end_date_min`` set to the last end date
-    seen; events sharing that boundary date are skipped by id so none is
-    yielded twice. A boundary that does not advance (more events on one end
-    date than the cap) or has no end date ends the walk, since nothing past
-    it can be reached this way.
+    Gamma's keyset endpoint (April 2026) returns a ``next_cursor`` with each
+    page and accepts it back as ``after_cursor``; the last page has none.
+    Unlike the offset walk it replaces (capped at 2000 events, so a busy tag
+    needed restarting from its last end date), a cursor reaches the end of
+    any tag in one pass and never repeats an event. Verified live on
+    2026-09-23 with ``tag_id`` and ``closed`` filters on the events keyset.
     """
-    seen: set[str] = set()
-    offset = 0
-    end_date_min: str | None = None
+    cursor: str | None = None
     while True:
-        page = list_events(
-            tag_id=tag_id,
-            closed=closed,
-            limit=page_size,
-            offset=offset,
-            end_date_min=end_date_min,
+        params: dict[str, Any] = {"limit": page_size}
+        if tag_id is not None:
+            params["tag_id"] = tag_id
+        if closed is not None:
+            params["closed"] = "true" if closed else "false"
+        if cursor:
+            params["after_cursor"] = cursor
+        payload = _get_json(
+            _GAMMA_EVENTS_KEYSET_URL, host_key=_GAMMA_HOST_KEY, params=params
         )
-        for event in page:
-            key = event.get("event_id")
-            if key in seen:
-                continue
-            if key is not None:
-                seen.add(key)
-            yield event
-        if len(page) < page_size:
+        if not isinstance(payload, dict):
+            raise ValueError("unexpected keyset payload shape")
+        events = [e for e in payload.get("events") or [] if isinstance(e, dict)]
+        for event in events:
+            yield normalize_event(event, with_markets=True)
+        cursor = payload.get("next_cursor")
+        if not cursor or not events:
             return
-        offset += page_size
-        if offset + page_size > _OFFSET_CAP:
-            boundary = page[-1].get("end_date")
-            if not boundary or boundary == end_date_min:
-                logger.warning("walk stopped at the offset cap, end date %s", boundary)
-                return
-            end_date_min, offset = boundary, 0
+
+
+def fetch_resolution(condition_id: str) -> dict[str, Any] | None:
+    """The venue's resolution record for a condition, from the Data API v2.
+
+    Returns ``None`` when the venue has no record yet. ``payouts`` is one
+    number per outcome; the outcome with the positive payout won, and a
+    split payout (no single winner) leaves ``winner_index`` as ``None``.
+    """
+    payload = _get_json(
+        _DATA_RESOLUTIONS_URL,
+        host_key=_DATA_HOST_KEY,
+        params={"condition": condition_id},
+    )
+    rows = payload.get("data") if isinstance(payload, dict) else None
+    if not rows or not isinstance(rows[0], dict):
+        return None
+    row = rows[0]
+    payouts = [_to_float(x) or 0.0 for x in row.get("payouts") or []]
+    winners = [i for i, x in enumerate(payouts) if x > 0]
+    return {
+        "condition_id": row.get("condition_id", condition_id),
+        "status": str(row.get("status") or "unknown"),
+        "payouts": payouts,
+        "winner_index": winners[0] if len(winners) == 1 else None,
+        "resolved_at": row.get("resolved_at"),
+    }

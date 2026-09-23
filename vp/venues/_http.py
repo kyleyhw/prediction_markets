@@ -93,6 +93,52 @@ class HostThrottle:
 
 _THROTTLE = HostThrottle()
 
+
+class TokenBucket:
+    """At most ``rate`` requests a second on average, in bursts of ``burst``.
+
+    Where the minimum spacing above is the engine's courtesy for one
+    command at a time, a long-running process with many callers (the
+    platform's market-data service and workers) needs a rate: it lets a
+    burst through at once and then holds the average. Configured per host
+    bucket with :func:`set_rate`; a bucket with no rate is not limited
+    beyond the spacing.
+    """
+
+    def __init__(self, rate: float, burst: int) -> None:
+        if rate <= 0 or burst < 1:
+            raise ValueError("a token bucket needs a positive rate and burst")
+        self.rate = rate
+        self.burst = burst
+        self._tokens = float(burst)
+        self._at = time.monotonic()
+        self._lock = threading.Lock()
+
+    def take(self) -> float:
+        """Take one token, sleeping until one is available; returns the wait."""
+        with self._lock:
+            now = time.monotonic()
+            self._tokens = min(self.burst, self._tokens + (now - self._at) * self.rate)
+            self._at = now
+            self._tokens -= 1.0
+            wait = -self._tokens / self.rate if self._tokens < 0 else 0.0
+        if wait > 0:
+            time.sleep(wait)
+        return wait
+
+
+_BUCKETS: dict[str, TokenBucket] = {}
+
+#: Called after every request with (host bucket, status or None, seconds);
+#: the platform points it at its metrics. Nothing by default.
+observe: Any = None
+
+
+def set_rate(host_key: str, rate: float, burst: int) -> None:
+    """Limit a host bucket to ``rate`` requests a second with ``burst``."""
+    _BUCKETS[host_key] = TokenBucket(rate, burst)
+
+
 _SESSIONS: dict[str, requests.Session] = {}
 _SESSIONS_LOCK = threading.Lock()
 
@@ -158,8 +204,21 @@ def throttled_get(
     if headers:
         merged_headers.update(headers)
     _THROTTLE.wait(host_key, min_interval)
+    bucket = _BUCKETS.get(host_key)
+    if bucket is not None:
+        bucket.take()
     session = _session_for(host_key)
-    return session.get(url, params=params, headers=merged_headers, timeout=timeout)
+    started = time.monotonic()
+    status: int | None = None
+    try:
+        response = session.get(
+            url, params=params, headers=merged_headers, timeout=timeout
+        )
+        status = response.status_code
+        return response
+    finally:
+        if observe is not None:
+            observe(host_key, status, time.monotonic() - started)
 
 
 def throttled_get_json(

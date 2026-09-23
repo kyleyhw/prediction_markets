@@ -1,0 +1,469 @@
+"""What each kind of job does.
+
+Every handler runs the engine unchanged over a data root assembled from
+the shared cache (`SharedRoot.workroot`) and writes what it produced to
+the workspace's tables and the object store, as the job's principal:
+
+* `backtest`: `vp.backtest.run.run_backtest`; the run's results and
+  summary go to `runs`, its files to `workspaces/<id>/runs/<run>/`.
+* `paper_cycle`: `vp.paper.loop.run_cycle` for each of the account's
+  domains, against the newest shared snapshot (the market-data service
+  takes those; a cycle never polls the venue), writing to the account's
+  `PgLedger`; its forecasts go to `forecasts`.
+* `settle`: `vp.paper.loop.settle`, asking the venue only about markets the
+  resolutions table already says have resolved.
+* `leakage`: `vp.paper.leakage` between a backtest run and an account.
+
+and for the platform, as `system`:
+
+* `dataset`: a domain's resolved dataset, published as a new version, with
+  any price histories not yet stored;
+* `snapshot`: one capture of a domain's open markets (the market-data
+  service writes these on its schedule; this is the fallback and the
+  on-demand refresh);
+* `partitions`, `sweep`: maintenance.
+
+Statistical forecasts are memoised in `forecast_memo`: the same forecaster
+on the same market with the same inputs gives the same answer, so a second
+workspace asking gets the first one's result without recomputing it.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import logging
+import tempfile
+from collections.abc import Callable, Sequence
+from dataclasses import asdict, dataclass, field
+from pathlib import Path
+from typing import Any
+from uuid import UUID, uuid4
+
+from psycopg.types.json import Jsonb
+from psycopg_pool import ConnectionPool
+
+from vp.backtest.run import BacktestConfig, run_backtest
+from vp.domains import DOMAINS
+from vp.forecast import Evidence, Forecaster, make_forecaster
+from vp.forecast.base import Forecast
+from vp.markets.polymarket import PolymarketSource
+from vp.markets.schema import BinaryMarket, utc_now_iso
+from vp.markets.snapshot import collect_snapshot
+from vp.paper import leakage
+from vp.paper.loop import run_cycle, settle
+from vp.platform import budgets
+from vp.platform.config import Settings
+from vp.platform.db import tenant_session
+from vp.platform.jobs import Handler, JobContext, run_scheduler
+from vp.platform.ledger import PgLedger
+from vp.platform.storage import (
+    SHARED,
+    ObjectStore,
+    SharedRoot,
+    publish_dataset,
+)
+
+logger = logging.getLogger(__name__)
+
+#: Bumped when a statistical forecaster's method changes, so old memos stop
+#: matching.
+MEMO_VERSION = "1"
+#: Forecasters whose answers are private (a person's prompt) or paid.
+UNMEMOISED = frozenset({"llm"})
+
+
+@dataclass
+class Services:
+    """What handlers need from the process: settings, database, storage."""
+
+    settings: Settings
+    pool: ConnectionPool
+    store: ObjectStore
+    shared: SharedRoot
+    source: Callable[[], PolymarketSource] = PolymarketSource
+    notify: Callable[[str, str], None] | None = None
+    work_dir: Path = field(default_factory=lambda: Path(tempfile.gettempdir()))
+
+    def refresh(self, domains: Sequence[str]) -> None:
+        self.shared.refresh(domains)
+
+
+# ---------------------------------------------------------------- memoising
+
+
+class Memoised:
+    """A statistical forecaster whose answers are shared through `forecast_memo`."""
+
+    def __init__(self, inner: Forecaster, pool: ConnectionPool, salt: str) -> None:
+        self.inner = inner
+        self.pool = pool
+        self.salt = salt
+        self.hits = 0
+
+    @property
+    def name(self) -> str:
+        return self.inner.name
+
+    def key(self, market: BinaryMarket, evidence: Evidence) -> str:
+        parts = [
+            MEMO_VERSION,
+            self.name,
+            self.salt,
+            market.market_id,
+            evidence.cutoff.isoformat(),
+        ]
+        return hashlib.sha256(json.dumps(parts).encode()).hexdigest()
+
+    def forecast(self, market: BinaryMarket, evidence: Evidence) -> Forecast | None:
+        key = self.key(market, evidence)
+        with self.pool.connection() as conn:
+            row = conn.execute(
+                "select record from forecast_memo where memo_key = %s", (key,)
+            ).fetchone()
+        if row is not None:
+            self.hits += 1
+            record = row[0]
+            return None if record.get("declined") else Forecast(**record)
+        answer = self.inner.forecast(market, evidence)
+        record = {"declined": True} if answer is None else asdict(answer)
+        with self.pool.connection() as conn:
+            conn.execute(
+                "insert into forecast_memo (memo_key, forecaster, market_id, record) "
+                "values (%s, %s, %s, %s) on conflict do nothing",
+                (key, self.name, market.market_id, Jsonb(record)),
+            )
+        return answer
+
+
+def forecasters_for(
+    names: Sequence[str], domain: str, pool: ConnectionPool, salt: str, **llm: Any
+) -> list[Forecaster]:
+    out: list[Forecaster] = []
+    for name in names:
+        if name == "llm":
+            out.append(make_forecaster(name, domain, **llm))
+        else:
+            out.append(Memoised(make_forecaster(name, domain), pool, salt))
+    return out
+
+
+def _stamp() -> str:
+    return utc_now_iso().replace("-", "").replace(":", "")
+
+
+def _dataset_version(store: ObjectStore, domain: str) -> str:
+    stamp = store.get_bytes(f"{SHARED}/markets/{domain}/LATEST")
+    return stamp.decode().strip() if stamp else "none"
+
+
+# ------------------------------------------------------------ workspace jobs
+
+
+def backtest(ctx: JobContext) -> dict[str, Any]:
+    svc: Services = ctx.services
+    p = ctx.job.payload
+    domain = str(p["domain"])
+    if domain not in DOMAINS:
+        raise ValueError(f"unknown domain {domain!r}")
+    config = BacktestConfig(
+        domain=domain,
+        forecasters=tuple(p.get("forecasters") or ("market", "constant")),
+        hours_before_close=float(p.get("hours_before_close", 24.0)),
+        kinds=tuple(p.get("kinds") or ()),
+        max_markets=p.get("max_markets"),
+        seed=int(p.get("seed", 0)),
+        fee_rate=float(p.get("fee_rate", 0.0)),
+        min_edge=float(p.get("min_edge", 0.0)),
+    )
+    ctx.progress(0.0, "getting the data")
+    svc.refresh([domain])
+    salt = _dataset_version(svc.store, domain)
+    run_id = uuid4()
+    with tempfile.TemporaryDirectory(dir=svc.work_dir) as tmp:
+        root = svc.shared.workroot(Path(tmp) / "root")
+        out = Path(tmp) / "out"
+        forecasters = forecasters_for(config.forecasters, domain, svc.pool, salt)
+        result = run_backtest(
+            config,
+            root,
+            out,
+            forecasters=forecasters,
+            progress=lambda f, m: ctx.progress(0.05 + 0.9 * f, m),
+        )
+        ctx.progress(0.96, "saving the run")
+        prefix = f"workspaces/{ctx.principal.workspace}/runs/{run_id}"
+        for path in sorted(out.iterdir()):
+            if path.is_file():
+                svc.store.put_file(f"{prefix}/{path.name}", path)
+        results = json.loads((out / "results.json").read_text())
+        summary = (out / "summary.md").read_text()
+    with svc.pool.connection() as conn, tenant_session(conn, ctx.principal):
+        conn.execute(
+            "insert into runs (id, workspace_id, kind, job_id, config, results, "
+            "summary, artifacts, created_by) "
+            "values (%s, %s, 'backtest', %s, %s, %s, %s, %s, %s)",
+            (
+                run_id,
+                ctx.principal.workspace,
+                ctx.job.id,
+                Jsonb(asdict(config)),
+                Jsonb(results),
+                summary,
+                prefix,
+                ctx.principal.user_id,
+            ),
+        )
+    charged = budgets.settle_job(
+        svc.pool,
+        ctx.principal,
+        ctx.job.id,
+        ctx.job.reserved_usd,
+        [
+            {"forecaster": r.name, "domain": domain, "usd": r.cost_usd}
+            for r in result.results
+            if r.cost_usd
+        ],
+    )
+    return {
+        "run_id": str(run_id),
+        "scored": result.common,
+        "cost_usd": float(charged),
+        "memo_hits": sum(getattr(f, "hits", 0) for f in forecasters),
+    }
+
+
+def _account(ctx: JobContext, account_id: UUID) -> dict[str, Any]:
+    svc: Services = ctx.services
+    with svc.pool.connection() as conn, tenant_session(conn, ctx.principal):
+        row = conn.execute(
+            "select id, domains, forecasters, initial_cash from paper_accounts "
+            "where id = %s",
+            (account_id,),
+        ).fetchone()
+    if row is None:
+        raise ValueError("no such paper account in this workspace")
+    return {
+        "id": row[0],
+        "domains": row[1],
+        "forecasters": row[2],
+        "cash": float(row[3]),
+    }
+
+
+def paper_cycle(ctx: JobContext) -> dict[str, Any]:
+    svc: Services = ctx.services
+    account = _account(ctx, UUID(str(ctx.job.payload["account_id"])))
+    ledger = PgLedger(svc.pool, ctx.principal, account["id"], store=svc.store)
+    broken = ledger.verify()
+    if broken is not None:
+        raise RuntimeError(f"ledger chain broken at entry {broken}; refusing to trade")
+    svc.refresh(account["domains"])
+    counts: dict[str, Any] = {}
+    domains = [d for d in account["domains"] if d in DOMAINS]
+    for i, domain in enumerate(domains):
+        ctx.progress(i / max(len(domains), 1), f"trading {domain}")
+        snaps = sorted((svc.shared.root / "snapshots" / domain).glob("*.parquet"))
+        if not snaps:
+            counts[domain] = {"skipped": "no capture of this domain yet"}
+            continue
+        with tempfile.TemporaryDirectory(dir=svc.work_dir) as tmp:
+            root = svc.shared.workroot(Path(tmp))
+            forecasters = forecasters_for(
+                account["forecasters"], domain, svc.pool, snaps[-1].stem
+            )
+            counts[domain] = run_cycle(
+                DOMAINS[domain],
+                forecasters,
+                None,
+                root,
+                ledger,
+                initial_cash=account["cash"],
+                snapshot=root / "snapshots" / domain / snaps[-1].name,
+            )
+            _store_forecasts(
+                ctx, root / "paper" / "forecasts.jsonl", domain, account["id"]
+            )
+    return {"account_id": str(account["id"]), "domains": counts}
+
+
+def _store_forecasts(
+    ctx: JobContext, path: Path, domain: str, account_id: UUID
+) -> None:
+    if not path.exists():
+        return
+    svc: Services = ctx.services
+    rows = [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+    with svc.pool.connection() as conn, tenant_session(conn, ctx.principal):
+        for r in rows:
+            conn.execute(
+                "insert into forecasts (workspace_id, account_id, job_id, forecaster, "
+                "market_id, domain, p_hat, cutoff, cost_usd, record) "
+                "values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                (
+                    ctx.principal.workspace,
+                    account_id,
+                    ctx.job.id,
+                    r["forecaster"],
+                    r.get("market_id"),
+                    domain,
+                    r["p_hat"],
+                    r["cutoff"],
+                    r.get("cost_usd", 0.0),
+                    Jsonb(r),
+                ),
+            )
+
+
+class ResolvedFirst:
+    """Settlement's market lookup, asking the venue only when it must.
+
+    A market the resolutions table (kept by the market-data service) does
+    not list as resolved is still pending, and is reported so without a
+    request. One it does list is fetched from the venue by condition id,
+    because the label comes only from the venue's own settlement record
+    (closed is not resolved).
+    """
+
+    def __init__(self, pool: ConnectionPool, source: PolymarketSource) -> None:
+        self.pool = pool
+        self.source = source
+        self.asked = 0
+
+    def market(self, identifier: str, *, depth: int = 0) -> BinaryMarket:
+        with self.pool.connection() as conn:
+            known = conn.execute(
+                "select status from resolutions where condition_id = %s", (identifier,)
+            ).fetchone()
+            record = conn.execute(
+                "select record from tracked_markets where condition_id = %s",
+                (identifier,),
+            ).fetchone()
+        if (known is None or known[0] != "resolved") and record is not None:
+            from vp.markets.store import market_from_row
+
+            return market_from_row(record[0])
+        self.asked += 1
+        return self.source.market(identifier, depth=depth)
+
+
+def settle_account(ctx: JobContext) -> dict[str, Any]:
+    svc: Services = ctx.services
+    account = _account(ctx, UUID(str(ctx.job.payload["account_id"])))
+    ledger = PgLedger(svc.pool, ctx.principal, account["id"], store=svc.store)
+    lookup = ResolvedFirst(svc.pool, svc.source())
+    counts = settle(lookup, ledger, initial_cash=account["cash"])
+    return {**counts, "venue_requests": lookup.asked}
+
+
+def leakage_check(ctx: JobContext) -> dict[str, Any]:
+    svc: Services = ctx.services
+    p = ctx.job.payload
+    account = _account(ctx, UUID(str(p["account_id"])))
+    with svc.pool.connection() as conn, tenant_session(conn, ctx.principal):
+        run = conn.execute(
+            "select artifacts, config from runs where id = %s",
+            (UUID(str(p["run_id"])),),
+        ).fetchone()
+    if run is None:
+        raise ValueError("no such backtest run in this workspace")
+    domain = run[1]["domain"]
+    svc.refresh([domain])
+    with tempfile.TemporaryDirectory(dir=svc.work_dir) as tmp:
+        run_dir = Path(tmp) / "run"
+        if not svc.store.download(
+            f"{run[0]}/forecasts.jsonl", run_dir / "forecasts.jsonl"
+        ):
+            raise ValueError("the run's forecasts are missing from storage")
+        rows = leakage.gaps(
+            leakage.backtest_scores(run_dir, svc.shared.root, domain),
+            leakage.forward_scores(PgLedger(svc.pool, ctx.principal, account["id"])),
+        )
+    return {
+        "summary": leakage.summary(rows) if rows else "no forecaster settled in both"
+    }
+
+
+# ------------------------------------------------------------- platform jobs
+
+
+def dataset(ctx: JobContext) -> dict[str, Any]:
+    svc: Services = ctx.services
+    domain = DOMAINS[str(ctx.job.payload["domain"])]
+    from vp.markets.dataset import build_resolved_dataset
+
+    with tempfile.TemporaryDirectory(dir=svc.work_dir) as tmp:
+        root = Path(tmp)
+        stored = set(svc.store.keys(f"{SHARED}/histories/{domain.name}/"))
+        report = build_resolved_dataset(
+            domain,
+            svc.source(),
+            root,
+            max_markets=ctx.job.payload.get("max_markets"),
+            with_history=bool(ctx.job.payload.get("history", True)),
+        )
+        stamp = _stamp()
+        publish_dataset(
+            svc.store,
+            domain.name,
+            root / "markets" / domain.name / "resolved.parquet",
+            stamp,
+        )
+        added = 0
+        for path in sorted((root / "histories" / domain.name).glob("*.parquet")):
+            key = f"{SHARED}/histories/{domain.name}/{path.name}"
+            if key not in stored:
+                svc.store.put_file(key, path)
+                added += 1
+    if svc.notify:
+        svc.notify("vp_data", f"dataset:{domain.name}")
+    return {"version": stamp, "histories_added": added, "summary": report.summary()}
+
+
+def snapshot(ctx: JobContext) -> dict[str, Any]:
+    svc: Services = ctx.services
+    domain = DOMAINS[str(ctx.job.payload["domain"])]
+    with tempfile.TemporaryDirectory(dir=svc.work_dir) as tmp:
+        path, count = collect_snapshot(
+            domain,
+            svc.source(),
+            Path(tmp),
+            depth=int(ctx.job.payload.get("depth", 5)),
+            max_markets=ctx.job.payload.get("max_markets"),
+        )
+        svc.store.put_file(f"{SHARED}/snapshots/{domain.name}/{path.name}", path)
+    if svc.notify:
+        svc.notify("vp_data", f"snapshot:{domain.name}")
+    return {"markets": count, "stamp": path.stem}
+
+
+def partitions(ctx: JobContext) -> dict[str, Any]:
+    with ctx.pool.connection() as conn:
+        (made,) = conn.execute("select vp_ensure_partitions(3)").fetchone() or (0,)
+    return {"created": made}
+
+
+def sweep(ctx: JobContext) -> dict[str, Any]:
+    with ctx.pool.connection() as conn:
+        row = conn.execute("select * from vp_platform_sweep()").fetchone()
+    return dict(
+        zip(("sign_in_tokens", "sessions", "jobs"), row or (0, 0, 0), strict=True)
+    )
+
+
+def handlers(extra: dict[str, Handler] | None = None) -> dict[str, Handler]:
+    """Every kind this module handles, plus any given (the ingest's and the
+    evidence collectors', which live with their services)."""
+    table: dict[str, Handler] = {
+        "backtest": backtest,
+        "paper_cycle": paper_cycle,
+        "settle": settle_account,
+        "leakage": leakage_check,
+        "dataset": dataset,
+        "snapshot": snapshot,
+        "partitions": partitions,
+        "sweep": sweep,
+        "scheduler": run_scheduler,
+    }
+    table.update(extra or {})
+    return table

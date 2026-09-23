@@ -173,29 +173,86 @@ def test_clob_token_id_domain() -> None:
     assert not pm.is_clob_token_id("²")
 
 
-def test_iter_events_walks_past_the_offset_cap(monkeypatch) -> None:
-    """A tag with 2300 events is listed exactly once by restarting the walk from
-    the last end date seen when the offset cap is reached."""
-    events = [
-        {"id": str(i), "endDate": f"2026-01-01T00:00:{i // 10:02d}Z", "markets": []}
-        for i in range(2300)
-    ]
-    calls: list[tuple[int, str | None]] = []
+def test_iter_events_follows_the_keyset_cursor_to_the_end(monkeypatch) -> None:
+    """A tag with 2300 events is listed exactly once, in one pass, following
+    `next_cursor` until the venue returns none."""
+    events = [{"id": str(i), "markets": []} for i in range(2300)]
+    calls: list[dict] = []
 
-    def fake_list(*, tag_id, closed, limit, offset, end_date_min=None):
-        calls.append((offset, end_date_min))
-        assert offset + limit <= 2000, "the cap must not be crossed"
-        window = [
-            e for e in events if end_date_min is None or e["endDate"] >= end_date_min
-        ]
-        return [
-            pm.normalize_event(e, with_markets=True)
-            for e in window[offset : offset + limit]
-        ]
+    def fake_get(url, *, host_key, params):
+        calls.append(dict(params or {}))
+        assert url.endswith("/events/keyset") and params["tag_id"] == "84"
+        start = int(params.get("after_cursor", "0"))
+        page = events[start : start + params["limit"]]
+        nxt = start + len(page)
+        return {
+            "events": page,
+            **({"next_cursor": str(nxt)} if nxt < len(events) else {}),
+        }
 
-    monkeypatch.setattr(pm, "list_events", fake_list)
+    monkeypatch.setattr(pm, "_get_json", fake_get)
     ids = [e["event_id"] for e in pm.iter_events(tag_id="84", closed=True)]
     assert ids == [str(i) for i in range(2300)]
-    # 20 pages at offsets 0..1900, then a restart from the boundary date.
-    assert calls[19] == (1900, None)
-    assert calls[20] == (0, events[1999]["endDate"])
+    assert len(calls) == 23 and calls[0]["closed"] == "true"
+    assert "after_cursor" not in calls[0] and calls[1]["after_cursor"] == "100"
+
+
+def test_resolution_payouts_name_the_winner(monkeypatch) -> None:
+    rows = {
+        "0xa": {
+            "status": "resolved",
+            "payouts": [1000000, 0],
+            "resolved_at": "2026-09-20T17:52:34Z",
+        },
+        "0xb": {"status": "resolved", "payouts": [500000, 500000]},
+    }
+
+    def fake_get(url, *, host_key, params):
+        row = rows.get(params["condition"])
+        return {"data": [row | {"condition_id": params["condition"]}] if row else []}
+
+    monkeypatch.setattr(pm, "_get_json", fake_get)
+    a = pm.fetch_resolution("0xa")
+    assert a is not None and a["winner_index"] == 0 and a["status"] == "resolved"
+    b = pm.fetch_resolution("0xb")
+    assert b is not None and b["winner_index"] is None  # split: no single winner
+    assert pm.fetch_resolution("0xc") is None
+
+
+def test_history_falls_back_to_the_data_api_where_the_clob_is_retired(
+    monkeypatch,
+) -> None:
+    import requests
+
+    def fake_get(url, *, host_key, params):
+        if "clob" in url:
+            response = requests.Response()
+            response.status_code = 410
+            raise requests.HTTPError(response=response)
+        if params.get("cursor") is None:
+            return {
+                "data": [{"timestamp": 1788753600, "price": 0.495}],
+                "pagination": {"has_more": True, "next_cursor": "c2"},
+            }
+        return {
+            "data": [{"timestamp": 1788757200, "price": 0.5}],
+            "pagination": {"has_more": False},
+        }
+
+    monkeypatch.setattr(pm, "_get_json", fake_get)
+    series = pm.fetch_history(str(2**70), fidelity=60)
+    assert series["source"] == "data-api-v2"
+    assert [p["implied_probability"] for p in series["points"]] == [0.495, 0.5]
+
+
+def test_a_token_bucket_lets_a_burst_through_then_holds_the_rate() -> None:
+    import time
+
+    from vp.venues._http import TokenBucket
+
+    bucket = TokenBucket(rate=20.0, burst=5)
+    started = time.monotonic()
+    waits = [bucket.take() for _ in range(15)]
+    elapsed = time.monotonic() - started
+    assert waits[:5] == [0.0] * 5  # the burst
+    assert 0.4 < elapsed < 0.8  # then ten more at 20 a second

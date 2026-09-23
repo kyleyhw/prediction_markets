@@ -15,8 +15,11 @@ Subcommands:
 * ``vp ui``: a local, read-only browser dashboard over the data root.
 * ``vp serve``: the platform web service, with sign-in, over Postgres.
 * ``vp db migrate``: apply the platform's pending database migrations.
+* ``vp worker``: a pool of job runners for some kinds of job.
+* ``vp ingest``: the market-data service.
+* ``vp jobs``, ``vp admin``: the operator's commands (as the owner).
 
-The two platform commands import ``vp.platform`` lazily, inside their own
+The platform commands import ``vp.platform`` lazily, inside their own
 branches: this module is the composition root, and the engine commands
 never load the platform.
 """
@@ -145,6 +148,55 @@ def main() -> None:
     db_sub = dbp.add_subparsers(dest="db_command", required=True)
     db_sub.add_parser("migrate", help="apply pending migrations as the owner")
 
+    wrk = sub.add_parser("worker", help="run platform jobs (Postgres)")
+    wrk.add_argument("--kinds", nargs="*", default=None, help="job kinds (default all)")
+    wrk.add_argument("--concurrency", type=int, default=2)
+    wrk.add_argument("--metrics-port", type=int, default=None)
+
+    ing = sub.add_parser("ingest", help="run the market-data service (Postgres)")
+    ing.add_argument("--domains", nargs="*", default=None, choices=sorted(DOMAINS))
+    ing.add_argument("--metrics-port", type=int, default=None)
+    ing.add_argument("--snapshot-minutes", type=float, default=15.0)
+    ing.add_argument("--discover-minutes", type=float, default=10.0)
+
+    jb = sub.add_parser("jobs", help="the job queue, for the operator")
+    jb_sub = jb.add_subparsers(dest="jobs_command", required=True)
+    jl = jb_sub.add_parser("list", help="recent jobs")
+    jl.add_argument("--state", default=None)
+    jl.add_argument("--kind", default=None)
+    jl.add_argument("--limit", type=int, default=30)
+    for name, text in (("show", "one job"), ("retry", "requeue a dead job")):
+        jb_sub.add_parser(name, help=text).add_argument("job_id")
+    for name, text in (("drain", "stop claiming a kind"), ("undrain", "resume a kind")):
+        jb_sub.add_parser(name, help=text).add_argument("kind")
+    jb_sub.add_parser("stats", help="queue depth and age by kind and state")
+
+    adm = sub.add_parser("admin", help="operator commands")
+    adm_sub = adm.add_subparsers(dest="admin_command", required=True)
+    adm_sub.add_parser("halt", help="halt the platform").add_argument(
+        "--reason", required=True
+    )
+    adm_sub.add_parser("resume", help="clear the platform halt")
+    ap = adm_sub.add_parser("pause", help="pause one workspace")
+    ap.add_argument("workspace")
+    ap.add_argument("--reason", required=True)
+    adm_sub.add_parser("unpause", help="clear a workspace pause").add_argument(
+        "workspace"
+    )
+    adm_sub.add_parser("halts", help="the halts in force")
+    ab = adm_sub.add_parser("budget", help="set a workspace's monthly model budget")
+    ab.add_argument("workspace")
+    ab.add_argument("usd")
+    adm_sub.add_parser("costs", help="model spend this month").add_argument(
+        "--month", default=None, help="YYYY-MM"
+    )
+    ar = adm_sub.add_parser("refresh", help="refresh a domain's data now")
+    ar.add_argument("domain", choices=sorted(DOMAINS))
+    ar.add_argument("--what", nargs="+", default=["dataset", "snapshot"])
+    aa = adm_sub.add_parser("archive", help="move old months to object storage")
+    aa.add_argument("--before", required=True, help="YYYY-MM: archive months before it")
+    adm_sub.add_parser("audit", help="verify the audit chain and show its tail")
+
     args = parser.parse_args()
     logging.basicConfig(
         level=logging.DEBUG if args.verbose else logging.INFO,
@@ -160,6 +212,29 @@ def main() -> None:
         from vp.platform.run import serve as serve_platform
 
         serve_platform(args.host, args.port)
+        return
+
+    if args.command == "worker":
+        from vp.platform.run import work
+
+        work(args.kinds, args.concurrency, args.metrics_port)
+        return
+
+    if args.command == "ingest":
+        from vp.platform.run import ingest
+
+        ingest(
+            args.domains,
+            args.metrics_port,
+            args.snapshot_minutes,
+            args.discover_minutes,
+        )
+        return
+
+    if args.command in ("jobs", "admin"):
+        from vp.platform.console import operator_command
+
+        operator_command(args)
         return
 
     if args.command == "db":

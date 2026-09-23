@@ -33,12 +33,17 @@ class AuthMethod(StrEnum):
     SESSION = "session"
     API_TOKEN = "api_token"
     ANONYMOUS = "anonymous"
+    # A background job acting for the person who asked for it, whose id the
+    # job row recorded when a session or token enqueued it.
+    JOB = "job"
+    # The platform's own work (ingest, maintenance), acting for nobody.
+    SYSTEM = "system"
 
 
 #: Methods that name an actual person. Anything else proves only that
 #: somebody reached the service.
 ATTRIBUTABLE: frozenset[AuthMethod] = frozenset(
-    {AuthMethod.SESSION, AuthMethod.API_TOKEN}
+    {AuthMethod.SESSION, AuthMethod.API_TOKEN, AuthMethod.JOB}
 )
 
 

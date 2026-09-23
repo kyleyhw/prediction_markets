@@ -28,6 +28,7 @@ from vp.markets.schema import utc_now_iso
 from vp.paper.ledger import GENESIS, entry_hash, verify_entries
 from vp.platform.archive import archived_entries
 from vp.platform.db import tenant_session
+from vp.platform.observe import LEDGER_APPEND_SECONDS, timed
 from vp.platform.principal import Principal
 from vp.platform.storage import ObjectStore
 
@@ -52,7 +53,11 @@ class PgLedger:
     def append(self, kind: str, data: dict[str, Any]) -> dict[str, Any]:
         """Chain one entry onto the account and return it."""
         workspace = self.principal.workspace
-        with self.pool.connection() as conn, tenant_session(conn, self.principal):
+        with (
+            timed(LEDGER_APPEND_SECONDS),
+            self.pool.connection() as conn,
+            tenant_session(conn, self.principal),
+        ):
             conn.execute(
                 "insert into ledger_heads (account_id, workspace_id, seq, hash) "
                 "values (%s, %s, -1, %s) on conflict (account_id) do nothing",

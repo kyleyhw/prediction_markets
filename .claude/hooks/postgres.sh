@@ -30,6 +30,10 @@ if ! pg_isready -q -h "$SOCKET"; then
   su postgres -c "$PG_BIN/pg_ctl -D $PGDATA -l $PGDATA/server.log -o '-p 5432 -k $SOCKET' -w start" >/dev/null
 fi
 
-if ! su postgres -c "psql -h $SOCKET -tAc \"select 1 from pg_database where datname = 'vp_dev'\"" | grep -q 1; then
-  su postgres -c "createdb -h $SOCKET vp_dev"
-fi
+# vp_dev for the running service; vp_test for the test suite, whose fixtures
+# clear queues and halts and must never touch what the service is using.
+for db in vp_dev vp_test; do
+  if ! su postgres -c "psql -h $SOCKET -tAc \"select 1 from pg_database where datname = '$db'\"" | grep -q 1; then
+    su postgres -c "createdb -h $SOCKET $db"
+  fi
+done

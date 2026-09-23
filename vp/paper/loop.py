@@ -34,7 +34,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
 
 from vp.backtest.scoring import brier_one
 from vp.backtest.sizing import FeeModel, fees_for, size
@@ -46,7 +46,7 @@ from vp.markets.polymarket import PolymarketSource
 from vp.markets.schema import BinaryMarket
 from vp.markets.snapshot import collect_snapshot
 from vp.markets.store import read_markets
-from vp.paper.ledger import Ledger
+from vp.paper.ledger import ChainLedger
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +59,13 @@ class Account:
     open: dict[str, dict[str, Any]]  # market_id -> order data
 
 
-def replay(ledger: Ledger, initial_cash: float) -> dict[str, Account]:
+class MarketLookup(Protocol):
+    """Fetches one market by condition id with its resolution, as settlement needs."""
+
+    def market(self, identifier: str, *, depth: int = 0) -> BinaryMarket: ...
+
+
+def replay(ledger: ChainLedger, initial_cash: float) -> dict[str, Account]:
     """Bankrolls and open positions per forecaster from the ledger entries."""
     accounts: dict[str, Account] = {}
     for entry in ledger.entries():
@@ -94,9 +100,9 @@ def touch(market: BinaryMarket) -> tuple[float, float, float, float] | None:
 def run_cycle(
     domain: Domain,
     forecasters: Sequence[Forecaster],
-    source: PolymarketSource,
+    source: PolymarketSource | None,
     root: Path,
-    ledger: Ledger,
+    ledger: ChainLedger,
     *,
     depth: int = 5,
     max_markets: int | None = None,
@@ -106,19 +112,42 @@ def run_cycle(
     max_fraction: float = 0.05,
     min_edge: float = 0.0,
     now: datetime | None = None,
+    snapshot: Path | None = None,
 ) -> dict[str, int]:
-    """Snapshot, forecast, and place simulated orders; returns counts."""
+    """Snapshot, forecast, and place simulated orders; returns counts.
+
+    With ``snapshot`` the cycle trades against that existing capture
+    instead of taking its own, which is how the platform runs many
+    accounts off one capture of the venue rather than one each.
+    """
     now = now or datetime.now(tz=timezone.utc)
-    path, count = collect_snapshot(
-        domain, source, root, depth=depth, max_markets=max_markets
-    )
-    markets = [m for m in read_markets(path) if m.parsed.get("kind")]
+    if snapshot is None:
+        if source is None:
+            raise ValueError("a cycle without a snapshot needs a source to take one")
+        path, count = collect_snapshot(
+            domain, source, root, depth=depth, max_markets=max_markets
+        )
+    else:
+        path = snapshot
+    captured = read_markets(path)
+    if snapshot is not None:
+        count = len(captured)
+    markets = [m for m in captured if m.parsed.get("kind")]
     evidence = Evidence(now, root)
     registry = Registry(root / "paper" / "forecasts.jsonl")
     accounts = replay(ledger, initial_cash)
     counts = {"snapshot": count, "parsed": len(markets), "forecasts": 0, "orders": 0}
     ledger.append(
-        "cycle", {"domain": domain.name, "snapshot": str(path), "markets": count}
+        "cycle",
+        {
+            "domain": domain.name,
+            # Relative to the data root where possible, so the record names
+            # the capture rather than a machine's directory layout.
+            "snapshot": str(
+                path.relative_to(root) if path.is_relative_to(root) else path
+            ),
+            "markets": count,
+        },
     )
     for market in markets:
         quote = touch(market)
@@ -186,7 +215,7 @@ def run_cycle(
 
 
 def settle(
-    source: PolymarketSource, ledger: Ledger, *, initial_cash: float = 1000.0
+    source: MarketLookup, ledger: ChainLedger, *, initial_cash: float = 1000.0
 ) -> dict[str, int]:
     """Settle open positions whose markets the venue has resolved."""
     accounts = replay(ledger, initial_cash)
