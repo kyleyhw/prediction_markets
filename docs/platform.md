@@ -6,13 +6,14 @@ once. This page records what is built and why; the design it implements is
 tenancy, storage and capacity decisions. The engine under `vp/` is
 unchanged and knows nothing about any of it.
 
-**Status.** Phase 13 is in progress, interface first (the plan's build
-order). Built: configuration, the principal, the tenancy boundary, the web
-service with email sign-in, sessions and API tokens, and the dashboard's
-views behind sign-in, all verified in a real browser. Not built: the job
-queue, the market-data service, the evidence collectors, budgets,
-observability, per-workspace paper accounts, and the deploy, which comes
-last (flag F16). Each is a numbered task in [the plan](../PROJECT_PLAN.md).
+**Status.** Phase 13 is built and verified on the local stand-in
+(2026-09-23): configuration, the principal, the tenancy boundary, the web
+service with email sign-in, sessions and API tokens, storage in Postgres
+and an object store, the job queue and its worker pools, the market-data
+service, the evidence collectors, budgets and model keys, observability
+and the operator's controls, all run together under Docker Compose. What
+was measured is in `tests/reports/phase13_platform.md`. The cloud deploy
+comes last (flag F16) and is the one part of the phase not done.
 
 ```bash
 uv run vp db migrate          # as the owner: VP_MIGRATION_DATABASE_URL
@@ -21,7 +22,9 @@ uv run vp serve               # as vp_app: VP_DATABASE_URL, on :8000
 
 In a web session the start-up hook starts Postgres, sets both URLs and
 migrates, so `vp serve` works at once; sign-in links land in
-`data/outbox/`.
+`data/outbox/`. The whole platform (web, five worker pools, the
+market-data service, Postgres, MinIO, and optionally Prometheus and
+Grafana) runs from `deploy/compose.yaml`; see "The Local Stand-in" below.
 
 ## The Division
 
@@ -257,19 +260,198 @@ The walk-through (sign-in page, emailed link, confirm button, dashboard
 with the account panel, sign-out, and back to sign-in on revisiting)
 passes, and the access log carries the token only as `[redacted]`.
 
-### Known gaps, all scheduled
+### What the first gaps became
 
-- **The data root is shared.** The views read the same data root for
-  everyone signed in. On a development machine with one person that is
-  harmless; per-workspace paper accounts and runs land with tasks 30 and
-  37, before anyone else uses the service.
-- **The page still speaks to developers.** Its empty states say to run
-  `vp` commands, and its footer shows the server's data path. Replacing
-  these is the friendly-interface work that comes next (tasks 39 to 47).
-- **No per-address-and-IP rate limit** beyond five links per address per
-  fifteen minutes; request limits come with observability (task 36).
-- **No sweep of expired tokens and sessions** yet; it becomes a scheduled
-  job when the queue exists (task 31).
+The four gaps this page listed on 2026-09-23 are closed: every view reads
+the signed-in workspace's own rows (below); the page no longer speaks to
+developers (the friendly interface, `docs/interface.md`); sign-in requests
+are limited per client address as well as per email address
+(`vp_rate_limit`, twenty an hour by default); and expired tokens and
+sessions are swept by a scheduled job.
+
+## Storage
+
+Two stores, split by what the data is (`docs/scaling.md` § 4). Postgres
+holds what belongs to a person or must be transactional: accounts,
+ledgers, runs, forecasts, jobs, budgets, keys, the audit chain, and the
+shared tables of the market-data service (tracked markets, quotes,
+resolutions, the evidence index). An object store holds what is large and
+immutable: dataset versions, price histories, snapshots, evidence
+captures, run artifacts and archived ledger months. `LocalStore` (a
+directory) and `S3Store` (MinIO locally, any S3 in the cloud) implement
+one small protocol; `VP_STORE` picks.
+
+The engine reads a data root, and the platform keeps one: `SharedRoot` is
+a disk cache of the object store laid out exactly as the engine expects
+(`markets/<domain>/resolved.parquet`, `histories/`, `snapshots/`). Keys
+are immutable except each dataset's `LATEST` pointer, which is read
+through, so a refresh fetches only what is new. A job gets a private
+working root whose shared directories are links into the cache, so the
+engine runs unchanged and never sees another workspace's files. Cache
+writes go to a temporary name unique to the process and thread and are
+renamed into place, because several web processes share one cache.
+
+**The ledger in Postgres.** `PgLedger` stores the entries the file ledger
+would write, hashed by the same function, one chain per paper account. An
+append locks the account's head row, so two writers queue rather than
+fork the chain. A paper cycle appends inside `PgLedger.batch()`: one
+transaction, one lock and one pipelined insert for the whole cycle, chained
+exactly as single appends are, and a cycle that fails writes nothing. An
+export verifies offline with the engine's own `Ledger.verify`.
+
+**Partitions and archives.** Ledger entries, forecasts and quotes are
+partitioned by month (`vp_ensure_partitions`, run daily by a job, keeps two
+months ahead). `vp admin archive <table> <month>` moves a closed month to
+Parquet in the object store, reads it back to check every row is there,
+and only then drops the partition; `PgLedger` reads archived months first,
+so a chain still verifies from its first entry. `vp_app` holds no
+privilege on any partition: naming a partition directly would bypass the
+parent table's row-level security, so only the parent is reachable.
+
+## Jobs
+
+Everything that takes longer than a request is a job: a row in `jobs`
+claimed with `FOR UPDATE SKIP LOCKED`, so any number of workers share one
+queue. A job has a kind, a payload, an idempotency key, a priority
+(interactive 50, scheduled 100, maintenance 200), a run-after time, a
+lease renewed by a heartbeat thread, progress, a result, and the budget it
+reserved. A failure is retried after $30 \cdot 2^{n-1}$ seconds; after the
+last attempt the job is dead and waits for an operator. Cancelling sets a
+flag the next heartbeat reads. Workers sleep on `LISTEN vp_jobs`, so a new
+job starts within milliseconds; a job scheduled for later is found by a
+five-second poll.
+
+A job runs as a `Principal` with the `job` method and the id of the person
+who asked, in their workspace, so it passes the same row-level security as
+their requests. The platform's own jobs run as `system` and reach only
+shared tables, through `SECURITY DEFINER` functions.
+
+**The scheduler is a job.** Each run reaps expired leases, fires due
+schedules (cron with an IANA time zone, via croniter) and queues itself for
+the next minute under an idempotency key naming that minute, so however
+many workers try, one scheduler runs per minute, and a lost one is
+replaced a minute later. A person's paper trading is two schedules in
+their own time zone: a cycle at seven past each hour and a settlement at
+thirty-seven past.
+
+**Pools.** A worker serves the kinds it is started with, so pools are
+sized independently and long work never blocks short work. Compose runs
+five: interactive (backtest, leakage), paper (paper cycle, settle),
+platform (scheduler, partitions, sweep), capture (snapshot, evidence,
+reconcile) and data (dataset builds, which run for hours). The split was
+found, not planned: with the scheduler in the dataset pool it waited
+behind a build, and evidence captures waited 4.6 minutes behind two.
+
+**Work shared between people.** A paper cycle trades the latest capture
+of the market-data service rather than taking its own, and forecasts at
+the capture's time rather than the moment the job runs. That is when the
+prices it trades against were seen, never later than now, so the cutoff
+holds; and every account trading one capture asks the same question, so a
+statistical forecast is computed once and read by everyone from
+`forecast_memo`. Language-model forecasts are not memoised: a person's
+prompt is private.
+
+**A dataset build resumes.** Each price history goes to the object store
+as it is fetched, and a build skips histories already stored (a settled
+market's history does not change), so a build cut short by a restart or a
+deploy carries on where it stopped. Weather has about 146,000 settled
+markets, so its daily build fetches histories for the 2,000 that ended
+most recently. On stop, a worker finishes its running jobs for up to its
+lease; Compose gives it 90 seconds.
+
+## The Market-Data Service
+
+`vp ingest` holds one subscription to the venue for everyone
+(`docs/scaling.md` § 5). Discovery walks Gamma's keyset pagination for
+each domain every ten minutes and records tracked markets; markets it no
+longer sees are marked closed. Every outcome token is subscribed on the
+CLOB market WebSocket, 400 to a socket, with the custom-feature flag and a
+`PING` every ten seconds; new tokens fill existing sockets before new ones
+open, and a dropped socket reconnects with exponential backoff.
+
+Books are kept in memory. Once a minute every token whose best bid or ask
+moved is written to `quotes` (one row per token per minute, updated in
+place; a change of size alone, which most books see every minute, writes
+nothing); a
+market someone holds is written on every change of its top of book. Every
+fifteen minutes each domain's snapshot is written from memory in the
+engine's own format to the object store, and `NOTIFY vp_data` tells the
+web processes to refresh their caches. Resolutions come from the
+channel's `market_resolved` event, and an hourly reconcile asks the Data
+API v2 about tracked markets past their end date with no resolution yet.
+Closed is still not resolved: a label is written only from a resolution.
+
+Freshness is measured two ways. The ingestion lag is the gap between the
+venue's stamp on a change event and its receipt (a `book` message is a
+picture stamped with the book's last change, so it is excluded). Staleness
+is how long a token's socket has been silent: on a live socket the venue
+sends every change and answers the ping, so a quiet book is current, and
+the time since a book last changed (hours, for quiet markets) is not its
+age.
+
+## Evidence
+
+Four collectors run hourly and write Parquet captures with their capture
+time, indexed in `evidence_captures` (`docs/evidence.md` has the sources
+and their terms): Open-Meteo forecasts for every city in the weather
+markets (one multi-location request; geocoding cached), the openfootball
+fixtures and results (CC0), the venue's own schedule of tracked markets,
+and GDELT headlines per domain, queried from each domain's keywords so no
+domain is hard-coded. Each collector fails alone and records why.
+
+## Budgets and Model Keys
+
+Each workspace has a monthly budget for model spending on the platform's
+key ($5 by default, set per workspace by the operator). Starting a
+backtest estimates its cost from the number of markets, reserves it under
+an advisory lock (a start that would exceed the budget is refused with
+402), and on completion replaces the reservation with the measured cost
+from the model's token counts, cache reads and writes priced at 0.1 and
+1.25 times input, and batch at half price. Spend is recorded per model
+call with the forecaster, domain, model, tokens and who paid.
+
+A person may store their own Anthropic key. It is sealed with AES-GCM
+under a data key that is itself sealed under `VP_MASTER_KEY` (envelope
+encryption; the master key stands in for the cloud key-management service
+until the deploy), is shown only as its last four characters, and can be
+replaced or deleted at any time. Calls on an own key are recorded as
+`own_key` and do not count against the budget. Every client, the
+platform's or a person's, passes through one limiter per key across all
+processes: advisory-lock slots, four by default, so a pool of workers
+cannot exceed the provider's concurrency.
+
+## Observability and Operations
+
+Each process keeps Prometheus metrics: requests by route and status and
+their latency; jobs finished, their duration and start latency; queue depth
+and oldest ready age by kind; venue requests by host and status (a 429 is
+visible); the feed's reconnects, tokens, lag and staleness; resolution
+delay; spend; ledger append latency. The web serves them at `/metrics`
+behind `VP_METRICS_TOKEN`, and workers and the ingest service on their own
+ports. `vp serve --workers N` runs several web processes; their metrics
+are kept in files and added up at each scrape. Traces are OpenTelemetry
+spans per request, job and venue call, sent nowhere, to the log or to an
+OTLP collector (`VP_TELEMETRY`). `deploy/alerts.yml` holds the alerts,
+each with an entry in `docs/runbook.md`, and `deploy/grafana` a
+dashboard.
+
+The operator works from the command line: `vp jobs` (list, show, retry,
+drain, stats) and `vp admin` (halt and resume the platform, pause a
+workspace, budgets, costs, a data refresh, archive, the audit chain).
+While the platform is halted no job is claimed; a paused workspace's jobs
+wait. Every operator action is an entry in a hash-chained audit log that
+names the operator.
+
+## The Local Stand-in
+
+`deploy/compose.yaml` runs the platform from one image: Postgres 16, MinIO,
+a setup job that migrates and creates the bucket, the web service (four
+processes), the five worker pools, the market-data service, and with
+`--profile observability` Prometheus and Grafana. `deploy/compose.proxy.yaml`
+adapts it to a sandbox whose traffic must pass a proxy (host networking,
+the proxy's certificate). `.github/workflows/ci.yml` runs the checks and
+the tests against a Postgres service and builds the image; it deploys
+nothing. The cloud deploy of task 34 is the last step of the phase.
 
 ## Running the Database Tests
 

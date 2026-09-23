@@ -125,10 +125,13 @@ Each control saves as it changes and says so in a status line that a
 screen reader announces. Detailed adds API tokens (create, shown once;
 revoke), a download of every record the app holds for the person, and a
 list of what is not here yet and when it arrives: the play-money amount
-(with the person's own paper account), notifications (Phase 18), the
-model tier (Phase 15), the budget and one's own key (task 35), data
-refresh on demand (task 31). They are listed rather than shown as dead
-controls, because a switch that does nothing misleads.
+(with the person's own paper account), notifications (Phase 18) and the
+model tier (Phase 15). They are listed rather than shown as dead
+controls, because a switch that does nothing misleads. Under `vp serve`,
+Settings also shows this month's model spending against the budget (a
+sentence in both levels, the breakdown by strategy, domain and model in
+Detailed), and in Detailed one's own Anthropic key (shown only as its last
+four characters) and a data refresh per domain.
 
 Settings are the person's, not the workspace's: one JSON document per
 user in `user_settings` (migration 0003), readable only by its owner under
@@ -196,10 +199,31 @@ Scripts come only from this origin: `vp serve` sends a
 Content-Security-Policy with `script-src 'self'` and no inline script on
 every page except FastAPI's API reference, so text from a market question
 or a ledger entry that slipped past escaping still could not run.
-Everything from the server is escaped where it is inserted. The page still
-cannot act: it reads, and it changes only the person's own settings and
-API tokens. The engine-facing commands stay on the command line until
-jobs exist (task 31).
+Everything from the server is escaped where it is inserted. Under `vp
+ui` the page cannot act. Under `vp serve` it starts work only as jobs in
+the person's own workspace (next section), and every such request passes
+the cross-site checks of the web service.
+
+## Work From the Page (Phase 13)
+
+Under `vp serve` the page starts work and shows it progressing:
+
+- **Paper trading.** A workspace without a paper account sees an offer on
+  Home to start one with the sample strategies; accepting opens the
+  account, schedules an hourly cycle and a settlement in the person's own
+  time zone, and runs the first cycle at once. Strategies adds "run a
+  cycle now" and "settle now".
+- **Backtests.** Backtests has a form: the markets, the strategies, and in
+  Detailed the hours before close and a cap on markets. Before anything
+  runs it says how many markets the run covers and, if a model strategy is
+  chosen, what it would cost and how much of the month's budget is left;
+  an answer to an earlier choice that arrives late is ignored. A finished
+  run opens itself.
+- **The jobs panel.** Home, Strategies and Backtests list the workspace's
+  recent jobs with their state, a progress bar and its message, and a
+  cancel button while they are queued or running, polling every two
+  seconds only while something is active.
+- **What it cost.** Settings shows the month's model spending (above).
 
 ## Endpoints Added
 
@@ -243,10 +267,10 @@ task 49.
 
 ## Known Gaps
 
-- Everyone on one `vp serve` sees the same sample strategies, because the
-  data root is still shared (task 30). The settings are per person.
-- The chance-over-time chart reads the last 30 snapshots; the snapshot
-  reader's cache grows with the snapshots read and is not bounded.
+- The chance-over-time chart reads the last 30 snapshots, one every
+  fifteen minutes, so it spans about seven hours. The quotes table of the
+  market-data service holds the longer series; the page does not read it
+  yet.
 - Usability sessions with people who have never used a prediction market
   (task 49) are what will show whether the words work; they need a public
   host and come at the end of the build.

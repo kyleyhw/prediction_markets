@@ -119,10 +119,10 @@ talking to the venue.
   `tick_size_change` events, the `best_bid_ask` and `market_resolved` events
   behind the custom-feature flag, and a `PING` every ten seconds. Books are
   kept in memory per token, quotes coalesced to one row per token per
-  minute in which its book changed (and on every top-of-book change for
-  markets a strategy holds) and appended to the quote stream; a quiet book
-  writes nothing, and the quote at a minute is the latest row at or before
-  it.
+  minute in which its best bid or ask moved (and on every top-of-book
+  change for markets a strategy holds) and appended to the quote stream; a
+  book whose top has not moved writes nothing, and the quote at a minute is
+  the latest row at or before it.
 - **Resolutions.** The `market_resolved` event, the Data API v2
   `/v2/resolutions` endpoint, and the CLOB `winner` flag, in that order of
   speed and the reverse order of authority; a sweep reconciles anything a

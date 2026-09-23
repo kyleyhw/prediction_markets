@@ -119,10 +119,19 @@ def test_the_service_records_markets_quotes_snapshots_and_resolutions(
     assert service.flush_quotes() == 0  # a quiet book writes nothing more
     service.state.apply(
         {
-            "event_type": "best_bid_ask",
-            "asset_id": token,
-            "best_bid": "0.48",
-            "best_ask": "0.53",
+            "event_type": "price_change",
+            "price_changes": [
+                {"asset_id": token, "price": "0.53", "size": "9", "side": "SELL"}
+            ],
+        }
+    )
+    assert service.flush_quotes() == 0  # nor does a size change at the same top
+    service.state.apply(
+        {
+            "event_type": "price_change",
+            "price_changes": [
+                {"asset_id": token, "price": "0.48", "size": "3", "side": "BUY"}
+            ],
         }
     )
     assert service.flush_quotes() == 1  # the same minute is updated, not duplicated
