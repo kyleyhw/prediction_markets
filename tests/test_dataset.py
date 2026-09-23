@@ -231,3 +231,16 @@ def test_snapshot_attaches_books(tmp_path: Path) -> None:
     assert saved[0].parsed["kind"] == "match"
     assert saved[0].outcomes[0].asks[0].price == 0.51
     assert saved[0].outcomes[1].bids[0].size == 5.0
+
+
+def test_histories_go_to_the_latest_markets_and_skip_those_held(
+    tmp_path: Path,
+) -> None:
+    source = make_source()
+    everything = build_resolved_dataset(EPL, source, tmp_path / "a")
+    assert everything.histories_fetched == 2
+    latest = build_resolved_dataset(EPL, source, tmp_path / "b", history_limit=1)
+    assert latest.histories_fetched == 1
+    held = frozenset(p.stem for p in (tmp_path / "a" / "histories" / "epl").glob("*"))
+    again = build_resolved_dataset(EPL, source, tmp_path / "c", have_history=held)
+    assert again.histories_fetched == 0

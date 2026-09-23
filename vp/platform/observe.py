@@ -97,6 +97,12 @@ QUOTE_AGE_P99 = Gauge(
     "vp_quote_age_p99_seconds", "99th percentile age of the books", registry=REGISTRY
 )
 QUOTE_AGE_MAX = Gauge("vp_quote_age_max_seconds", "Oldest book", registry=REGISTRY)
+INGEST_LAG = Histogram(
+    "vp_ingest_lag_seconds",
+    "Venue event timestamp to our receipt",
+    registry=REGISTRY,
+    buckets=(0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10, 30),
+)
 RESOLUTION_DELAY = Histogram(
     "vp_resolution_delay_seconds",
     "Venue resolution to our record",
@@ -145,6 +151,9 @@ class FeedMetrics:
 
     def reconnect(self) -> None:
         WS_RECONNECTS.inc()
+
+    def lag(self, seconds: float) -> None:
+        INGEST_LAG.observe(max(seconds, 0.0))
 
     def freshness(self, ages: list[float], tokens: int) -> None:
         TOKENS_TRACKED.set(tokens)

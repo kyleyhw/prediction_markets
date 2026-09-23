@@ -439,6 +439,11 @@ class Ingest:
             if isinstance(event, dict):
                 self.messages += 1
                 moved |= self.state.apply(event)
+                # The venue stamps each event in milliseconds; the gap to now
+                # is the ingestion lag the plan asks to measure.
+                stamp = _num(event.get("timestamp"))
+                if stamp and self.metrics:
+                    self.metrics.lag(time.time() - stamp / 1000)
         held = {t for t in moved if self.state.token_market.get(t) in self.held}
         if held:
             with contextlib.suppress(Exception):

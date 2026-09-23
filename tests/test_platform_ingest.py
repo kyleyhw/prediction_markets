@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import time
 from pathlib import Path
 
 import pytest
@@ -249,3 +250,17 @@ def test_new_tokens_fill_sockets_before_opening_more() -> None:
     plan = service.assign([f"n{i}" for i in range(5)])
     assert [len(take) for _, take in plan] == [2, 3]
     assert plan[0][0] is service._sockets[0][1] and plan[1][0] == set()
+
+
+def test_the_venue_s_event_stamp_gives_the_ingestion_lag() -> None:
+    class Seen:
+        lags: list[float] = []
+
+        def lag(self, seconds: float) -> None:
+            self.lags.append(seconds)
+
+    seen = Seen()
+    service = Ingest(None, None, [], metrics=seen)  # ty: ignore[invalid-argument-type]
+    stamp = int((time.time() - 0.5) * 1000)
+    service._handle(json.dumps([{"event_type": "new_market", "timestamp": str(stamp)}]))
+    assert len(seen.lags) == 1 and 0.4 < seen.lags[0] < 5

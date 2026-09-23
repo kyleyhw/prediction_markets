@@ -71,6 +71,8 @@ def build_resolved_dataset(
     *,
     max_markets: int | None = None,
     with_history: bool = True,
+    history_limit: int | None = None,
+    have_history: frozenset[str] = frozenset(),
 ) -> BuildReport:
     """Discover closed markets in ``domain``, keep the labelled ones, persist.
 
@@ -82,6 +84,10 @@ def build_resolved_dataset(
             A small value is the quick retrievability check.
         with_history: Also fetch and store each labelled market's price
             history for its first outcome.
+        history_limit: Fetch histories only for this many markets, those
+            that ended most recently; ``None`` for all.
+        have_history: Keys of markets whose history is already stored. A
+            settled market's history no longer changes, so these are skipped.
     """
     report = BuildReport(domain=domain.name)
     labelled: list[BinaryMarket] = []
@@ -107,8 +113,13 @@ def build_resolved_dataset(
     report.markets_path = markets_path
 
     if with_history:
-        for market in labelled:
+        wanted = sorted(labelled, key=lambda m: m.end_date or "", reverse=True)
+        if history_limit is not None:
+            wanted = wanted[:history_limit]
+        for market in wanted:
             key = market.market_id or market.condition_id or "unknown"
+            if key in have_history:
+                continue
             try:
                 series = source.history(market, outcome_index=0)
             except Exception as exc:  # noqa: BLE001 - one failure must not end the run

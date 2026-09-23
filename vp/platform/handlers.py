@@ -417,13 +417,18 @@ def dataset(ctx: JobContext) -> dict[str, Any]:
 
     with tempfile.TemporaryDirectory(dir=svc.work_dir) as tmp:
         root = Path(tmp)
-        stored = set(svc.store.keys(f"{SHARED}/histories/{domain.name}/"))
+        prefix = f"{SHARED}/histories/{domain.name}/"
+        stored = set(svc.store.keys(prefix))
         report = build_resolved_dataset(
             domain,
             svc.source(),
             root,
             max_markets=ctx.job.payload.get("max_markets"),
             with_history=bool(ctx.job.payload.get("history", True)),
+            history_limit=ctx.job.payload.get("history_limit"),
+            have_history=frozenset(
+                k.removeprefix(prefix).removesuffix(".parquet") for k in stored
+            ),
         )
         stamp = _stamp()
         publish_dataset(

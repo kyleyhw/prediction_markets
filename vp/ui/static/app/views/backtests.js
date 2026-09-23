@@ -117,15 +117,17 @@ async function form(o) {
       if (f.batch) data.batch = f.batch.checked;
       return data;
     };
+    let asked = 0;
     const estimate = async () => {
-      const data = body();
+      const data = body(), mine = ++asked;
       if (!data.forecasters.length) { status.textContent = tp('bt.form.pick_one'); return; }
       try {
         const e = await send('POST', 'backtests/estimate', data);
+        if (mine !== asked) return; // a later choice's answer is on its way
         status.innerHTML = e.estimate_usd > 0
           ? t('bt.form.cost', { n: e.markets, cost: fmt.money(e.estimate_usd), left: fmt.money(e.remaining_usd), limit: fmt.money(e.limit_usd) })
           : t('bt.form.free', { n: e.markets });
-      } catch (err) { status.textContent = err.message; }
+      } catch (err) { if (mine === asked) status.textContent = err.message; }
     };
     f.addEventListener('change', estimate);
     f.addEventListener('submit', async (e) => {

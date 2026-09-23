@@ -64,7 +64,8 @@ def show_job(conn: psycopg.Connection, job_id: UUID) -> dict[str, Any] | None:
     cur = conn.cursor(row_factory=dict_row)
     return cur.execute(
         "select id, kind, state, workspace_id, attempts, max_attempts, priority, "
-        "created_at, started_at, finished_at, worker, progress, error, "
+        "created_at, started_at, finished_at, worker, progress, payload, result, "
+        "error, "
         "run_after, lease_until from jobs where id = %s",
         (job_id,),
     ).fetchone()
