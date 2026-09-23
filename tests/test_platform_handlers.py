@@ -20,6 +20,7 @@ from vp.platform.handlers import Services, handlers
 from vp.platform.jobs import Worker, enqueue
 from vp.platform.ledger import PgLedger
 from vp.platform.storage import LocalStore, SharedRoot, publish_dataset, publish_tree
+from vp.platform.views import WorkspaceView
 
 pytestmark = needs_db
 
@@ -111,6 +112,15 @@ def test_a_paper_cycle_trades_the_shared_capture_into_the_account_s_ledger(
         assert conn.execute("select count(*) from forecasts").fetchone() == (1,)
     with app_pool.connection() as conn, tenant_session(conn, bob):
         assert conn.execute("select count(*) from forecasts").fetchone() == (0,)
+    # The market list shows the workspace's own latest forecast, and only its.
+    shown = WorkspaceView(services.shared, app_pool, ada, services.store)
+    assert [f["forecaster"] for f in shown.latest_forecasts("cs2")["6"]] == ["constant"]
+    assert (
+        WorkspaceView(services.shared, app_pool, bob, services.store).latest_forecasts(
+            "cs2"
+        )
+        == {}
+    )
     # Bob cannot run a cycle on Ada's account: the job fails, touching nothing.
     theirs = enqueue(app_pool, bob, "paper_cycle", {"account_id": str(account)})
     run_all(app_pool, services, ("paper_cycle",))

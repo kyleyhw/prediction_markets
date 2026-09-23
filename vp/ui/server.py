@@ -27,7 +27,7 @@ import json
 import logging
 import re
 import threading
-from collections import Counter
+from collections import Counter, OrderedDict
 from collections.abc import Iterator
 from datetime import datetime, timedelta, timezone
 from functools import partial
@@ -51,11 +51,13 @@ DOMAINS = tuple(DOMAIN_ADAPTERS)
 START_CASH = 1000.0
 
 
-# Parquet reads, keyed by path and modification time, shared by every view
-# in the process: the hosted service builds a view per request, and a
-# weather snapshot is too large to decode on each.
-_CACHE: dict[str, tuple[float, Any]] = {}
+# Parsed files, keyed by path, loader and modification time, shared by every
+# view in the process: the hosted service builds a view per request, and a
+# weather snapshot is too large to decode on each. Bounded, because the
+# hosted service sees a new capture every few minutes.
+_CACHE: OrderedDict[str, tuple[float, Any]] = OrderedDict()
 _CACHE_LOCK = threading.Lock()
+CACHE_SIZE = 64
 
 
 class DataView:
@@ -71,14 +73,18 @@ class DataView:
         self.root = root
 
     def _cached(self, path: Path, load: Any) -> Any:
-        key = str(path)
+        key = f"{path}#{load.__name__}"
         mtime = path.stat().st_mtime if path.exists() else -1.0
         with _CACHE_LOCK:
             hit = _CACHE.get(key)
+            if hit is not None:
+                _CACHE.move_to_end(key)
         if hit is None or hit[0] != mtime:
             hit = (mtime, load(path) if path.exists() else None)
             with _CACHE_LOCK:
                 _CACHE[key] = hit
+                while len(_CACHE) > CACHE_SIZE:
+                    _CACHE.popitem(last=False)
         return hit[1]
 
     # -- the seams --
@@ -179,7 +185,15 @@ class DataView:
         snaps = sorted((self.root / "snapshots" / domain).glob("*.parquet"))
         if not snaps:
             return {"domain": domain, "stamp": None, "markets": []}
-        markets = self._cached(snaps[-1], read_markets) or []
+        forecasts = self.latest_forecasts(domain)
+        rows = [
+            row | {"forecasts": forecasts.get(str(row["market_id"]), [])}
+            for row in self._cached(snaps[-1], _snapshot_rows) or []
+        ]
+        return {"domain": domain, "stamp": snaps[-1].stem, "markets": rows}
+
+    def latest_forecasts(self, domain: str) -> dict[str, list[dict[str, Any]]]:
+        """Recent forecasts by market id, as the market list shows them."""
         forecasts: dict[str, list[dict[str, Any]]] = {}
         for f in self.forecasts(limit=5000):
             forecasts.setdefault(str(f.get("market_id")), []).append(
@@ -189,9 +203,7 @@ class DataView:
                     "cutoff": f["cutoff"],
                 }
             )
-        rows = [_market_row(m, forecasts.get(str(m.market_id), [])) for m in markets]
-        rows.sort(key=lambda r: (not r["has_book"], r["end_date"] or ""))
-        return {"domain": domain, "stamp": snaps[-1].stem, "markets": rows}
+        return forecasts
 
     def market(
         self, domain: str, market_id: str, *, history: int = 30
@@ -335,6 +347,13 @@ def _market_row(
         "fee_rate": market.fee_rate,
         "fee_exponent": market.fee_exponent,
     }
+
+
+def _snapshot_rows(path: Path) -> list[dict[str, Any]]:
+    """A capture's market rows without forecasts, in the list's order."""
+    rows = [_market_row(m, []) for m in read_markets(path)]
+    rows.sort(key=lambda r: (not r["has_book"], r["end_date"] or ""))
+    return rows
 
 
 def _kind_counts(path: Path) -> dict[str, Any]:

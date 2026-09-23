@@ -147,6 +147,27 @@ class WorkspaceView(DataView):
             ).fetchall()
         return [r[0] for r in rows]
 
+    def latest_forecasts(self, domain: str) -> dict[str, list[dict[str, Any]]]:
+        """Each strategy's latest forecast per market in the domain, read as
+        the columns the list shows rather than decoded records."""
+        with self.pool.connection() as conn, tenant_session(conn, self.principal):
+            rows = conn.execute(
+                "select distinct on (market_id, forecaster) market_id, forecaster, "
+                "p_hat, cutoff from forecasts where domain = %s "
+                "order by market_id, forecaster, at desc",
+                (domain,),
+            ).fetchall()
+        out: dict[str, list[dict[str, Any]]] = {}
+        for market_id, forecaster, p_hat, cutoff in rows:
+            out.setdefault(str(market_id), []).append(
+                {
+                    "forecaster": forecaster,
+                    "p_hat": float(p_hat),
+                    "cutoff": cutoff.isoformat().replace("+00:00", "Z"),
+                }
+            )
+        return out
+
     def overview(self) -> dict[str, Any]:
         view = super().overview()
         view.pop("root", None)
