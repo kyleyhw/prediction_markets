@@ -220,3 +220,15 @@ def ingest(
 
     print(f"vp ingest: {', '.join(service.domains)}")
     asyncio.run(main())
+
+
+def setup() -> list[str]:
+    """What a fresh deployment runs once before the services start: apply the
+    migrations and, on an S3-compatible development store, create the bucket."""
+    from vp.platform.storage import S3Store, open_store
+
+    applied = migrate_database()
+    store = open_store(load_settings())
+    if isinstance(store, S3Store):
+        store.ensure_bucket()
+    return applied

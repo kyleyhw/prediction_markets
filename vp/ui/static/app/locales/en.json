@@ -53,7 +53,13 @@
     "cost": "Cost",
     "name": "Name",
     "scope": "Access",
-    "created": "Created"
+    "created": "Created",
+    "domain": "Domain",
+    "model": "Model",
+    "tokens_in": "Tokens in",
+    "tokens_out": "Tokens out",
+    "cache_read": "Cached",
+    "paid_by": "Paid by"
   },
   "home": {
     "title": "Home",
@@ -242,7 +248,28 @@
     "advantage_title": "Cumulative advantage over the market",
     "advantage_summary": "Running sum of the market's Brier score minus the strategy's, market by market.",
     "advantage_x": "markets in settlement order",
-    "advantage_caption": "Rising means the strategy is beating the market as a forecaster; falling means the market is winning."
+    "advantage_caption": "Rising means the strategy is beating the market as a forecaster; falling means the market is winning.",
+    "form": {
+      "title": "Run a backtest",
+      "domain": "Markets",
+      "strategies": "Strategies to test (the market's own price is always the yardstick)",
+      "hours": "Hours before settlement",
+      "max": "At most",
+      "all": "all markets",
+      "batch": "Use the slower batch service at half price",
+      "run": "Run the backtest",
+      "pick_one": "Choose at least one strategy.",
+      "free": {
+        "one": "Covers 1 settled market. Free: these strategies cost nothing to run.",
+        "other": "Covers {n} settled markets. Free: these strategies cost nothing to run."
+      },
+      "cost": {
+        "one": "Covers 1 settled market. Estimated cost {cost}; {left} of your {limit} this month is left.",
+        "other": "Covers {n} settled markets. Estimated cost {cost}; {left} of your {limit} this month is left."
+      },
+      "queued": "Queued. Its progress is below.",
+      "none_yet": "No backtests yet. Run one above; it appears here when it finishes."
+    }
   },
   "learn": {
     "title": "Learn",
@@ -410,12 +437,26 @@
     "later_play_money": "Your own play-money amount: arrives with your own paper account, when strategies become yours to make.",
     "later_notifications": "Email and chat summaries: arrive with delivery (plan, Phase 18).",
     "later_model": "Choosing the AI model tier: arrives with research sessions (Phase 15).",
-    "later_budget": "Your monthly AI budget: arrives with budgets (Phase 13, task 35).",
-    "later_own_key": "Using your own AI key: arrives with budgets.",
-    "later_refresh": "Refreshing data on demand: arrives with background jobs (Phase 13, task 31).",
     "account": "Account",
     "email": "Email",
-    "workspace": "Workspace"
+    "workspace": "Workspace",
+    "spend": "AI spending",
+    "spend_line": "This month the AI model has cost {used} of your {limit} limit; {left} is left. Statistical strategies are free.",
+    "spend_caption": "This month's charges by strategy, domain and model.",
+    "paid_own": "your key",
+    "paid_platform": "platform",
+    "key": "Your own AI key",
+    "key_note": "With your own Anthropic key, AI forecasts are billed to you and not counted against this month's limit. The key is stored encrypted; only its last four characters are ever shown again.",
+    "key_current": "A key ending {hint} is stored.",
+    "key_save": "Save key",
+    "key_remove": "Remove key",
+    "key_saved": "Saved. The key ends {hint}.",
+    "key_removed": "Removed.",
+    "refresh": "Refresh market data",
+    "refresh_note": "Markets are captured every fifteen minutes. Ask for a fresh capture now; if one was asked for in the last fifteen minutes, that one is used.",
+    "refresh_button": "Refresh {title}",
+    "refresh_queued": "Asked for. The markets page shows it when it arrives.",
+    "refresh_recent": "A refresh was already asked for in the last fifteen minutes."
   },
   "start": {
     "step": "Step {n} of {total}",
@@ -469,58 +510,275 @@
     }
   },
   "kinds": {
-    "match": { "name": "Match winner" },
-    "daily_temperature": { "name": "Daily temperature" },
-    "season_winner": { "name": "Season winner" },
-    "tournament_winner": { "name": "Tournament winner" },
-    "global_anomaly": { "name": "Global temperature" },
-    "record_rank": { "name": "Record rank" },
-    "unparsed": { "name": "Other" }
+    "match": {
+      "name": "Match winner"
+    },
+    "daily_temperature": {
+      "name": "Daily temperature"
+    },
+    "season_winner": {
+      "name": "Season winner"
+    },
+    "tournament_winner": {
+      "name": "Tournament winner"
+    },
+    "global_anomaly": {
+      "name": "Global temperature"
+    },
+    "record_rank": {
+      "name": "Record rank"
+    },
+    "unparsed": {
+      "name": "Other"
+    }
   },
   "glossary_doc": "Derivation: {doc}",
   "glossary": {
-    "brier": { "name": "Brier score", "text": "Mean of (forecast − outcome)² over the scored markets. 0 is perfect, 0.25 is what forecasting 0.5 every time earns, 1 is confidently wrong every time. Lower is better.", "doc": "docs/scoring.md" },
-    "log": { "name": "Log score", "text": "Mean of −log(probability given to what happened). Punishes confident misses without bound, so forecasts are clipped to [0.01, 0.99]. Lower is better.", "doc": "docs/scoring.md" },
-    "skill": { "name": "Skill against the market", "text": "1 − (forecaster Brier ÷ market Brier) on the same markets. Positive means the forecaster beat the market price as a forecast, zero equal, negative worse. On paper accounts it is computed from the settled positions so far.", "doc": "docs/scoring.md" },
-    "reliability": { "name": "Reliability", "text": "Calibration error from the Murphy decomposition: how far each bin's forecasts sit from the frequency that actually happened. Lower is better.", "doc": "docs/scoring.md" },
-    "resolution": { "name": "Resolution", "text": "How much the forecasts separate outcomes: the spread of observed frequencies across bins around the base rate. Higher is better.", "doc": "docs/scoring.md" },
-    "ece": { "name": "Expected calibration error", "text": "Average absolute gap between forecast and observed frequency across bins, weighted by bin size. Lower is better.", "doc": "docs/scoring.md" },
-    "cost": { "name": "Cost", "text": "Dollars of API usage spent on these forecasts, from token counts at the model's price. Zero for everything but the AI model.", "doc": "docs/forecasters.md" },
-    "n": { "name": "n", "text": "Markets scored: those every forecaster in the run answered and that had a market price at the cutoff, so all are compared on the same set.", "doc": "docs/scoring.md" },
-    "bets": { "name": "Bets", "text": "Simulated positions placed: one per market where the forecast beat the effective price by at least the minimum edge.", "doc": "docs/sizing.md" },
-    "return": { "name": "Return", "text": "Change in the simulated balance over the run, compounding bet by bet in settlement order.", "doc": "docs/sizing.md" },
-    "drawdown": { "name": "Max drawdown", "text": "Worst peak-to-trough fall of the balance as a fraction of the peak.", "doc": "docs/scoring.md" },
-    "winrate": { "name": "Win rate", "text": "Fraction of settled bets that paid out.", "doc": "docs/scoring.md" },
-    "pf": { "name": "Profit factor", "text": "Gross profit divided by gross loss. Above 1 is net profitable.", "doc": "docs/scoring.md" },
-    "sharpe": { "name": "Per-bet Sharpe", "text": "Mean per-bet return divided by its standard deviation. Not annualised: bets have no fixed time base.", "doc": "docs/scoring.md" },
-    "sharpeci": { "name": "Sharpe 95% interval", "text": "Bootstrap confidence interval for the per-bet Sharpe ratio. If it includes 0 the edge is not demonstrated.", "doc": "docs/scoring.md" },
-    "psharpe": { "name": "P(Sharpe > 0)", "text": "Fraction of bootstrap resamples with a positive Sharpe ratio. Near 0.5 is no evidence of edge; near 1 the edge survived resampling.", "doc": "docs/scoring.md" },
-    "cutoff": { "name": "Cutoff", "text": "The moment a forecast is made as of. Every forecaster reads only evidence from before it; in a backtest it is a fixed number of hours before each market settled.", "doc": "docs/forecasters.md" },
-    "hours": { "name": "Hours before settlement", "text": "Where the backtest placed the cutoff: this many hours before each market settled.", "doc": "docs/scoring.md" },
-    "q": { "name": "Market price q", "text": "The market's price for the first outcome, which is its implied probability; the baseline every forecaster is scored against.", "doc": "docs/scoring.md" },
-    "phat": { "name": "Forecast p̂", "text": "The forecaster's probability that the first outcome occurs.", "doc": "docs/forecasters.md" },
-    "kind": { "name": "Market type", "text": "What the question parser read from the question: a match winner, a daily temperature, a season winner, and so on. Forecasters act only on types they understand.", "doc": "docs/data_layer.md" },
-    "market": { "name": "market (forecaster)", "text": "The market's own price as a forecast. The reference: skill is measured against it and it never bets.", "doc": "docs/forecasters.md" },
-    "constant": { "name": "constant (forecaster)", "text": "Always 0.5. A scale anchor: it scores 0.25 Brier by construction, and its bets show what the sizing rule does with no information.", "doc": "docs/forecasters.md" },
-    "elo": { "name": "elo (forecaster)", "text": "Elo ratings fitted on results settled before the cutoff, replayed in order from 1500; a home advantage in football; draws from the empirical draw rate.", "doc": "docs/forecasters.md" },
-    "climatology": { "name": "climatology (forecaster)", "text": "For a temperature bucket: how often that bucket happened at the same city on nearby dates in earlier years, from the venue's own resolved markets.", "doc": "docs/forecasters.md" },
-    "llm": { "name": "llm (forecaster)", "text": "A Claude model given the question, the cutoff and tools that return evidence from before the cutoff, answering with a probability and a rationale.", "doc": "docs/forecasters.md" },
-    "ledger": { "name": "Ledger", "text": "The append-only record of paper trading: every cycle, forecast, order and settlement, each entry hashed together with the previous one.", "doc": "docs/paper_trading.md" },
-    "verified": { "name": "Chain verified", "text": "Every ledger entry's hash matches its content and its predecessor, so nothing has been edited, deleted or reordered.", "doc": "docs/paper_trading.md" },
-    "bankroll": { "name": "Balance", "text": "The strategy's paper account: starts at the starting amount and changes with each settled position.", "doc": "docs/paper_trading.md" },
-    "realised": { "name": "Realised", "text": "Profit and loss from positions that have settled.", "doc": "docs/paper_trading.md" },
-    "exposure": { "name": "Open stake", "text": "Money currently tied up in open positions.", "doc": "docs/paper_trading.md" },
-    "fee": { "name": "Fee", "text": "The venue's taker fee, C · r · (p(1 − p))^e on C shares at price p, with the market's own rate r and exponent e. Included in the effective price and recorded on every paper order.", "doc": "docs/sizing.md" },
-    "side": { "name": "Side", "text": "yes buys the first outcome's share; no buys the complementary share, which pays if the first outcome does not happen.", "doc": "docs/sizing.md" },
-    "price": { "name": "Price", "text": "Effective price paid per share, fee included. A share pays 1 if its side wins.", "doc": "docs/sizing.md" },
-    "shares": { "name": "Shares", "text": "Number of shares bought: stake ÷ price, capped at the size resting at the touch of the book.", "doc": "docs/paper_trading.md" },
-    "stake": { "name": "Stake", "text": "Dollars committed, fee included: a fraction of the balance from fractional Kelly, capped at 5% per position.", "doc": "docs/sizing.md" },
-    "label": { "name": "Label", "text": "How the market resolved: 1 if the first outcome happened, 0 if not. Set only from the venue's settlement, never from a price.", "doc": "docs/data_layer.md" },
-    "pnl": { "name": "P&L", "text": "Profit or loss of the settled position: shares − stake on a win, −stake on a loss. Net of the fee, which is in the stake.", "doc": "docs/sizing.md" },
-    "bid": { "name": "Bid", "text": "Best resting offer to buy the first outcome's share.", "doc": "docs/data_layer.md" },
-    "ask": { "name": "Ask", "text": "Best resting offer to sell the first outcome's share; what a buyer pays before the fee.", "doc": "docs/data_layer.md" },
-    "minedge": { "name": "Minimum edge", "text": "Smallest gap between forecast and effective price worth a bet.", "doc": "docs/sizing.md" },
-    "kelly": { "name": "Fractional Kelly", "text": "Stake as a fraction of the balance: this multiple of the growth-optimal Kelly fraction, which gives up a little growth for much less drawdown.", "doc": "docs/sizing.md" },
-    "spread": { "name": "Half-spread", "text": "Historical records carry the last price, not the book, so the backtest assumes a bid and ask this far either side of it.", "doc": "docs/sizing.md" }
+    "brier": {
+      "name": "Brier score",
+      "text": "Mean of (forecast − outcome)² over the scored markets. 0 is perfect, 0.25 is what forecasting 0.5 every time earns, 1 is confidently wrong every time. Lower is better.",
+      "doc": "docs/scoring.md"
+    },
+    "log": {
+      "name": "Log score",
+      "text": "Mean of −log(probability given to what happened). Punishes confident misses without bound, so forecasts are clipped to [0.01, 0.99]. Lower is better.",
+      "doc": "docs/scoring.md"
+    },
+    "skill": {
+      "name": "Skill against the market",
+      "text": "1 − (forecaster Brier ÷ market Brier) on the same markets. Positive means the forecaster beat the market price as a forecast, zero equal, negative worse. On paper accounts it is computed from the settled positions so far.",
+      "doc": "docs/scoring.md"
+    },
+    "reliability": {
+      "name": "Reliability",
+      "text": "Calibration error from the Murphy decomposition: how far each bin's forecasts sit from the frequency that actually happened. Lower is better.",
+      "doc": "docs/scoring.md"
+    },
+    "resolution": {
+      "name": "Resolution",
+      "text": "How much the forecasts separate outcomes: the spread of observed frequencies across bins around the base rate. Higher is better.",
+      "doc": "docs/scoring.md"
+    },
+    "ece": {
+      "name": "Expected calibration error",
+      "text": "Average absolute gap between forecast and observed frequency across bins, weighted by bin size. Lower is better.",
+      "doc": "docs/scoring.md"
+    },
+    "cost": {
+      "name": "Cost",
+      "text": "Dollars of API usage spent on these forecasts, from token counts at the model's price. Zero for everything but the AI model.",
+      "doc": "docs/forecasters.md"
+    },
+    "n": {
+      "name": "n",
+      "text": "Markets scored: those every forecaster in the run answered and that had a market price at the cutoff, so all are compared on the same set.",
+      "doc": "docs/scoring.md"
+    },
+    "bets": {
+      "name": "Bets",
+      "text": "Simulated positions placed: one per market where the forecast beat the effective price by at least the minimum edge.",
+      "doc": "docs/sizing.md"
+    },
+    "return": {
+      "name": "Return",
+      "text": "Change in the simulated balance over the run, compounding bet by bet in settlement order.",
+      "doc": "docs/sizing.md"
+    },
+    "drawdown": {
+      "name": "Max drawdown",
+      "text": "Worst peak-to-trough fall of the balance as a fraction of the peak.",
+      "doc": "docs/scoring.md"
+    },
+    "winrate": {
+      "name": "Win rate",
+      "text": "Fraction of settled bets that paid out.",
+      "doc": "docs/scoring.md"
+    },
+    "pf": {
+      "name": "Profit factor",
+      "text": "Gross profit divided by gross loss. Above 1 is net profitable.",
+      "doc": "docs/scoring.md"
+    },
+    "sharpe": {
+      "name": "Per-bet Sharpe",
+      "text": "Mean per-bet return divided by its standard deviation. Not annualised: bets have no fixed time base.",
+      "doc": "docs/scoring.md"
+    },
+    "sharpeci": {
+      "name": "Sharpe 95% interval",
+      "text": "Bootstrap confidence interval for the per-bet Sharpe ratio. If it includes 0 the edge is not demonstrated.",
+      "doc": "docs/scoring.md"
+    },
+    "psharpe": {
+      "name": "P(Sharpe > 0)",
+      "text": "Fraction of bootstrap resamples with a positive Sharpe ratio. Near 0.5 is no evidence of edge; near 1 the edge survived resampling.",
+      "doc": "docs/scoring.md"
+    },
+    "cutoff": {
+      "name": "Cutoff",
+      "text": "The moment a forecast is made as of. Every forecaster reads only evidence from before it; in a backtest it is a fixed number of hours before each market settled.",
+      "doc": "docs/forecasters.md"
+    },
+    "hours": {
+      "name": "Hours before settlement",
+      "text": "Where the backtest placed the cutoff: this many hours before each market settled.",
+      "doc": "docs/scoring.md"
+    },
+    "q": {
+      "name": "Market price q",
+      "text": "The market's price for the first outcome, which is its implied probability; the baseline every forecaster is scored against.",
+      "doc": "docs/scoring.md"
+    },
+    "phat": {
+      "name": "Forecast p̂",
+      "text": "The forecaster's probability that the first outcome occurs.",
+      "doc": "docs/forecasters.md"
+    },
+    "kind": {
+      "name": "Market type",
+      "text": "What the question parser read from the question: a match winner, a daily temperature, a season winner, and so on. Forecasters act only on types they understand.",
+      "doc": "docs/data_layer.md"
+    },
+    "market": {
+      "name": "market (forecaster)",
+      "text": "The market's own price as a forecast. The reference: skill is measured against it and it never bets.",
+      "doc": "docs/forecasters.md"
+    },
+    "constant": {
+      "name": "constant (forecaster)",
+      "text": "Always 0.5. A scale anchor: it scores 0.25 Brier by construction, and its bets show what the sizing rule does with no information.",
+      "doc": "docs/forecasters.md"
+    },
+    "elo": {
+      "name": "elo (forecaster)",
+      "text": "Elo ratings fitted on results settled before the cutoff, replayed in order from 1500; a home advantage in football; draws from the empirical draw rate.",
+      "doc": "docs/forecasters.md"
+    },
+    "climatology": {
+      "name": "climatology (forecaster)",
+      "text": "For a temperature bucket: how often that bucket happened at the same city on nearby dates in earlier years, from the venue's own resolved markets.",
+      "doc": "docs/forecasters.md"
+    },
+    "llm": {
+      "name": "llm (forecaster)",
+      "text": "A Claude model given the question, the cutoff and tools that return evidence from before the cutoff, answering with a probability and a rationale.",
+      "doc": "docs/forecasters.md"
+    },
+    "ledger": {
+      "name": "Ledger",
+      "text": "The append-only record of paper trading: every cycle, forecast, order and settlement, each entry hashed together with the previous one.",
+      "doc": "docs/paper_trading.md"
+    },
+    "verified": {
+      "name": "Chain verified",
+      "text": "Every ledger entry's hash matches its content and its predecessor, so nothing has been edited, deleted or reordered.",
+      "doc": "docs/paper_trading.md"
+    },
+    "bankroll": {
+      "name": "Balance",
+      "text": "The strategy's paper account: starts at the starting amount and changes with each settled position.",
+      "doc": "docs/paper_trading.md"
+    },
+    "realised": {
+      "name": "Realised",
+      "text": "Profit and loss from positions that have settled.",
+      "doc": "docs/paper_trading.md"
+    },
+    "exposure": {
+      "name": "Open stake",
+      "text": "Money currently tied up in open positions.",
+      "doc": "docs/paper_trading.md"
+    },
+    "fee": {
+      "name": "Fee",
+      "text": "The venue's taker fee, C · r · (p(1 − p))^e on C shares at price p, with the market's own rate r and exponent e. Included in the effective price and recorded on every paper order.",
+      "doc": "docs/sizing.md"
+    },
+    "side": {
+      "name": "Side",
+      "text": "yes buys the first outcome's share; no buys the complementary share, which pays if the first outcome does not happen.",
+      "doc": "docs/sizing.md"
+    },
+    "price": {
+      "name": "Price",
+      "text": "Effective price paid per share, fee included. A share pays 1 if its side wins.",
+      "doc": "docs/sizing.md"
+    },
+    "shares": {
+      "name": "Shares",
+      "text": "Number of shares bought: stake ÷ price, capped at the size resting at the touch of the book.",
+      "doc": "docs/paper_trading.md"
+    },
+    "stake": {
+      "name": "Stake",
+      "text": "Dollars committed, fee included: a fraction of the balance from fractional Kelly, capped at 5% per position.",
+      "doc": "docs/sizing.md"
+    },
+    "label": {
+      "name": "Label",
+      "text": "How the market resolved: 1 if the first outcome happened, 0 if not. Set only from the venue's settlement, never from a price.",
+      "doc": "docs/data_layer.md"
+    },
+    "pnl": {
+      "name": "P&L",
+      "text": "Profit or loss of the settled position: shares − stake on a win, −stake on a loss. Net of the fee, which is in the stake.",
+      "doc": "docs/sizing.md"
+    },
+    "bid": {
+      "name": "Bid",
+      "text": "Best resting offer to buy the first outcome's share.",
+      "doc": "docs/data_layer.md"
+    },
+    "ask": {
+      "name": "Ask",
+      "text": "Best resting offer to sell the first outcome's share; what a buyer pays before the fee.",
+      "doc": "docs/data_layer.md"
+    },
+    "minedge": {
+      "name": "Minimum edge",
+      "text": "Smallest gap between forecast and effective price worth a bet.",
+      "doc": "docs/sizing.md"
+    },
+    "kelly": {
+      "name": "Fractional Kelly",
+      "text": "Stake as a fraction of the balance: this multiple of the growth-optimal Kelly fraction, which gives up a little growth for much less drawdown.",
+      "doc": "docs/sizing.md"
+    },
+    "spread": {
+      "name": "Half-spread",
+      "text": "Historical records carry the last price, not the book, so the backtest assumes a bid and ask this far either side of it.",
+      "doc": "docs/sizing.md"
+    }
+  },
+  "work": {
+    "start_title": "Start paper trading",
+    "start_text": "The sample strategies will trade your interests with play money against the real prices, every hour, and settle their positions as markets resolve.",
+    "start_note": "Nothing here uses real money. You can see every trade, and download the record to check it yourself.",
+    "start_button": "Start with play money",
+    "starting_title": "Your sample strategies are starting",
+    "starting_text": "Their first trades are being placed now. This page updates when they are done.",
+    "run_cycle": "Trade now",
+    "run_settle": "Check for settled markets",
+    "export_ledger": "Download the ledger to verify it yourself"
+  },
+  "jobs": {
+    "title": "Working on it",
+    "none": "Nothing running.",
+    "cancel": "Cancel",
+    "progress": "Progress",
+    "kind": {
+      "backtest": "Backtest",
+      "paper_cycle": "Paper trading",
+      "settle": "Settlement check",
+      "leakage": "Leakage check"
+    },
+    "state": {
+      "queued": "Waiting",
+      "running": "Running",
+      "succeeded": "Done",
+      "failed": "Failed; trying again",
+      "dead": "Failed",
+      "cancelled": "Cancelled"
+    }
   }
 }

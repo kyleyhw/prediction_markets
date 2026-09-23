@@ -1,0 +1,64 @@
+# Alerts, each with its entry in docs/runbook.md (the anchor after `runbook:`).
+groups:
+  - name: vibe-predict
+    rules:
+      - alert: QuotesStale
+        expr: vp_quote_age_p99_seconds > 60
+        for: 5m
+        labels: {severity: page}
+        annotations:
+          summary: "The newest quotes are over a minute old at the 99th percentile"
+          runbook: "docs/runbook.md#quotes-stale"
+      - alert: MarketFeedReconnecting
+        expr: increase(vp_ws_reconnects_total[10m]) > 5
+        labels: {severity: ticket}
+        annotations:
+          summary: "The market channel has reconnected more than five times in ten minutes"
+          runbook: "docs/runbook.md#market-feed-reconnecting"
+      - alert: ResolutionsLate
+        expr: histogram_quantile(0.9, rate(vp_resolution_delay_seconds_bucket[6h])) > 900
+        for: 30m
+        labels: {severity: ticket}
+        annotations:
+          summary: "Resolutions are taking over fifteen minutes to become labels"
+          runbook: "docs/runbook.md#resolutions-late"
+      - alert: QueueBacklog
+        expr: max by (kind) (vp_queue_oldest_seconds) > 600
+        for: 5m
+        labels: {severity: page}
+        annotations:
+          summary: "A job kind has waited more than ten minutes to start"
+          runbook: "docs/runbook.md#queue-backlog"
+      - alert: DeadJobs
+        expr: sum by (kind) (vp_queue_depth{state="dead"}) > 0
+        for: 15m
+        labels: {severity: ticket}
+        annotations:
+          summary: "Jobs have failed every attempt"
+          runbook: "docs/runbook.md#dead-jobs"
+      - alert: VenueRateLimited
+        expr: sum by (host) (increase(vp_venue_requests_total{status="429"}[10m])) > 0
+        labels: {severity: ticket}
+        annotations:
+          summary: "The venue answered 429 Too Many Requests"
+          runbook: "docs/runbook.md#venue-rate-limited"
+      - alert: ServerErrors
+        expr: sum(rate(vp_http_requests_total{status=~"5.."}[5m])) / sum(rate(vp_http_requests_total[5m])) > 0.01
+        for: 5m
+        labels: {severity: page}
+        annotations:
+          summary: "More than one request in a hundred is failing"
+          runbook: "docs/runbook.md#server-errors"
+      - alert: SlowRequests
+        expr: histogram_quantile(0.95, sum by (le) (rate(vp_http_seconds_bucket[5m]))) > 1
+        for: 10m
+        labels: {severity: ticket}
+        annotations:
+          summary: "The 95th percentile request takes more than a second"
+          runbook: "docs/runbook.md#slow-requests"
+      - alert: SpendRising
+        expr: sum(increase(vp_spend_usd_total[1h])) > 20
+        labels: {severity: ticket}
+        annotations:
+          summary: "Model spend passed $20 in an hour"
+          runbook: "docs/runbook.md#spend-rising"

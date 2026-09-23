@@ -201,3 +201,8 @@ details.data .wrap { max-height: 260px; overflow-y: auto; margin-top: 6px; }
 .figure { margin: 18px 0; }
 .figure figcaption { color: var(--muted); font-size: 13.5px; margin-top: 6px; }
 .formula { font-family: "JetBrains Mono", ui-monospace, monospace; background: var(--panel); padding: 8px 12px; border-radius: 6px; overflow-x: auto; }
+
+/* ---------- jobs ---------- */
+.jobs { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.job { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 10px 14px; }
+.job .meter { margin-top: 8px; }

@@ -148,6 +148,8 @@ def main() -> None:
     db_sub = dbp.add_subparsers(dest="db_command", required=True)
     db_sub.add_parser("migrate", help="apply pending migrations as the owner")
 
+    sub.add_parser("setup", help="migrate the database and prepare the store")
+
     wrk = sub.add_parser("worker", help="run platform jobs (Postgres)")
     wrk.add_argument("--kinds", nargs="*", default=None, help="job kinds (default all)")
     wrk.add_argument("--concurrency", type=int, default=2)
@@ -212,6 +214,13 @@ def main() -> None:
         from vp.platform.run import serve as serve_platform
 
         serve_platform(args.host, args.port)
+        return
+
+    if args.command == "setup":
+        from vp.platform.run import setup
+
+        applied = setup()
+        print("applied: " + ", ".join(applied) if applied else "up to date")
         return
 
     if args.command == "worker":

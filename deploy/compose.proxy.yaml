@@ -1,0 +1,45 @@
+# For a development machine whose outbound traffic goes through a local
+# TLS-intercepting proxy (as the container this was built in does): every
+# service shares the host's network, so the proxy on 127.0.0.1 is reachable
+# and service names become localhost; the proxy's CA is mounted and trusted.
+#
+#   export VP_DB_HOST=localhost VP_DB_PORT=5433 VP_S3_HOST=localhost
+#   docker compose -f deploy/compose.yaml -f deploy/compose.proxy.yaml up -d
+#
+# (Compose fills `${VP_DB_HOST}` and the like from the shell, which is why
+# they are exported rather than set here.) Postgres listens on 5433 so it
+# does not meet a Postgres already on 5432.
+
+x-proxy: &proxy
+  network_mode: host
+  environment:
+    HTTPS_PROXY: ${HTTPS_PROXY:-}
+    https_proxy: ${HTTPS_PROXY:-}
+    NO_PROXY: localhost,127.0.0.1
+    SSL_CERT_FILE: /etc/proxy-ca.crt
+    REQUESTS_CA_BUNDLE: /etc/proxy-ca.crt
+  volumes:
+    - ${VP_PROXY_CA:-/root/.ccr/ca-bundle.crt}:/etc/proxy-ca.crt:ro
+    - data:/data
+
+services:
+  postgres:
+    network_mode: host
+    command: ["postgres", "-p", "5433"]
+  minio:
+    network_mode: host
+    command: ["server", "/data", "--address", "127.0.0.1:9000", "--console-address", "127.0.0.1:9001"]
+  setup: *proxy
+  web:
+    <<: *proxy
+    ports: !reset []
+  worker-interactive: *proxy
+  worker-paper: *proxy
+  worker-platform: *proxy
+  ingest: *proxy
+  prometheus:
+    network_mode: host
+    ports: !reset []
+    volumes:
+      - ./prometheus.host.yml:/etc/prometheus/prometheus.yml:ro
+      - ./alerts.yml:/etc/prometheus/alerts.yml:ro

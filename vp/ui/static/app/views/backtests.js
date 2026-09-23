@@ -5,10 +5,12 @@
 // the reliability diagram and the cumulative advantage, and can overlay a
 // second run. Both say when a run assumed no fees or rests on too few
 // markets to tell skill from luck.
-import { api } from '../api.js';
+import { api, send, session } from '../api.js';
+import { render } from '../main.js';
+import { jobsPanel } from '../work.js';
 import { BASELINE, colorOf, lineChart } from '../charts.js';
 import { after, detailed, empty, esc, fmt, head, raw, signed, strategyLabel, strategyName, strategySentence, t, table, term, tp } from '../ui.js';
-import { stampIso } from './markets.js';
+import { orderedDomains, stampIso } from './markets.js';
 
 // Settled markets needed to detect a two-point Brier edge at 5% with 80%
 // power (PROJECT_PLAN.md, Mathematical core: n = 7.85 sd^2 / delta^2).
@@ -95,10 +97,75 @@ function legacy(run) {
   return h + `<div class="grid cols-3" style="margin-top:12px">${run.figures.map((f) => `<img style="width:100%;border-radius:8px;border:1px solid var(--rule)" src="/api/backtests/${encodeURIComponent(run.domain)}/${encodeURIComponent(run.stamp)}/${encodeURIComponent(f)}" alt="${esc(f)}">`).join('')}</div>`;
 }
 
+const OFFERED = ['market', 'constant', 'elo', 'climatology'];
+
+// The form that starts a backtest (hosted): what it covers and costs is
+// shown before it runs, and its progress below it.
+async function form(o) {
+  const caps = await api('capabilities');
+  const names = OFFERED.concat(caps?.llm ? ['llm'] : []);
+  const domains = orderedDomains(o.domains);
+  after(() => {
+    const f = document.getElementById('bt-form'), status = document.getElementById('bt-estimate');
+    const body = () => {
+      const data = {
+        domain: f.domain.value,
+        forecasters: [...f.querySelectorAll('input[name=forecasters]:checked')].map((x) => x.value),
+      };
+      if (f.hours) data.hours_before_close = Number(f.hours.value);
+      if (f.max && f.max.value) data.max_markets = Number(f.max.value);
+      if (f.batch) data.batch = f.batch.checked;
+      return data;
+    };
+    const estimate = async () => {
+      const data = body();
+      if (!data.forecasters.length) { status.textContent = tp('bt.form.pick_one'); return; }
+      try {
+        const e = await send('POST', 'backtests/estimate', data);
+        status.innerHTML = e.estimate_usd > 0
+          ? t('bt.form.cost', { n: e.markets, cost: fmt.money(e.estimate_usd), left: fmt.money(e.remaining_usd), limit: fmt.money(e.limit_usd) })
+          : t('bt.form.free', { n: e.markets });
+      } catch (err) { status.textContent = err.message; }
+    };
+    f.addEventListener('change', estimate);
+    f.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const button = f.querySelector('button[type=submit]');
+      button.disabled = true;
+      try {
+        await send('POST', 'backtests', body());
+        status.textContent = tp('bt.form.queued');
+        await render(false);
+      } catch (err) { status.textContent = err.message; button.disabled = false; }
+    });
+    estimate();
+  });
+  const label = (n) => (detailed() ? n : strategyLabel(n));
+  return `<section class="card" style="margin-bottom:18px"><h2 style="margin-top:0">${t('bt.form.title')}</h2>
+    <form id="bt-form"><div class="row">
+      <label for="bt-domain" class="small muted">${t('bt.form.domain')}</label>
+      <select id="bt-domain" name="domain">${domains.map(([name, d]) => `<option value="${esc(name)}">${esc(d.title)}</option>`).join('')}</select></div>
+      <fieldset><legend class="small">${t('bt.form.strategies')}</legend><div class="row" style="margin:0">${names.map((n) =>
+        `<label class="check"><input type="checkbox" name="forecasters" value="${n}"${['market', 'constant'].includes(n) ? ' checked' : ''}> <span>${esc(label(n))}</span></label>`).join('')}</div></fieldset>
+      ${detailed() ? `<div class="row"><label for="bt-hours" class="small muted">${t('bt.form.hours')}</label>
+        <input type="text" inputmode="decimal" id="bt-hours" name="hours" value="24" style="width:6em">
+        <label for="bt-max" class="small muted">${t('bt.form.max')}</label>
+        <input type="text" inputmode="numeric" id="bt-max" name="max" placeholder="${tp('bt.form.all')}" style="width:8em"></div>` : ''}
+      ${caps?.llm ? `<label class="check" style="margin-bottom:10px"><input type="checkbox" name="batch"> <span>${t('bt.form.batch')}</span></label>` : ''}
+      <p class="small" id="bt-estimate" role="status"></p>
+      <button class="btn primary" type="submit">${t('bt.form.run')}</button></form></section>`
+    + jobsPanel(['backtest'], { onDone: () => { location.hash = '#backtests/0'; render(false); } });
+}
+
 export default async function backtests([sel, cmp] = []) {
   const [runs, o] = await Promise.all([api('backtests'), api('overview')]);
   let h = head(t('bt.title'), t('bt.lede'));
-  if (!runs.length) return h + empty(t('bt.empty_title'), t('bt.empty_text'), [['#learn/backtest', t('learn.topics.backtest.title')]], 'vp backtest --domain <domain> --forecasters market elo');
+  if (session.hosted) h += await form(o);
+  if (!runs.length) {
+    return h + (session.hosted
+      ? `<p class="muted">${t('bt.form.none_yet')}</p>`
+      : empty(t('bt.empty_title'), t('bt.empty_text'), [['#learn/backtest', t('learn.topics.backtest.title')]], 'vp backtest --domain <domain> --forecasters market elo'));
+  }
   const i = Math.min(Math.max(+sel || 0, 0), runs.length - 1), run = runs[i];
   const other = detailed() && cmp !== undefined && cmp !== '' && runs[+cmp]?.results ? runs[+cmp].results : null;
   const title = (r) => o.domains[r.domain]?.title ?? r.domain;

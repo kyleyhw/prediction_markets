@@ -38,6 +38,59 @@ async function download() {
   URL.revokeObjectURL(a.href);
 }
 
+// This month's model spending: a sentence in both levels, the breakdown in
+// Detailed. It is a fact that changes decisions, so Simple keeps it.
+async function spending() {
+  const s = await api('spend');
+  if (!s) return '';
+  let h = `<h2>${t('settings.spend')}</h2><p>${t('settings.spend_line', { used: fmt.money(s.charged_usd), limit: fmt.money(s.limit_usd), left: fmt.money(s.remaining_usd) })}</p>`;
+  if (detailed() && s.breakdown.length) {
+    h += table([t('col.strategy'), t('col.domain'), t('col.model'), t('col.tokens_in'), t('col.tokens_out'), t('col.cache_read'), t('col.cost'), t('col.paid_by')],
+      s.breakdown.map((r) => [esc(r.forecaster ?? '–'), esc(r.domain ?? '–'), esc(r.model ?? '–'), esc(fmt.int(r.input_tokens)), esc(fmt.int(r.output_tokens)),
+        esc(fmt.int(r.cache_read_tokens)), esc(fmt.money(r.usd, 4)), t(r.paid_by === 'own_key' ? 'settings.paid_own' : 'settings.paid_platform')]),
+      { caption: t('settings.spend_caption'), numFrom: 3 });
+  }
+  return h;
+}
+
+async function ownKey() {
+  const k = await api('keys');
+  if (!k?.enabled) return '';
+  after(() => {
+    const f = document.getElementById('key-form'), status = document.getElementById('key-status');
+    f?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        const r = await send('PUT', 'keys', { key: f.key.value });
+        f.key.value = '';
+        status.textContent = tp('settings.key_saved', { hint: r.hint });
+      } catch (err) { status.textContent = err.message; }
+    });
+    document.getElementById('key-remove')?.addEventListener('click', async () => {
+      await send('DELETE', 'keys');
+      status.textContent = tp('settings.key_removed');
+    });
+  });
+  return `<h2>${t('settings.key')}</h2><p class="muted measure">${t('settings.key_note')}</p>
+    ${k.hint ? `<p>${t('settings.key_current', { hint: k.hint })}</p>` : ''}
+    <form id="key-form" class="row"><label for="key-input" class="sr-only">${t('settings.key')}</label>
+      <input type="password" id="key-input" name="key" autocomplete="off" required minlength="20" placeholder="sk-ant-…" style="min-width:18em">
+      <button class="btn" type="submit">${t('settings.key_save')}</button>
+      ${k.hint ? `<button class="btn quiet" type="button" id="key-remove">${t('settings.key_remove')}</button>` : ''}</form>
+    <p class="small" id="key-status" role="status"></p>`;
+}
+
+function refreshData(domains) {
+  after(() => document.querySelectorAll('[data-refresh]').forEach((b) => b.addEventListener('click', async () => {
+    b.disabled = true;
+    const r = await send('POST', 'refresh/' + b.dataset.refresh);
+    document.getElementById('refresh-status').textContent = tp(r.queued ? 'settings.refresh_queued' : 'settings.refresh_recent');
+  })));
+  return `<h2>${t('settings.refresh')}</h2><p class="muted measure">${t('settings.refresh_note')}</p>
+    <div class="row">${Object.entries(domains).map(([name, d]) => `<button class="btn" type="button" data-refresh="${esc(name)}">${t('settings.refresh_button', { title: d.title })}</button>`).join('')}</div>
+    <p class="small" id="refresh-status" role="status"></p>`;
+}
+
 export default async function settings() {
   const o = await api('overview');
   const p = prefs();
@@ -58,11 +111,15 @@ export default async function settings() {
     h += `<fieldset><legend>${t('settings.follow')}</legend><div class="choices">
       ${accounts.map((a) => radio('follow', a.forecaster, p.follow, esc(strategyLabel(a.forecaster)), esc(strategySentence(a.forecaster)))).join('')}</div></fieldset>`;
   }
-  h += `</form><h2>${t('settings.start')}</h2><p class="muted">${t('settings.start_note')}</p><button class="btn" type="button" id="restart">${t('settings.start_again')}</button>`;
+  h += '</form>';
+  if (session.hosted) h += await spending();
+  h += `<h2>${t('settings.start')}</h2><p class="muted">${t('settings.start_note')}</p><button class="btn" type="button" id="restart">${t('settings.start_again')}</button>`;
   if (detailed()) {
     if (session.hosted) h += `<h2>${t('settings.tokens')}</h2><p class="muted measure">${t('settings.tokens_note')}</p><div id="tokens">${tokens(await api('tokens'))}</div>`;
+    if (session.hosted) h += await ownKey();
+    if (session.hosted) h += refreshData(o.domains);
     h += `<h2>${t('settings.export')}</h2><p class="muted measure">${t('settings.export_note')}</p><button class="btn" type="button" id="export">${t('settings.export_button')}</button>`;
-    h += `<h2>${t('settings.later')}</h2><ul class="notes measure">${['play_money', 'notifications', 'model', 'budget', 'own_key', 'refresh'].map((k) => `<li>${t('settings.later_' + k)}</li>`).join('')}</ul>`;
+    h += `<h2>${t('settings.later')}</h2><ul class="notes measure">${['play_money', 'notifications', 'model'].map((k) => `<li>${t('settings.later_' + k)}</li>`).join('')}</ul>`;
   }
   if (session.hosted) {
     h += `<h2>${t('settings.account')}</h2><dl class="kv"><dt>${t('settings.email')}</dt><dd>${esc(session.me.email)}</dd>

@@ -1,0 +1,122 @@
+# The platform on one machine: the local stand-in for the cloud deploy
+# (plan, task 34, flag F16). The same image runs every process; Postgres 16
+# and MinIO stand in for the managed database and object storage.
+#
+#   docker build -t vibe-predict:dev .
+#   docker compose -f deploy/compose.yaml up -d
+#   docker compose -f deploy/compose.yaml --profile observability up -d
+#
+# The passwords below are development defaults for a machine nobody else
+# reaches; set them in the environment (or an .env file) anywhere else.
+
+name: vibe-predict
+
+x-app: &app
+  image: ${VP_IMAGE:-vibe-predict:dev}
+  restart: unless-stopped
+  environment: &env
+    VP_ENV: development
+    VP_DATABASE_URL: postgresql://vp_app:${VP_APP_PASSWORD:-vp-app-dev}@${VP_DB_HOST:-postgres}:${VP_DB_PORT:-5432}/vp  # pragma: allowlist secret
+    VP_MIGRATION_DATABASE_URL: postgresql://postgres:${VP_OWNER_PASSWORD:-vp-owner-dev}@${VP_DB_HOST:-postgres}:${VP_DB_PORT:-5432}/vp  # pragma: allowlist secret
+    VP_PUBLIC_URL: ${VP_PUBLIC_URL:-http://localhost:8000}
+    VP_DATA_ROOT: /data
+    VP_STORE: s3://vp-data
+    VP_S3_ENDPOINT: http://${VP_S3_HOST:-minio}:9000
+    VP_S3_ACCESS_KEY: ${VP_S3_ACCESS_KEY:-vp-minio}
+    VP_S3_SECRET_KEY: ${VP_S3_SECRET_KEY:-vp-minio-dev-secret}  # pragma: allowlist secret
+    VP_METRICS_TOKEN: ${VP_METRICS_TOKEN:-vp-metrics-dev}  # pragma: allowlist secret
+    VP_MASTER_KEY: ${VP_MASTER_KEY:-}
+    VP_ANTHROPIC_API_KEY: ${VP_ANTHROPIC_API_KEY:-}
+  volumes:
+    - data:/data
+  depends_on:
+    setup:
+      condition: service_completed_successfully
+
+services:
+  postgres:
+    image: ${VP_POSTGRES_IMAGE:-postgres:16}
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: vp
+      POSTGRES_PASSWORD: ${VP_OWNER_PASSWORD:-vp-owner-dev}  # pragma: allowlist secret
+      VP_APP_PASSWORD: ${VP_APP_PASSWORD:-vp-app-dev}  # pragma: allowlist secret
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres-init.sh:/docker-entrypoint-initdb.d/10-app-role.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d vp -p ${VP_DB_PORT:-5432}"]
+      interval: 2s
+      retries: 30
+
+  minio:
+    image: ${VP_MINIO_IMAGE:-quay.io/minio/minio:latest}
+    restart: unless-stopped
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${VP_S3_ACCESS_KEY:-vp-minio}
+      MINIO_ROOT_PASSWORD: ${VP_S3_SECRET_KEY:-vp-minio-dev-secret}  # pragma: allowlist secret
+    volumes:
+      - minio:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 2s
+      retries: 30
+
+  # Migrations run as a job before anything else starts.
+  setup:
+    <<: *app
+    restart: "no"
+    command: ["setup"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  web:
+    <<: *app
+    command: ["serve", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "8000:8000"
+
+  # Worker pools per kind, sized independently: interactive work never
+  # waits behind a dataset build.
+  worker-interactive:
+    <<: *app
+    command: ["worker", "--kinds", "backtest", "leakage", "--concurrency", "2", "--metrics-port", "9101"]
+
+  worker-paper:
+    <<: *app
+    command: ["worker", "--kinds", "paper_cycle", "settle", "--concurrency", "2", "--metrics-port", "9102"]
+
+  worker-platform:
+    <<: *app
+    command: ["worker", "--kinds", "scheduler", "dataset", "snapshot", "evidence", "partitions", "reconcile", "sweep", "--concurrency", "2", "--metrics-port", "9103"]
+
+  ingest:
+    <<: *app
+    command: ["ingest", "--metrics-port", "9104"]
+
+  prometheus:
+    profiles: ["observability"]
+    image: ${VP_PROMETHEUS_IMAGE:-quay.io/prometheus/prometheus:latest}
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./alerts.yml:/etc/prometheus/alerts.yml:ro
+    ports:
+      - "9090:9090"
+
+  grafana:
+    profiles: ["observability"]
+    image: ${VP_GRAFANA_IMAGE:-grafana/grafana-oss:latest}
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3000:3000"
+
+volumes:
+  pgdata:
+  minio:
+  data:

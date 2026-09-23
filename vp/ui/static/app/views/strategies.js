@@ -2,9 +2,11 @@
 // balance against doing nothing and its open positions in words. Detailed
 // is the paper-trading record in full: accounts, open positions with the
 // fee each paid, settlements, and the hash-chained ledger itself.
-import { api } from '../api.js';
-import { detailed, empty, esc, fmt, head, raw, signed, strategyName, strategySentence, t, table, term, tp } from '../ui.js';
-import { balanceChart } from './home.js';
+import { api, send, session } from '../api.js';
+import { render } from '../main.js';
+import { jobsPanel } from '../work.js';
+import { after, detailed, empty, esc, fmt, head, raw, signed, strategyName, strategySentence, t, table, term, tp } from '../ui.js';
+import { balanceChart, startCard } from './home.js';
 
 const SHOWN = 5;
 
@@ -71,6 +73,23 @@ export default async function strategies() {
   let h = head(t('strategies.title'), t('strategies.lede'));
   if (p.verified === false) h += `<div class="aside caution" role="alert"><p>${t('home.chain_broken')}</p></div>`;
   h += `<div class="aside"><p>${t('strategies.own_soon')}</p></div>`;
-  if (!p.accounts.length) return h + empty(t('home.empty_title'), t('home.empty_text'), [['#learn/paper', t('next.learn_paper')]], 'vp paper run --domain <domain>');
+  if (session.hosted) {
+    const o = await api('overview');
+    if (!o.account) return h + startCard();
+    h += `<div class="row">
+      <button class="btn" type="button" data-run="cycle">${t('work.run_cycle')}</button>
+      <button class="btn" type="button" data-run="settle">${t('work.run_settle')}</button>
+      ${detailed() ? `<a class="btn quiet" href="/api/paper/export" download>${t('work.export_ledger')}</a>` : ''}</div>
+      <p class="small" id="run-status" role="status"></p>`;
+    h += jobsPanel(['paper_cycle', 'settle'], { onDone: () => render(false) });
+    after(() => document.querySelectorAll('[data-run]').forEach((b) => b.addEventListener('click', async () => {
+      b.disabled = true;
+      try { await send('POST', 'paper/run?what=' + b.dataset.run); await render(false); } catch (err) {
+        document.getElementById('run-status').textContent = err.message;
+        b.disabled = false;
+      }
+    })));
+  }
+  if (!p.accounts.length) return h + (session.hosted ? '' : empty(t('home.empty_title'), t('home.empty_text'), [['#learn/paper', t('next.learn_paper')]], 'vp paper run --domain <domain>'));
   return h + (detailed() ? full(p) : simple(p));
 }

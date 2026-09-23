@@ -64,11 +64,12 @@ def test_keys_built_from_fixed_lists_exist() -> None:
         + [f"nav.{n}" for n in ("home", "markets", "strategies", "backtests")]
         + ["nav.learn", "nav.settings", "level.simple", "level.detailed"]
         + [f"settings.theme_{v}" for v in ("system", "light", "dark")]
+        + [f"settings.later_{v}" for v in ("play_money", "notifications", "model")]
+        + [f"jobs.kind.{k}" for k in ("backtest", "paper_cycle", "settle", "leakage")]
         + [
-            f"settings.later_{v}"
-            for v in ("play_money", "notifications", "model", "budget", "own_key")
+            f"jobs.state.{k}"
+            for k in ("queued", "running", "succeeded", "failed", "dead", "cancelled")
         ]
-        + ["settings.later_refresh"]
     ):
         assert is_message(lookup(key)), key
 

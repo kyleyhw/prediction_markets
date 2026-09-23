@@ -2,10 +2,12 @@
 // against doing nothing, what changed in the last day, and one next step.
 // Detailed adds every strategy's figures, their curves together, and the
 // ledger's integrity.
-import { api } from '../api.js';
+import { api, session } from '../api.js';
+import { render } from '../main.js';
 import { BASELINE, colorOf, dayTicks, lineChart } from '../charts.js';
 import { prefs } from '../prefs.js';
-import { detailed, empty, esc, fmt, head, raw, signed, strategyLabel, strategyName, strategySentence, t, table, term, tp } from '../ui.js';
+import { jobsPanel, startPaper } from '../work.js';
+import { after, detailed, empty, esc, fmt, head, raw, signed, strategyLabel, strategyName, strategySentence, t, table, term, tp } from '../ui.js';
 
 // The strategy Home follows: the person's choice, else the first that trades.
 export function followed(accounts) {
@@ -60,6 +62,26 @@ function nextStep(accounts) {
   return `<a class="btn primary" href="${href}">${label}</a>`;
 }
 
+// The offer to open a paper account, for a hosted workspace that has none.
+export function startCard() {
+  after(() => document.getElementById('start-paper')?.addEventListener('click', async (e) => {
+    const button = e.currentTarget;
+    button.disabled = true;
+    const status = document.getElementById('start-status');
+    try {
+      await startPaper(prefs().interests);
+      await render(false);
+    } catch (err) {
+      status.textContent = err.message;
+      button.disabled = false;
+    }
+  }));
+  return `<div class="card hero"><h3>${t('work.start_title')}</h3><p>${t('work.start_text')}</p>
+    <p class="muted small">${t('work.start_note')}</p>
+    <button class="btn primary" type="button" id="start-paper">${t('work.start_button')}</button>
+    <p class="small" id="start-status" role="status"></p></div>`;
+}
+
 export default async function home() {
   const o = await api('overview');
   const paper = o.paper, start = paper.start_cash, accounts = paper.accounts;
@@ -70,6 +92,11 @@ export default async function home() {
   }
   if (paper.verified === false) h += `<div class="aside caution" role="alert"><p>${t('home.chain_broken')}</p></div>`;
   if (!accounts.length) {
+    if (session.hosted && !o.account) return h + startCard();
+    if (session.hosted) {
+      return h + `<div class="card"><h3>${t('work.starting_title')}</h3><p class="muted">${t('work.starting_text')}</p></div>`
+        + jobsPanel(['paper_cycle'], { onDone: () => render(false) });
+    }
     return h + empty(t('home.empty_title'), t('home.empty_text'), [['#markets', t('next.markets')], ['#learn/paper', t('next.learn_paper')]],
       'vp paper run --domain ' + Object.keys(o.domains).join(' '));
   }
@@ -84,6 +111,7 @@ export default async function home() {
   h += `<div class="grid cols-2" style="margin-top:14px">
     <section class="card"><h2 style="margin-top:0">${t('home.today_title')}</h2>${today(paper)}</section>
     <section class="card"><h2 style="margin-top:0">${t('home.next_title')}</h2><p class="muted">${t('home.next_text')}</p>${nextStep(accounts)}</section></div>`;
+  h += jobsPanel(['paper_cycle', 'settle', 'backtest'], { limit: 3, onDone: () => render(false) });
   if (detailed()) {
     h += `<h2>${t('home.all_title')}</h2>`;
     h += table(
