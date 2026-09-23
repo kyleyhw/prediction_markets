@@ -1,0 +1,490 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>vibe-predict</title>
+<style>
+  @font-face { font-family: "Instrument Sans"; src: url(fonts/InstrumentSans-latin.woff2) format("woff2");
+               font-weight: 400 700; font-display: swap; }
+  @font-face { font-family: "JetBrains Mono"; src: url(fonts/JetBrainsMono-latin.woff2) format("woff2");
+               font-weight: 100 800; font-display: swap; }
+  :root {
+    color-scheme: light;
+    --plane: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+    --grid: #e1e0d9; --axis: #c3c2b7; --ring: rgba(11,11,11,.10); --wash: rgba(11,11,11,.04);
+    --accent: #2a78d6; --good: #006300; --bad: #d03b3b; --good-mark: #0ca30c;
+    --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s6: #4a3aa7;
+    --shadow: 0 1px 2px rgba(11,11,11,.05), 0 4px 16px rgba(11,11,11,.04);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --plane: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+      --grid: #2c2c2a; --axis: #383835; --ring: rgba(255,255,255,.10); --wash: rgba(255,255,255,.05);
+      --accent: #3987e5; --good: #0ca30c; --bad: #e66767; --good-mark: #0ca30c;
+      --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #9085e9;
+      --shadow: none;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --plane: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --ring: rgba(255,255,255,.10); --wash: rgba(255,255,255,.05);
+    --accent: #3987e5; --good: #0ca30c; --bad: #e66767; --good-mark: #0ca30c;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #9085e9;
+    --shadow: none;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--plane); color: var(--ink);
+         font: 15px/1.5 "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .mono, td.num, th.num, .axis text, .kbd { font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace; }
+  td.num, th.num, .axis text { font-variant-numeric: tabular-nums; font-size: 13px; }
+  a { color: inherit; }
+  .app { display: grid; grid-template-columns: 224px 1fr; min-height: 100%; }
+  aside { border-right: 1px solid var(--ring); background: var(--surface); padding: 20px 14px;
+          display: flex; flex-direction: column; gap: 4px; position: sticky; top: 0; height: 100vh; }
+  .brand { font-weight: 600; letter-spacing: 0; padding: 4px 10px 18px; font-size: 17px; }
+  .brand small { display: block; color: var(--muted); font-weight: 400; font-size: 12px; margin-top: 2px; }
+  aside nav a { display: block; padding: 8px 10px; border-radius: 8px; color: var(--ink-2); text-decoration: none; font-weight: 500; }
+  aside nav a:hover { background: var(--wash); }
+  aside nav a.active { background: var(--wash); color: var(--ink); }
+  aside .foot { margin-top: auto; color: var(--muted); font-size: 12px; padding: 0 10px; word-break: break-all; }
+  .theme { display: flex; gap: 2px; padding: 2px; border: 1px solid var(--ring); border-radius: 8px; margin: 10px 10px 12px; }
+  .theme button { flex: 1; border: 0; background: transparent; color: var(--muted); border-radius: 6px; padding: 5px 0; font: inherit; font-size: 12px; cursor: pointer; }
+  .theme button.on { background: var(--wash); color: var(--ink); }
+  main { padding: 28px 36px 64px; max-width: 1240px; width: 100%; }
+  .page-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 20px; }
+  .page-head h1 { margin: 0; font-size: 24px; font-weight: 600; letter-spacing: -.01em; }
+  .page-head .sub { color: var(--muted); font-size: 13px; }
+  h2 { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 28px 0 10px; }
+  .grid { display: grid; gap: 12px; }
+  .cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  @media (max-width: 1000px) { .cols-3, .cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 720px) { .app { grid-template-columns: 1fr; } aside { position: static; height: auto; }
+                              .cols-2, .cols-3, .cols-4 { grid-template-columns: 1fr; } main { padding: 20px; } }
+  .card { background: var(--surface); border: 1px solid var(--ring); border-radius: 12px; padding: 16px 18px; box-shadow: var(--shadow); min-width: 0; }
+  .card .k { color: var(--ink-2); font-size: 13px; font-weight: 500; }
+  .card .v { font-size: 28px; font-weight: 600; letter-spacing: -.015em; margin-top: 2px; }
+  .card .s { color: var(--muted); font-size: 12.5px; margin-top: 6px; }
+  .stack { display: flex; height: 8px; border-radius: 4px; overflow: hidden; margin: 12px 0 8px; gap: 2px; background: transparent; }
+  .stack i { display: block; height: 100%; }
+  .keys { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--ink-2); }
+  .keys i, .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: var(--ink-2); margin: 6px 0 2px; }
+  .legend i { width: 14px; height: 3px; border-radius: 2px; vertical-align: 3px; }
+  .wrap { overflow-x: auto; border: 1px solid var(--ring); border-radius: 12px; background: var(--surface); box-shadow: var(--shadow); }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { padding: 9px 12px; text-align: left; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+  th { color: var(--muted); font-weight: 500; font-size: 12px; position: sticky; top: 0; background: var(--surface); }
+  tbody tr:hover { background: var(--wash); }
+  tr:last-child td { border-bottom: 0; }
+  td.num, th.num { text-align: right; }
+  td.wrapc { white-space: normal; max-width: 520px; }
+  .muted { color: var(--muted); } .good { color: var(--good); } .bad { color: var(--bad); }
+  .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11.5px; font-weight: 500;
+          border: 1px solid var(--ring); color: var(--ink-2); background: var(--wash); }
+  .pill.ok { color: var(--good); } .pill.err { color: var(--bad); }
+  .empty { color: var(--muted); padding: 28px 0; }
+  .kbd { font-size: 12.5px; background: var(--wash); border: 1px solid var(--ring); border-radius: 6px; padding: 1px 6px; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 4px 0 14px; }
+  select, input[type=search], button.btn { font: inherit; font-size: 14px; color: var(--ink); background: var(--surface);
+          border: 1px solid var(--ring); border-radius: 8px; padding: 7px 10px; }
+  input[type=search] { min-width: 260px; }
+  label.chk { display: flex; align-items: center; gap: 6px; color: var(--ink-2); font-size: 13.5px; }
+  .split { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 16px; align-items: start; }
+  .split > * { min-width: 0; }
+  @media (max-width: 1000px) { .split { grid-template-columns: 1fr; } }
+  .runs { display: flex; flex-direction: column; gap: 6px; }
+  .run { text-align: left; padding: 10px 12px; border: 1px solid var(--ring); background: var(--surface); border-radius: 10px; cursor: pointer; font: inherit; color: var(--ink); }
+  .run:hover { background: var(--wash); }
+  .run.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+  .run .d { font-weight: 600; } .run .t { color: var(--muted); font-size: 12px; }
+  .chart { position: relative; }
+  .chart svg { width: 100%; height: auto; display: block; }
+  .chart .title { font-size: 13px; font-weight: 500; color: var(--ink-2); margin-bottom: 4px; }
+  .tip { position: fixed; pointer-events: none; z-index: 9; background: var(--surface); color: var(--ink); border: 1px solid var(--ring);
+         border-radius: 8px; padding: 8px 10px; font-size: 12.5px; box-shadow: var(--shadow); display: none; min-width: 140px; }
+  .tip b { font-weight: 600; } .tip .r { display: flex; justify-content: space-between; gap: 14px; }
+  .tip .r i { display: inline-block; width: 12px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: 3px; }
+  .bar { display: inline-block; width: 90px; height: 6px; border-radius: 3px; background: var(--grid); position: relative; vertical-align: middle; }
+  .bar b { position: absolute; top: -3px; width: 2px; height: 12px; border-radius: 1px; }
+  .bar b.q { background: var(--s1); } .bar b.p { background: var(--s2); }
+  .expand { background: var(--wash); }
+  .expand td { white-space: normal; }
+  .kv { display: grid; grid-template-columns: max-content 1fr; gap: 2px 14px; font-size: 13px; }
+  .kv span:first-child { color: var(--muted); }
+  .timeline { display: flex; flex-direction: column; gap: 0; }
+  .ev { display: grid; grid-template-columns: 150px 110px 1fr; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--grid); font-size: 13px; align-items: baseline; }
+  .ev:last-child { border-bottom: 0; }
+  .ev .at { color: var(--muted); }
+  .ev code { font-size: 12px; color: var(--ink-2); white-space: normal; word-break: break-all; }
+  tr.click { cursor: pointer; }
+  .term { background: none; border: 0; padding: 0; margin: 0; font: inherit; color: inherit; cursor: help;
+          text-decoration: underline dotted var(--muted); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+  .term:hover { text-decoration-color: var(--accent); }
+  th .term { font-size: inherit; font-family: inherit; }
+  .pop { position: fixed; z-index: 10; max-width: 340px; background: var(--surface); color: var(--ink); border: 1px solid var(--ring);
+         border-radius: 10px; padding: 12px 14px; font-size: 13.5px; line-height: 1.5; box-shadow: 0 8px 28px rgba(0,0,0,.18); display: none; }
+  .pop b { display: block; font-weight: 600; margin-bottom: 4px; }
+  .pop .doc { display: block; margin-top: 8px; color: var(--muted); font-size: 12px; }
+  .intro { color: var(--ink-2); max-width: 760px; margin: -8px 0 18px; font-size: 14px; }
+  .cap { color: var(--muted); font-size: 12.5px; margin: 6px 0 0; }
+  .ev.click { cursor: pointer; }
+  .ev .full { grid-column: 1 / -1; }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="brand">vibe-predict<small>forecasting platform</small></div>
+    <nav>
+      <a href="#overview">Overview</a><a href="#backtests">Backtests</a>
+      <a href="#paper">Paper</a><a href="#markets">Markets</a>
+    </nav>
+    <div class="theme" id="theme">
+      <button data-t="system">System</button><button data-t="light">Light</button><button data-t="dark">Dark</button>
+    </div>
+    <div class="foot" id="root"></div>
+  </aside>
+  <main id="main"></main>
+</div>
+<div class="tip" id="tip"></div>
+<div class="pop" id="pop" role="dialog"></div>
+<script>
+// ---------- glossary ----------
+// Every metric, market type and status shown anywhere is a term here; term()
+// renders it clickable and the popover shows the definition and where the
+// derivation lives in docs/.
+const GLOSSARY = {
+  brier: ['Brier score', 'Mean of (forecast − outcome)² over the scored markets. 0 is perfect, 0.25 is what forecasting 0.5 every time earns, 1 is confidently wrong every time. Lower is better.', 'docs/scoring.md'],
+  log: ['Log score', 'Mean of −log(probability given to what happened). Punishes confident misses without bound, so forecasts are clipped to [0.01, 0.99]. Lower is better.', 'docs/scoring.md'],
+  skill: ['Skill against the market', '1 − (forecaster Brier ÷ market Brier) on the same markets. Positive means the forecaster beat the market price as a forecast, zero equal, negative worse. This is the number that matters.', 'docs/scoring.md'],
+  reliability: ['Reliability', 'Calibration error from the Murphy decomposition: how far each bin\'s forecasts sit from the frequency that actually happened. Lower is better; a calibrated forecaster is near 0.', 'docs/scoring.md'],
+  resolution: ['Resolution', 'How much the forecasts separate outcomes: the spread of observed frequencies across bins around the base rate. Higher is better; it is the information in the forecasts.', 'docs/scoring.md'],
+  ece: ['Expected calibration error', 'Average absolute gap between forecast and observed frequency across bins, weighted by bin size. Lower is better; it summarises the reliability diagram.', 'docs/scoring.md'],
+  cost: ['Cost', 'Dollars of API usage the forecaster spent on these forecasts, from token counts at the model\'s price. Zero for everything but the LLM forecaster.', 'docs/forecasters.md'],
+  n: ['n', 'Markets scored: those every forecaster in the run answered and that had a market price at the cutoff, so all forecasters are compared on the same set.', 'docs/scoring.md'],
+  bets: ['Bets', 'Simulated positions placed: one per market where the forecaster\'s belief beat the price by at least the minimum edge.', 'docs/sizing.md'],
+  return: ['Return', 'Change in the simulated bankroll over the run, compounding bet by bet in settlement order.', 'docs/sizing.md'],
+  drawdown: ['Max drawdown', 'Worst peak-to-trough fall of the bankroll as a fraction of the peak.', 'docs/scoring.md'],
+  winrate: ['Win rate', 'Fraction of settled bets that paid out.', 'docs/scoring.md'],
+  pf: ['Profit factor', 'Gross profit divided by gross loss. Above 1 is net profitable.', 'docs/scoring.md'],
+  sharpe: ['Per-bet Sharpe', 'Mean per-bet return divided by its standard deviation. Not annualised: bets have no fixed time base.', 'docs/scoring.md'],
+  sharpeci: ['Sharpe 95% interval', 'Bootstrap confidence interval for the per-bet Sharpe ratio from resampling the bets. If it includes 0 the edge is not demonstrated.', 'docs/scoring.md'],
+  psharpe: ['P(Sharpe > 0)', 'Fraction of bootstrap resamples with a positive Sharpe ratio. Near 0.5 means no evidence of edge; near 1 means the edge survived resampling.', 'docs/scoring.md'],
+  cutoff: ['Cutoff', 'The information cutoff: the moment the forecast pretends to be made. Every forecaster reads evidence only from before it; in a backtest it is a fixed number of hours before the market settled.', 'docs/forecasters.md'],
+  q: ['Market price q', 'The market\'s price for the first outcome, which is its implied probability. It is the baseline every forecaster is scored against.', 'docs/scoring.md'],
+  phat: ['Forecast p̂', 'The forecaster\'s probability that the first outcome occurs.', 'docs/forecasters.md'],
+  resolvedyes: ['Resolved to the first outcome', 'Share of resolved markets whose first outcome (Yes, or the first-named team) won. It is the base rate a forecaster has to beat.', 'docs/data_layer.md'],
+  histories: ['Price histories', 'Markets whose price series has been downloaded. A backtest can only score a market with a price at the cutoff, so this bounds what a run can use.', 'docs/data_layer.md'],
+  snapshots: ['Snapshots', 'Timestamped captures of the open markets with order-book depth, written by vp snapshot and vp paper run.', 'docs/data_layer.md'],
+  backtests: ['Backtests', 'Runs of vp backtest for this domain, each with its scores, bets and charts.', 'docs/scoring.md'],
+  kind: ['Market type', 'What the question parser read from the question: a match winner, a daily temperature bucket, a season winner, and so on. Forecasters act only on types they understand.', 'docs/data_layer.md'],
+  match: ['Match winner', 'A market on who wins a match: a Yes/No question on one side, or a two-team market. The first-named side is what p̂ refers to.', 'docs/data_layer.md'],
+  daily_temperature: ['Daily temperature bucket', 'Whether a city\'s highest temperature on a day falls in a stated range, for example 17°C, or 16°C or below.', 'docs/data_layer.md'],
+  season_winner: ['Season winner', 'Whether a club wins the league that season.', 'docs/data_layer.md'],
+  tournament_winner: ['Tournament winner', 'Whether a team wins a named CS2 event.', 'docs/data_layer.md'],
+  global_anomaly: ['Global temperature anomaly', 'Whether the monthly global temperature increase falls in a stated bucket.', 'docs/data_layer.md'],
+  record_rank: ['Record rank', 'Whether a year or month ranks as the hottest, second hottest, and so on, on record.', 'docs/data_layer.md'],
+  unparsed: ['Props (no structured fields)', 'Markets the parser recognises as in the domain but reads no fields from: over/under totals, handicaps, exact scores, odd/even. They are in the data but no current forecaster acts on them.', 'docs/data_layer.md'],
+  market: ['market (forecaster)', 'The market\'s own price as a forecast. It is the reference: skill is measured against it and it never places bets.', 'docs/forecasters.md'],
+  constant: ['constant (forecaster)', 'Always 0.5. A scale anchor: it scores 0.25 Brier by construction, and its bets show what the sizing rule does with no information.', 'docs/forecasters.md'],
+  elo: ['elo (forecaster)', 'Elo ratings fitted on match results settled before the cutoff, replayed in order from 1500; a home advantage in EPL; draws handled by the empirical draw rate.', 'docs/forecasters.md'],
+  climatology: ['climatology (forecaster)', 'For a temperature bucket: how often that bucket happened at the same city on nearby dates in earlier years, from the venue\'s own resolved markets.', 'docs/forecasters.md'],
+  llm: ['llm (forecaster)', 'A Claude model given the question, the cutoff and tools that return evidence from before the cutoff, answering with a probability and a rationale.', 'docs/forecasters.md'],
+  ledger: ['Ledger', 'The append-only record of paper trading: every cycle, forecast, order and settlement, each entry hashed together with the previous one.', 'docs/paper_trading.md'],
+  verified: ['Chain verified', 'Every ledger entry\'s hash matches its content and its predecessor, so nothing has been edited, deleted or reordered.', 'docs/paper_trading.md'],
+  bankroll: ['Bankroll', 'The forecaster\'s paper account: starts at 1,000 and compounds with each settled position.', 'docs/paper_trading.md'],
+  realised: ['Realised', 'Profit and loss from positions that have settled.', 'docs/paper_trading.md'],
+  exposure: ['Exposure', 'Stake currently tied up in open positions.', 'docs/paper_trading.md'],
+  side: ['Side', 'yes buys the first outcome\'s share; no buys the complementary share, which pays if the first outcome does not happen.', 'docs/sizing.md'],
+  price: ['Price', 'Effective price paid per share, fee included. A share pays 1 if its side wins.', 'docs/sizing.md'],
+  shares: ['Shares', 'Number of shares bought; stake ÷ price. Capped at the size resting at the touch of the book.', 'docs/paper_trading.md'],
+  stake: ['Stake', 'Dollars committed: a fraction of the bankroll from fractional Kelly, capped at 5% per position.', 'docs/sizing.md'],
+  label: ['Label', 'How the market resolved: 1 if the first outcome happened, 0 if not. Set only from the venue\'s settlement, never from a price.', 'docs/data_layer.md'],
+  pnl: ['P&L', 'Profit or loss of the settled position: shares − stake on a win, −stake on a loss.', 'docs/sizing.md'],
+  ends: ['Ends', 'The market\'s scheduled end date.', 'docs/data_layer.md'],
+  bid: ['Bid', 'Best resting buy price for the first outcome\'s share.', 'docs/data_layer.md'],
+  ask: ['Ask', 'Best resting sell price for the first outcome\'s share; what a buyer pays.', 'docs/data_layer.md'],
+  hours: ['Hours before settlement', 'Where the backtest placed the cutoff: this many hours before each market settled.', 'docs/scoring.md'],
+  minedge: ['Minimum edge', 'Smallest gap between belief and effective price worth a bet. Zero bets on every market outside the spread, which turns a noisy forecaster into coin flips against the spread.', 'docs/sizing.md'],
+  kelly: ['Fractional Kelly', 'Stake as a fraction of bankroll: a quarter of the growth-optimal Kelly fraction, which gives up a little growth for much less drawdown.', 'docs/sizing.md'],
+  spread: ['Half-spread', 'Historical records carry the last price, not the book, so the backtest assumes a bid and ask this far either side of it.', 'docs/sizing.md'],
+  scored: ['Scored', 'Markets every forecaster answered and that had a price at the cutoff; the common set the scores are computed on.', 'docs/scoring.md'],
+  cycle: ['Cycle', 'One run of vp paper run: snapshot the open markets, forecast them at the present, place simulated orders.', 'docs/paper_trading.md'],
+  forecast_entry: ['Forecast entry', 'A forecaster\'s probability for one open market at the time of the cycle.', 'docs/paper_trading.md'],
+  order: ['Order', 'A simulated position taken against the real order book at the touch, for at most the resting size.', 'docs/paper_trading.md'],
+  settlement: ['Settlement', 'The venue resolved the market; the position is closed and the forecast scored.', 'docs/paper_trading.md'],
+};
+const term = (key, label) => GLOSSARY[key] ? `<button class="term" data-term="${key}">${esc(label ?? GLOSSARY[key][0])}</button>` : esc(label ?? key);
+const pop = document.getElementById('pop');
+function showPop(el) {
+  const g = GLOSSARY[el.dataset.term]; if (!g) return;
+  pop.innerHTML = `<b>${esc(g[0])}</b>${esc(g[1])}<span class="doc">${esc(g[2])}</span>`;
+  pop.style.display = 'block';
+  const r = el.getBoundingClientRect();
+  let x = r.left, y = r.bottom + 8;
+  if (x + pop.offsetWidth > window.innerWidth - 12) x = window.innerWidth - pop.offsetWidth - 12;
+  if (y + pop.offsetHeight > window.innerHeight - 12) y = r.top - pop.offsetHeight - 8;
+  pop.style.left = x + 'px'; pop.style.top = y + 'px';
+}
+document.addEventListener('click', (e) => {
+  const t = e.target.closest('.term');
+  if (t) { e.stopPropagation(); if (pop.style.display === 'block' && pop.dataset.for === t.dataset.term) { pop.style.display = 'none'; pop.dataset.for = ''; return; } pop.dataset.for = t.dataset.term; showPop(t); return; }
+  if (!e.target.closest('#pop')) { pop.style.display = 'none'; pop.dataset.for = ''; }
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { pop.style.display = 'none'; pop.dataset.for = ''; } });
+
+// ---------- helpers ----------
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const num = (v, d = 3) => (v === null || v === undefined || v === '' || Number.isNaN(v)) ? '<span class="muted">–</span>'
+  : (typeof v === 'number' ? v.toLocaleString(undefined, { minimumFractionDigits: d, maximumFractionDigits: d }) : esc(v));
+const int = (v) => (v ?? 0).toLocaleString();
+const pct = (v, d = 1) => (v === null || v === undefined) ? '–' : (100 * v).toFixed(d) + '%';
+const signed = (v, text) => v === 0 || v === null || v === undefined ? esc(text) : `<span class="${v > 0 ? 'good' : 'bad'}">${esc(text)}</span>`;
+const api = async (p) => { const r = await fetch('/api/' + p); if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); };
+const table = (head, rows, numFrom = 1, extra = '') => `<div class="wrap"><table${extra}><thead><tr>${
+  head.map((h, i) => `<th class="${i >= numFrom ? 'num' : ''}">${h}</th>`).join('')}</tr></thead><tbody>${
+  rows.map(r => `<tr>${r.map((c, i) => `<td class="${i >= numFrom ? 'num' : ''}">${c}</td>`).join('')}</tr>`).join('')
+  }</tbody></table></div>`;
+const when = (s) => s ? esc(String(s).replace('T', ' ').replace(/\+00:00|Z/, '').slice(0, 16)) : '–';
+const stamp = (t) => { const m = String(t).match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})/); return m ? `${m[1]}-${m[2]}-${m[3]} ${m[4]}:${m[5]} UTC` : esc(t); };
+const kindLabel = (k) => k ? term(k, (GLOSSARY[k] || [k])[0]) : term('unparsed', 'props');
+
+// Fixed slot per entity: colour follows the forecaster, never its rank.
+const SLOTS = { market: 1, constant: 2, elo: 3, climatology: 4, llm: 5 };
+const KINDS = { match: 1, daily_temperature: 3, season_winner: 6, tournament_winner: 5, global_anomaly: 4, record_rank: 2, unparsed: 0 };
+const slotVar = (i) => i ? `var(--s${Math.min(i, 6)})` : 'var(--axis)';
+const colorOf = (name) => slotVar(SLOTS[name] ?? (6));
+const kindColor = (k) => slotVar(KINDS[k] ?? 6);
+
+// ---------- charts (inline SVG) ----------
+const tip = document.getElementById('tip');
+function showTip(e, html) { tip.innerHTML = html; tip.style.display = 'block';
+  const x = Math.min(e.clientX + 14, window.innerWidth - tip.offsetWidth - 12), y = Math.min(e.clientY + 14, window.innerHeight - tip.offsetHeight - 12);
+  tip.style.left = x + 'px'; tip.style.top = y + 'px'; }
+function hideTip() { tip.style.display = 'none'; }
+
+// series: [{name, color, points: [[x, y], ...]}]; opts: {title, xLabel, yLabel, xDomain, yDomain, diagonal, zeroLine, dots, height, fmtX, fmtY}
+function lineChart(series, opts = {}) {
+  const W = opts.width || 640, H = opts.height || 260, m = { l: 52, r: 14, t: 10, b: 44 };
+  const xs = series.flatMap(s => s.points.map(p => p[0])), ys = series.flatMap(s => s.points.map(p => p[1]));
+  let [x0, x1] = opts.xDomain || [Math.min(...xs), Math.max(...xs)];
+  let [y0, y1] = opts.yDomain || [Math.min(...ys), Math.max(...ys)];
+  if (opts.zeroLine) { y0 = Math.min(y0, 0); y1 = Math.max(y1, 0); }
+  if (x1 === x0) x1 = x0 + 1; if (y1 === y0) { y1 = y0 + 1; y0 = y0 - 1; }
+  const pad = (y1 - y0) * 0.06; y0 -= pad; y1 += pad;
+  const sx = (x) => m.l + (x - x0) / (x1 - x0) * (W - m.l - m.r);
+  const sy = (y) => m.t + (1 - (y - y0) / (y1 - y0)) * (H - m.t - m.b);
+  const ticksY = niceTicks(y0, y1, 4), ticksX = niceTicks(x0, x1, 5);
+  const minus = (t) => String(t).replace('-', '\u2212');
+  const fx = (v) => minus((opts.fmtX || ((x) => Number.isInteger(x) ? x : x.toFixed(2)))(v));
+  const fy = (v) => minus((opts.fmtY || ((x) => Math.abs(x) >= 100 ? Math.round(x) : x.toFixed(2)))(v));
+  let g = `<g class="axis" fill="var(--muted)" font-size="11">`;
+  for (const t of ticksY) g += `<line x1="${m.l}" x2="${W - m.r}" y1="${sy(t)}" y2="${sy(t)}" stroke="var(--grid)" stroke-width="1"/><text x="${m.l - 8}" y="${sy(t) + 4}" text-anchor="end">${fy(t)}</text>`;
+  for (const t of ticksX) g += `<text x="${sx(t)}" y="${H - m.b + 16}" text-anchor="middle">${fx(t)}</text>`;
+  g += `<line x1="${m.l}" x2="${W - m.r}" y1="${H - m.b}" y2="${H - m.b}" stroke="var(--axis)" stroke-width="1"/>`;
+  if (opts.zeroLine && y0 < 0 && y1 > 0) g += `<line x1="${m.l}" x2="${W - m.r}" y1="${sy(0)}" y2="${sy(0)}" stroke="var(--axis)" stroke-width="1"/>`;
+  if (opts.diagonal) g += `<line x1="${sx(0)}" y1="${sy(0)}" x2="${sx(1)}" y2="${sy(1)}" stroke="var(--axis)" stroke-width="1"/>`;
+  if (opts.xLabel) g += `<text x="${(m.l + W - m.r) / 2}" y="${H - 6}" text-anchor="middle">${esc(opts.xLabel)}</text>`;
+  if (opts.yLabel) g += `<text transform="translate(12 ${(m.t + H - m.b) / 2}) rotate(-90)" text-anchor="middle">${esc(opts.yLabel)}</text>`;
+  g += `</g>`;
+  for (const s of series) {
+    const d = s.points.map((p, i) => `${i ? 'L' : 'M'}${sx(p[0]).toFixed(1)} ${sy(p[1]).toFixed(1)}`).join(' ');
+    g += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" opacity="${s.opacity ?? 1}"/>`;
+    if (opts.dots) g += s.points.map(p => `<circle cx="${sx(p[0])}" cy="${sy(p[1])}" r="4" fill="${s.color}" stroke="var(--surface)" stroke-width="2" opacity="${s.opacity ?? 1}"/>`).join('');
+  }
+  const id = 'c' + Math.random().toString(36).slice(2, 8);
+  const svg = `<svg viewBox="0 0 ${W} ${H}" id="${id}" role="img" aria-label="${esc(opts.title || '')}">${g}<line id="${id}x" x1="0" x2="0" y1="${m.t}" y2="${H - m.b}" stroke="var(--axis)" stroke-width="1" style="display:none"/><rect x="${m.l}" y="${m.t}" width="${W - m.l - m.r}" height="${H - m.t - m.b}" fill="transparent"/></svg>`;
+  const legend = series.length > 1 ? `<div class="legend">${series.map(s => `<span><i style="background:${s.color};opacity:${s.opacity ?? 1}"></i>${esc(s.name)}</span>`).join('')}</div>` : '';
+  after(() => {
+    const el = document.getElementById(id); if (!el) return;
+    const cross = document.getElementById(id + 'x');
+    el.addEventListener('mousemove', (e) => {
+      const r = el.getBoundingClientRect(), px = (e.clientX - r.left) / r.width * W;
+      const xv = x0 + (px - m.l) / (W - m.l - m.r) * (x1 - x0);
+      const rows = series.map(s => { let best = null; for (const p of s.points) if (!best || Math.abs(p[0] - xv) < Math.abs(best[0] - xv)) best = p; return [s, best]; }).filter(([, p]) => p);
+      if (!rows.length) return;
+      cross.style.display = ''; cross.setAttribute('x1', sx(rows[0][1][0])); cross.setAttribute('x2', sx(rows[0][1][0]));
+      showTip(e, `<b>${esc(opts.xLabel || 'x')} ${fx(rows[0][1][0])}</b>` + rows.map(([s, p]) => `<div class="r"><span><i style="background:${s.color}"></i>${esc(s.name)}</span><b>${fy(p[1])}</b></div>`).join(''));
+    });
+    el.addEventListener('mouseleave', () => { cross.style.display = 'none'; hideTip(); });
+  });
+  return `<div class="chart">${opts.title ? `<div class="title">${esc(opts.title)}</div>` : ''}${svg}${legend}</div>`;
+}
+function niceTicks(a, b, n) { const span = b - a, raw = span / n, p = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / p;
+  const step = (f < 1.5 ? 1 : f < 3 ? 2 : f < 7 ? 5 : 10) * p; const out = []; for (let v = Math.ceil(a / step) * step; v <= b + 1e-9; v += step) out.push(+v.toFixed(10)); return out; }
+function spark(points, color, w = 120, h = 32) {
+  if (points.length < 2) return `<svg width="${w}" height="${h}"></svg>`;
+  const y0 = Math.min(...points), y1 = Math.max(...points) || 1;
+  const sx = (i) => i / (points.length - 1) * (w - 4) + 2, sy = (v) => y1 === y0 ? h / 2 : 2 + (1 - (v - y0) / (y1 - y0)) * (h - 4);
+  const d = points.map((v, i) => `${i ? 'L' : 'M'}${sx(i).toFixed(1)} ${sy(v).toFixed(1)}`).join(' ');
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><path d="${d}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round"/><circle cx="${sx(points.length - 1)}" cy="${sy(points[points.length - 1])}" r="3" fill="${color}" stroke="var(--surface)" stroke-width="2"/></svg>`;
+}
+function stacked(kinds) {
+  const total = Object.values(kinds).reduce((a, b) => a + b, 0) || 1;
+  const parts = Object.entries(kinds).sort((a, b) => b[1] - a[1]);
+  return `<div class="stack">${parts.map(([k, n]) => `<i style="width:${(100 * n / total).toFixed(2)}%;background:${kindColor(k)}" title="${esc(k)} ${int(n)}"></i>`).join('')}</div>
+    <div class="keys">${parts.map(([k, n]) => `<span><i style="background:${kindColor(k)}"></i>${kindLabel(k)} <span class="muted">${int(n)}</span></span>`).join('')}</div>`;
+}
+
+// ---------- views ----------
+const head = (title, sub) => `<div class="page-head"><h1>${esc(title)}</h1><span class="sub">${sub || ''}</span></div>`;
+const runSeries = (results, key, map, opacity = 1, suffix = '') => results.forecasters.filter(f => f[key])
+  .map(f => ({ name: f.name + suffix, color: colorOf(f.name), opacity, points: map(f) })).filter(s => s.points.length);
+const charts = (a, b) => {
+  const rel = (r, o, sfx) => runSeries(r, 'calibration', f => f.calibration.bins.map(x => [x.mean_forecast, x.observed_frequency]), o, sfx).filter(s => s.points.length);
+  const adv = (r, o, sfx) => runSeries(r, 'advantage', f => f.advantage.map((v, i) => [i + 1, v]), o, sfx).filter(s => s.name.split(' ')[0] !== 'market');
+  const eq = (r, o, sfx) => runSeries(r, 'equity', f => f.equity.map((v, i) => [i, v]), o, sfx).filter(s => s.points.length > 1);
+  const mix = (fn) => fn(a, 1, '').concat(b ? fn(b, .45, ' (B)') : []);
+  return `<h2>Charts</h2><div class="grid cols-2">
+    <div class="card">${lineChart(mix(rel), { title: 'Reliability diagram', xLabel: 'mean forecast', yLabel: 'observed frequency', xDomain: [0, 1], yDomain: [0, 1], diagonal: true, dots: true })}<div class="cap">Forecasts grouped into ten bins: what they said against how often it happened. On the diagonal is calibrated; above it under-confident, below it over-confident.</div></div>
+    <div class="card">${lineChart(mix(adv), { title: 'Cumulative advantage over the market', xLabel: 'markets in settlement order', zeroLine: true })}<div class="cap">Running sum of (market Brier − forecaster Brier). Rising means the forecaster is beating the market; falling means the market is winning.</div></div>
+    <div class="card" style="grid-column:1/-1">${lineChart(mix(eq), { title: 'Bankroll of the simulated bets', xLabel: 'bets in settlement order', width: 1320, height: 300, fmtY: v => Math.round(v) })}<div class="cap">The paper bankroll from 1,000 as each simulated bet settles. A second run, when compared, is drawn lighter with (B).</div></div></div>`;
+};
+
+const views = {
+  async overview() {
+    const [o, runs] = await Promise.all([api('overview'), api('backtests')]);
+    document.getElementById('root').textContent = o.root;
+    const latest = {}; for (const r of runs) if (!latest[r.domain] && r.results) latest[r.domain] = r;
+    let h = head('Overview', o.paper.last_at ? 'ledger updated ' + when(o.paper.last_at) : '');
+    h += `<div class="intro">What is on disk, how the latest backtest in each domain scored against the market, and the state of paper trading. Dotted terms open a definition.</div>`;
+    h += '<h2>Datasets</h2><div class="grid cols-3">';
+    for (const [d, x] of Object.entries(o.domains)) {
+      h += `<div class="card"><div class="k">${d}</div><div class="v">${int(x.resolved.markets)}</div>
+        <div class="s">resolved markets · ${x.resolved.markets ? pct(x.resolved.positive / x.resolved.markets, 0) : '–'} ${term('resolvedyes', 'resolved to the first outcome')}</div>
+        ${x.resolved.kinds ? stacked(x.resolved.kinds) : '<div class="s">no dataset — run <span class="kbd">vp build-dataset --domain ' + d + '</span></div>'}
+        <div class="s" style="margin-top:10px">${int(x.histories)} ${term('histories', 'price histories')} · ${int(x.snapshots)} ${term('snapshots', 'snapshots')} · ${int(x.backtests)} ${term('backtests', 'backtests')}</div></div>`;
+    }
+    h += `</div><h2>Latest backtest per domain</h2><div class="cap" style="margin:0 0 8px">The most recent run in each domain. ${term('skill', 'Skill')} is the headline: positive means the forecaster beat the market price. Click a row to open the run.</div>`;
+    const rows = Object.entries(latest).flatMap(([d, r]) => r.results.forecasters.filter(f => f.name !== 'market').map(f => [esc(d), term(f.name, f.name), int(f.n), num(f.brier, 4), signed(f.skill, (f.skill >= 0 ? '+' : '') + f.skill.toFixed(3)), f.stats ? signed(f.stats.total_return, pct(f.stats.total_return)) : '–', `<span class="muted">${stamp(r.stamp)}</span>`]).map(row => ({ row, i: runs.indexOf(r) })));
+    h += rows.length ? `<div class="wrap"><table><thead><tr><th>Domain</th><th>Forecaster</th><th class="num">${term('n', 'n')}</th><th class="num">${term('brier', 'Brier ↓')}</th><th class="num">${term('skill', 'Skill ↑')}</th><th class="num">${term('return', 'Return')}</th><th class="num">Run</th></tr></thead><tbody>${
+      rows.map(({ row, i }) => `<tr class="click" data-run="${i}">${row.map((c, j) => `<td class="${j >= 2 ? 'num' : ''}">${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`
+      : '<div class="empty">No backtests yet. Run <span class="kbd">vp backtest --domain epl --forecasters market elo</span>.</div>';
+    h += `<h2>Paper accounts</h2><div class="cap" style="margin:0 0 8px">One paper ${term('bankroll', 'bankroll')} per forecaster, compounding from 1,000 as its positions settle. The market forecaster keeps an account but never bets.</div>`;
+    h += o.paper.accounts.length ? `<div class="grid cols-4">${o.paper.accounts.map(a => `<div class="card"><div class="k">${term(a.forecaster, a.forecaster)}</div><div class="v">${num(a.bankroll, 2)}</div>
+        <div class="s">${signed(a.realised, (a.realised >= 0 ? '+' : '') + a.realised.toFixed(2))} ${term('realised', 'realised')} · ${num(a.exposure, 2)} ${term('exposure', 'open')}</div><div style="margin-top:8px">${spark(a.curve, colorOf(a.forecaster))}</div></div>`).join('')}</div>`
+      : '<div class="empty">No paper ledger yet. Run <span class="kbd">vp paper run --domain cs2 weather epl</span>.</div>';
+    h += `<div class="s muted" style="margin-top:10px;font-size:12.5px">${term('ledger', 'ledger')}: ${int(o.paper.entries)} entries · ${o.paper.verified === null ? 'empty' : (o.paper.verified ? '<span class="pill ok">' + term('verified', 'chain verified') + '</span>' : '<span class="pill err">chain broken</span>')}</div>`;
+    after(() => document.querySelectorAll('tr[data-run]').forEach(tr => tr.onclick = (e) => { if (!e.target.closest('.term')) location.hash = '#backtests/' + tr.dataset.run; }));
+    return h;
+  },
+  async backtests() {
+    const runs = await api('backtests');
+    if (!runs.length) return head('Backtests') + '<div class="empty">No backtests yet. Run <span class="kbd">vp backtest --domain epl --forecasters market elo --kinds match</span>.</div>';
+    const [, sel, cmp] = location.hash.split('/');
+    const a = runs[Math.min(+sel || 0, runs.length - 1)], b = cmp !== undefined && cmp !== '' ? runs[+cmp] : null;
+    let h = head('Backtests', `${runs.length} runs`);
+    h += `<div class="intro">Each run forecasts resolved markets at a ${term('cutoff', 'cutoff')} in the past, scores every forecaster against the market price on the same markets, then simulates bets from the forecasts. Dotted terms open a definition.</div>`;
+    h += '<div class="split"><div class="runs">' + runs.map((r, i) => `<button class="run ${r === a ? 'on' : ''}" data-i="${i}"><div class="d">${esc(r.domain)} <span class="muted">${r.results ? r.results.config.forecasters.join(', ') : ''}</span></div><div class="t">${stamp(r.stamp)}${r.results ? ` · ${r.results.config.hours_before_close} h before settlement · ${r.results.common} scored` : ''}</div></button>`).join('') + '</div><div>';
+    const res = a.results;
+    if (res) {
+      const c = res.config;
+      h += `<div class="cap" style="margin:0 0 12px">${term('hours', 'Cutoff')} ${c.hours_before_close} h before settlement · market types ${c.kinds.length ? c.kinds.map(k => kindLabel(k)).join(', ') : 'all'} · ${int(res.candidates)} markets selected, ${int(res.with_price)} with a price at the cutoff, ${int(res.common)} ${term('scored', 'scored')} · ${res.seconds} s<br>
+        Bets: ${term('kelly', c.kelly_multiplier + ' Kelly')}, cap ${pct(c.max_fraction, 0)} per bet, ${term('minedge', 'minimum edge ' + c.min_edge)}, ${term('spread', 'half-spread ' + c.half_spread)}, fee rate ${c.fee_rate}, from ${int(c.initial_cash)}</div>`;
+    } else h += `<div class="row" style="margin:0 0 12px"><span class="muted">${a.lines.map(esc).join(' · ')}</span></div>`;
+    h += `<div class="row"><label class="chk">compare with <select id="cmp"><option value="">none</option>${runs.map((r, i) => r !== a ? `<option value="${i}" ${b === r ? 'selected' : ''}>${esc(r.domain)} ${esc(r.stamp)}</option>` : '').join('')}</select></label></div>`;
+    if (res) {
+      h += '<h2 style="margin-top:6px">Scores</h2>' + table(['Forecaster', term('n', 'n'), term('brier', 'Brier ↓'), term('log', 'Log ↓'), term('skill', 'Skill ↑'), term('reliability', 'Reliability ↓'), term('resolution', 'Resolution ↑'), term('ece', 'ECE ↓'), term('cost', 'Cost $')],
+        res.forecasters.map(f => [`<i class="legend" style="margin:0 6px 0 0"><i style="background:${colorOf(f.name)}"></i></i>${term(f.name, f.name)}`, int(f.n), num(f.brier, 4), num(f.log, 4), signed(f.skill, (f.skill >= 0 ? '+' : '') + f.skill.toFixed(4)), num(f.calibration.reliability, 4), num(f.calibration.resolution, 4), num(f.calibration.ece, 4), num(f.cost_usd, 2)]));
+      h += `<div class="cap">Arrows show the better direction. The market row is the reference, so its skill is 0 by definition.</div>`;
+      const bets = res.forecasters.filter(f => f.stats);
+      if (bets.length) h += '<h2>Simulated bets</h2>' + table(['Forecaster', term('bets', 'Bets'), term('return', 'Return'), term('drawdown', 'Max drawdown'), term('winrate', 'Win rate'), term('pf', 'Profit factor'), term('sharpe', 'Sharpe'), term('sharpeci', 'Sharpe 95% CI'), term('psharpe', 'P(Sharpe>0)')],
+        bets.map(f => [term(f.name, f.name), int(f.stats.count), signed(f.stats.total_return, pct(f.stats.total_return, 2)), pct(f.stats.max_drawdown, 2), pct(f.stats.win_rate, 1), num(f.stats.profit_factor, 2), num(f.stats.per_bet_sharpe, 3), f.sharpe ? `[${f.sharpe.lower.toFixed(3)}, ${f.sharpe.upper.toFixed(3)}]` : '–', f.sharpe ? f.sharpe.probability_positive.toFixed(2) : '–']))
+        + `<div class="cap">Bets are placed only where the forecast beats the price by the minimum edge, sized by fractional Kelly, and settled in the order the markets resolved. ${term('psharpe', 'P(Sharpe > 0)')} is the number to read: near 0.5 is no evidence of edge.</div>`;
+      h += charts(res, b && b.results);
+    } else {
+      const [scores, betsT] = a.tables;
+      if (scores) h += table(scores[0], scores.slice(1).map(r => r.map(esc)));
+      if (betsT) h += '<br>' + table(betsT[0], betsT.slice(1).map(r => r.map(esc)));
+      h += `<div class="grid cols-3" style="margin-top:12px">${a.figures.map(f => `<img style="width:100%;border-radius:10px;border:1px solid var(--ring)" src="/api/backtests/${a.domain}/${a.stamp}/${f}" alt="${f}">`).join('')}</div>`;
+    }
+    h += '</div></div>';
+    after(() => {
+      document.querySelectorAll('.run').forEach(el => el.onclick = () => { location.hash = '#backtests/' + el.dataset.i; });
+      const s = document.getElementById('cmp'); if (s) s.onchange = () => { location.hash = '#backtests/' + runs.indexOf(a) + '/' + s.value; };
+    });
+    return h;
+  },
+  async paper() {
+    const p = await api('paper?limit=60');
+    if (!p.entries) return head('Paper trading') + '<div class="empty">No paper ledger yet. Run <span class="kbd">vp paper run --domain cs2 weather epl</span>.</div>';
+    let h = head('Paper trading', `${int(p.entries)} ledger entries · ${p.verified ? '<span class="pill ok">' + term('verified', 'chain verified') + '</span>' : '<span class="pill err">chain broken</span>'}`);
+    h += `<div class="intro">Forecasts made at the present on open markets, with simulated orders against the real order book, settled when the venue resolves. Everything here is replayed from the ${term('ledger', 'ledger')}. Dotted terms open a definition.</div>`;
+    h += '<h2>Accounts</h2><div class="grid cols-4">' + p.accounts.map(a => `<div class="card"><div class="k">${term(a.forecaster, a.forecaster)}</div><div class="v">${num(a.bankroll, 2)}</div>
+      <div class="s">${signed(a.realised, (a.realised >= 0 ? '+' : '') + a.realised.toFixed(2))} ${term('realised', 'realised')} · ${num(a.exposure, 2)} ${term('exposure', 'exposure')} · ${a.open.length} open · ${a.settled} settled</div><div style="margin-top:8px">${spark(a.curve, colorOf(a.forecaster))}</div></div>`).join('') + '</div>';
+    const open = p.accounts.flatMap(a => a.open.map(o => [term(a.forecaster, a.forecaster), `<span class="wrapc">${esc(o.question)}</span>`, esc(o.side), `<span class="bar"><b class="q" style="left:${(100 * (o.q ?? 0)).toFixed(1)}%"></b><b class="p" style="left:${(100 * o.p_hat).toFixed(1)}%"></b></span>`, num(o.price), num(o.shares, 1), num(o.stake, 2)]));
+    h += '<h2>Open positions</h2>' + (open.length ? table(['Forecaster', 'Market', term('side', 'Side'), term('q', 'q') + ' · ' + term('phat', 'p̂'), term('price', 'Price'), term('shares', 'Shares'), term('stake', 'Stake')], open, 4) + `<div class="legend"><span><i style="background:var(--s1)"></i>${term('q', 'market price q')}</span><span><i style="background:var(--s2)"></i>${term('phat', 'forecast p̂')}</span></div><div class="cap">The bar is the probability line from 0 to 1: where the market priced the first outcome and where the forecaster put it. The gap between them is the edge the position was sized on.</div>` : '<div class="empty">None.</div>');
+    h += '<h2>Settlements</h2>' + (p.settlements.length ? table(['At', 'Forecaster', 'Market', term('label', 'Label'), term('pnl', 'P&L'), term('brier', 'Brier'), term('brier', 'Market Brier')],
+      p.settlements.slice().reverse().map(s => [when(s.at), term(s.forecaster, s.forecaster), esc(s.market_id), s.label, signed(s.pnl, s.pnl.toFixed(2)), num(s.brier, 4), num(s.brier_market, 4)]), 3) + '<div class="cap">Each settled position scores both the forecast and the market price it traded against, so forward skill uses the same measure as the backtest.</div>' : '<div class="empty">None yet — positions settle when the venue resolves; run <span class="kbd">vp paper settle</span>.</div>');
+    const kindTerm = { cycle: 'cycle', forecast: 'forecast_entry', order: 'order', settlement: 'settlement' };
+    h += '<h2>Ledger</h2><div class="cap" style="margin:0 0 8px">Most recent entries, newest first. Click an entry for its full record.</div><div class="card timeline">' + p.recent.slice().reverse().map(e => `<div class="ev click" data-seq="${e.seq}"><span class="at mono">${when(e.at)}</span><span><span class="pill">${term(kindTerm[e.kind] || e.kind, e.kind)}</span> <span class="muted mono" style="font-size:12px">#${e.seq}</span></span><code>${esc(summarise(e))}</code><pre class="full mono" style="display:none;margin:4px 0 0;font-size:12px;white-space:pre-wrap">${esc(JSON.stringify(e, null, 1))}</pre></div>`).join('') + '</div>';
+    after(() => document.querySelectorAll('.ev.click').forEach(el => el.onclick = (e) => { if (e.target.closest('.term')) return; const f = el.querySelector('.full'); f.style.display = f.style.display === 'none' ? '' : 'none'; }));
+    return h;
+  },
+  async markets() {
+    const [, domain = 'cs2', q = ''] = location.hash.split('/');
+    const s = await api('snapshots/' + domain);
+    const showDead = state.showDead || !s.markets.some(m => m.has_book);
+    const query = decodeURIComponent(q).toLowerCase();
+    const rows = s.markets.filter(m => (showDead || m.has_book) && (!query || (m.question + ' ' + (m.event || '')).toLowerCase().includes(query)));
+    let h = head('Markets', s.stamp ? `snapshot ${stamp(s.stamp)} · ${int(rows.length)} of ${int(s.markets.length)} shown` : '');
+    h += `<div class="intro">The open markets as of the latest ${term('snapshots', 'snapshot')} of this domain, with the quote for the first outcome. Click a market for the fields the parser read and any forecasts made on it. Dotted terms open a definition.</div>`;
+    h += `<div class="row"><select id="dom">${['cs2', 'weather', 'epl'].map(d => `<option ${d === domain ? 'selected' : ''}>${d}</option>`).join('')}</select>
+      <input type="search" id="q" placeholder="search question or event" value="${esc(decodeURIComponent(q))}">
+      <label class="chk"><input type="checkbox" id="dead" ${showDead ? 'checked' : ''}> show markets without a book</label></div>`;
+    if (!s.stamp) h += '<div class="empty">No snapshot yet. Run <span class="kbd">vp snapshot --domain ' + esc(domain) + '</span>.</div>';
+    else if (!rows.length) h += '<div class="empty">Nothing matches.</div>';
+    else h += `<div class="wrap"><table><thead><tr><th>Question</th><th>${term('kind', 'Market type')}</th><th class="num">${term('q', 'Price')}</th><th class="num">${term('bid', 'Bid')}</th><th class="num">${term('ask', 'Ask')}</th><th class="num">${term('ends', 'Ends')}</th></tr></thead><tbody>${
+      rows.map((m, i) => `<tr class="click" data-i="${i}"><td class="wrapc">${esc(m.question)}${m.event && m.event !== m.question ? `<div class="muted" style="font-size:12px">${esc(m.event)}</div>` : ''}</td><td><span class="pill">${kindLabel(m.kind)}</span></td><td class="num">${m.p_yes === null ? '–' : `<span class="bar" style="width:60px"><i style="position:absolute;left:0;top:0;height:100%;width:${(100 * m.p_yes).toFixed(1)}%;background:var(--s1);border-radius:3px"></i></span> ${num(m.p_yes)}`}</td><td class="num">${num(m.bid)}</td><td class="num">${num(m.ask)}</td><td class="num">${esc((m.end_date || '').slice(0, 10))}</td></tr>
+        <tr class="expand" style="display:none"><td colspan="6"><div class="kv">${Object.entries(m.parsed).map(([k, v]) => `<span>${k === 'kind' ? term('kind', 'market type') : esc(k)}</span><span>${k === 'kind' ? kindLabel(v) : esc(v)}</span>`).join('')}<span>market id</span><span class="mono">${esc(m.market_id)}</span></div>${m.forecasts.length ? '<div style="margin-top:8px">' + table(['Forecaster', term('phat', 'p̂'), term('cutoff', 'Cutoff')], m.forecasts.map(f => [term(f.forecaster, f.forecaster), num(f.p_hat), when(f.cutoff)]), 1) + '</div>' : '<div class="muted" style="margin-top:6px;font-size:12.5px">no forecasts yet</div>'}</td></tr>`).join('')}</tbody></table></div>`;
+    after(() => {
+      const go = () => { location.hash = '#markets/' + document.getElementById('dom').value + '/' + encodeURIComponent(document.getElementById('q').value); };
+      document.getElementById('dom').onchange = go;
+      let t; document.getElementById('q').oninput = () => { clearTimeout(t); t = setTimeout(go, 250); };
+      document.getElementById('dead').onchange = (e) => { state.showDead = e.target.checked; render(); };
+      document.querySelectorAll('tr.click[data-i]').forEach(tr => tr.onclick = (e) => { if (e.target.closest('.term')) return; const x = tr.nextElementSibling; x.style.display = x.style.display === 'none' ? '' : 'none'; });
+    });
+    return h;
+  },
+};
+function summarise(e) { const d = e.data; switch (e.kind) {
+  case 'order': return `${d.forecaster} ${d.side} ${d.shares.toFixed(1)} sh @ ${d.price.toFixed(3)} (${d.stake.toFixed(2)}) — ${d.question}`;
+  case 'forecast': return `${d.forecaster} p̂=${d.p_hat.toFixed(3)} q=${d.q == null ? '–' : d.q.toFixed(3)} market ${d.market_id}`;
+  case 'settlement': return `${d.forecaster} market ${d.market_id} label ${d.label} pnl ${d.pnl.toFixed(2)} brier ${d.brier.toFixed(4)}`;
+  case 'cycle': return `${d.domain}: ${d.markets} markets snapshotted`;
+  default: return JSON.stringify(d); } }
+
+// ---------- shell ----------
+const state = { showDead: false, hooks: [] };
+// Views register wiring to run once their HTML is in the document.
+const after = (fn) => state.hooks.push(fn);
+function applyTheme() {
+  let t = 'system'; try { t = localStorage.getItem('vp-theme') || 'system'; } catch (e) {}
+  if (t === 'system') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme', t);
+  document.querySelectorAll('#theme button').forEach(b => b.classList.toggle('on', b.dataset.t === t));
+}
+document.querySelectorAll('#theme button').forEach(b => b.onclick = () => { try { localStorage.setItem('vp-theme', b.dataset.t); } catch (e) {} applyTheme(); });
+async function render() {
+  const name = (location.hash.slice(1).split('/')[0]) || 'overview';
+  document.querySelectorAll('aside nav a').forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + name));
+  const main = document.getElementById('main');
+  const q = document.getElementById('q'), focus = q && document.activeElement === q, pos = focus ? q.selectionStart : 0;
+  state.hooks = [];
+  try { main.innerHTML = await (views[name] || views.overview)(); }
+  catch (e) { main.innerHTML = head('Error') + `<div class="empty">Could not load: ${esc(e.message)}</div>`; }
+  for (const fn of state.hooks) fn();
+  if (focus) { const q2 = document.getElementById('q'); if (q2) { q2.focus(); q2.setSelectionRange(pos, pos); } }
+  if (!document.getElementById('root').textContent) api('overview').then(o => { document.getElementById('root').textContent = o.root; }).catch(() => {});
+}
+applyTheme();
+window.addEventListener('hashchange', render);
+render();
+</script>
+</body>
+</html>
