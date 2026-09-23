@@ -135,6 +135,21 @@ def run_backtest(
     registry = Registry(out_dir / "forecasts.jsonl")
     base = Evidence(_EPOCH, root, markets={config.domain: resolved})
 
+    # Forecasters that answer in bulk (the LLM forecaster in batch mode) are
+    # given every market with a price at its cutoff before the loop asks for
+    # them one at a time.
+    bulk = [f for f in forecasters if callable(getattr(f, "prefetch", None))]
+    if bulk:
+        pending = []
+        for market in markets:
+            when = settled_at(market)
+            assert when is not None
+            ev = base.at(when - timedelta(hours=config.hours_before_close))
+            if ev.price_at(market) is not None:
+                pending.append((market, ev))
+        for f in bulk:
+            getattr(f, "prefetch")(pending)  # noqa: B009 - not on the protocol
+
     # forecasts[name] -> list aligned with `scored` markets
     scored: list[tuple[BinaryMarket, float, str]] = []
     forecasts: dict[str, list[Forecast]] = {f.name: [] for f in forecasters}

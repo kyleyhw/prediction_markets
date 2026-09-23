@@ -11,8 +11,24 @@ does not.
 
 Every call is logged with its token usage, and the cost is computed from a
 price table per million tokens so the backtest can report dollars per
-forecast. With ``samples > 1`` the elicitation is repeated and the mean
-probability is used, which averages out sampling noise at a linear cost.
+forecast. The system prompt and the tools are the same for every market, so
+they are marked for prompt caching: a cache read costs a tenth of the input
+price and a write a quarter more (the API's published multipliers). The
+prefix must reach the model's minimum cacheable length for this to take
+effect; today's is shorter, so the saving arrives with the longer domain
+packs of Phase 16, and the accounting is already right when it does.
+
+With ``batch=True`` a backtest's forecasts go through the Message Batches
+API at half price, at the cost of waiting for each batch. Because the model
+calls tools, one answer can take several rounds; batching is done round by
+round: every conversation's next request goes into one batch, the tool
+calls in the replies are answered locally, and the next round is the next
+batch, until every conversation has its answer or its rounds run out.
+``prefetch`` runs this for all of a backtest's markets before the backtest
+asks for them one at a time.
+
+With ``samples > 1`` the elicitation is repeated and the mean probability
+is used, which averages out sampling noise at a linear cost.
 
 The model is called through the official SDK; the client is injectable so
 the elicitation loop is tested offline against a fake, and a run without
@@ -39,6 +55,14 @@ from vp.markets.schema import BinaryMarket
 logger = logging.getLogger(__name__)
 
 DEFAULT_MODEL = "claude-opus-5"
+
+# Multipliers on the input price for prompt-cache writes and reads, and the
+# discount for batched requests (the API's published terms).
+CACHE_WRITE, CACHE_READ, BATCH_DISCOUNT = 1.25, 0.10, 0.5
+
+# Tokens one elicitation round is expected to use, for estimates before a
+# run: the prompt and tool results in, the reasoning and answer out.
+EXPECTED_INPUT, EXPECTED_OUTPUT, EXPECTED_ROUNDS = 1500, 600, 3
 
 # USD per million tokens, input and output, for cost accounting.
 PRICES: dict[str, tuple[float, float]] = {
@@ -117,6 +141,16 @@ TOOLS: list[dict[str, Any]] = [
 ]
 
 
+def estimate_usd(
+    markets: int, model: str = DEFAULT_MODEL, samples: int = 1, batch: bool = False
+) -> float:
+    """An upper-end estimate of what forecasting `markets` markets costs."""
+    price_in, price_out = PRICES[model]
+    per_round = (EXPECTED_INPUT * price_in + EXPECTED_OUTPUT * price_out) / 1e6
+    usd = markets * samples * EXPECTED_ROUNDS * per_round
+    return usd * (BATCH_DISCOUNT if batch else 1.0)
+
+
 def run_tool(
     name: str, args: dict[str, Any], market: BinaryMarket, ev: Evidence
 ) -> str:
@@ -187,7 +221,10 @@ class LLMForecaster:
     effort: str = "medium"
     max_tokens: int = 4000
     name: str = "llm"
+    batch: bool = False
+    poll_seconds: float = 30.0
     calls: list[dict[str, Any]] = field(default_factory=list)
+    prefetched: dict[str, Forecast | None] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if self.client is None:
@@ -198,6 +235,9 @@ class LLMForecaster:
             raise ValueError(f"no price recorded for model {self.model!r}")
 
     def forecast(self, market: BinaryMarket, evidence: Evidence) -> Forecast | None:
+        key = f"{market.market_id}@{evidence.cutoff.isoformat()}"
+        if key in self.prefetched:
+            return self.prefetched.pop(key)
         probabilities: list[float] = []
         rationales: list[str] = []
         cost = 0.0
@@ -221,54 +261,165 @@ class LLMForecaster:
             meta={"model": self.model, "samples": str(self.samples)},
         )
 
+    def _params(self, messages: list[dict[str, Any]]) -> dict[str, Any]:
+        return {
+            "model": self.model,
+            "max_tokens": self.max_tokens,
+            # The system prompt and the tools before it are the same for every
+            # market: the stable prefix, marked for caching.
+            "system": [
+                {"type": "text", "text": SYSTEM, "cache_control": {"type": "ephemeral"}}
+            ],
+            "tools": TOOLS,
+            "output_config": {
+                "effort": self.effort,
+                "format": {"type": "json_schema", "schema": OUTPUT_SCHEMA},
+            },
+            "messages": messages,
+        }
+
+    def _step(
+        self,
+        response: Any,
+        messages: list[dict[str, Any]],
+        market: BinaryMarket,
+        ev: Evidence,
+    ) -> tuple[float, str] | None:
+        """Advance one conversation by a reply: answer its tool calls, or return
+        the answer when it has one."""
+        if response.stop_reason == "tool_use":
+            messages.append({"role": "assistant", "content": response.content})
+            results = [
+                {
+                    "type": "tool_result",
+                    "tool_use_id": block.id,
+                    "content": run_tool(block.name, dict(block.input), market, ev),
+                }
+                for block in response.content
+                if block.type == "tool_use"
+            ]
+            messages.append({"role": "user", "content": results})
+            return None
+        if response.stop_reason != "end_turn":
+            raise RuntimeError(f"unexpected stop reason {response.stop_reason!r}")
+        text = next(b.text for b in response.content if b.type == "text")
+        data = json.loads(text)
+        return float(data["probability"]), str(data["rationale"])
+
     def _elicit(self, market: BinaryMarket, ev: Evidence) -> tuple[float, str, float]:
         messages: list[dict[str, Any]] = [
             {"role": "user", "content": question_block(market, ev)}
         ]
         cost = 0.0
         for _ in range(self.max_turns):
-            response = self.client.messages.create(
-                model=self.model,
-                max_tokens=self.max_tokens,
-                system=SYSTEM,
-                tools=TOOLS,
-                output_config={
-                    "effort": self.effort,
-                    "format": {"type": "json_schema", "schema": OUTPUT_SCHEMA},
-                },
-                messages=messages,
-            )
+            response = self.client.messages.create(**self._params(messages))
             cost += self._record(response, market)
-            if response.stop_reason == "tool_use":
-                messages.append({"role": "assistant", "content": response.content})
-                results = [
-                    {
-                        "type": "tool_result",
-                        "tool_use_id": block.id,
-                        "content": run_tool(block.name, dict(block.input), market, ev),
-                    }
-                    for block in response.content
-                    if block.type == "tool_use"
-                ]
-                messages.append({"role": "user", "content": results})
-                continue
-            if response.stop_reason != "end_turn":
-                raise RuntimeError(f"unexpected stop reason {response.stop_reason!r}")
-            text = next(b.text for b in response.content if b.type == "text")
-            data = json.loads(text)
-            return float(data["probability"]), str(data["rationale"]), cost
+            answer = self._step(response, messages, market, ev)
+            if answer is not None:
+                return answer[0], answer[1], cost
         raise RuntimeError("tool-call rounds exhausted without an answer")
 
-    def _record(self, response: Any, market: BinaryMarket) -> float:
+    def prefetch(self, items: list[tuple[BinaryMarket, Evidence]]) -> None:
+        """Answer every (market, evidence) through the batch API, round by round.
+
+        Does nothing unless ``batch`` is set. Answers are kept for
+        :meth:`forecast` to hand back; a market whose conversation failed or
+        ran out of rounds gets ``None``, as a declined market does.
+        """
+        if not self.batch or not items:
+            return
+        import time
+
+        convs: dict[str, dict[str, Any]] = {}
+        for i, (market, ev) in enumerate(items):
+            for s in range(self.samples):
+                convs[f"m{i}-s{s}"] = {
+                    "key": f"{market.market_id}@{ev.cutoff.isoformat()}",
+                    "market": market,
+                    "ev": ev,
+                    "messages": [
+                        {"role": "user", "content": question_block(market, ev)}
+                    ],
+                    "cost": 0.0,
+                }
+        for _ in range(self.max_turns):
+            open_ = {
+                k: c for k, c in convs.items() if "answer" not in c and "error" not in c
+            }
+            if not open_:
+                break
+            batch = self.client.messages.batches.create(
+                requests=[
+                    {"custom_id": k, "params": self._params(c["messages"])}
+                    for k, c in open_.items()
+                ]
+            )
+            while batch.processing_status != "ended":
+                time.sleep(self.poll_seconds)
+                batch = self.client.messages.batches.retrieve(batch.id)
+            for result in self.client.messages.batches.results(batch.id):
+                conv = convs[result.custom_id]
+                if result.result.type != "succeeded":
+                    conv["error"] = result.result.type
+                    continue
+                response = result.result.message
+                conv["cost"] += self._record(response, conv["market"], batched=True)
+                try:
+                    answer = self._step(
+                        response, conv["messages"], conv["market"], conv["ev"]
+                    )
+                except Exception as exc:  # noqa: BLE001 - that market declines
+                    conv["error"] = str(exc)
+                    continue
+                if answer is not None:
+                    conv["answer"] = answer
+        by_key: dict[str, list[dict[str, Any]]] = {}
+        for conv in convs.values():
+            by_key.setdefault(conv["key"], []).append(conv)
+        for key, group in by_key.items():
+            answers = [c["answer"] for c in group if "answer" in c]
+            if len(answers) < len(group):
+                self.prefetched[key] = None
+                continue
+            market, ev = group[0]["market"], group[0]["ev"]
+            self.prefetched[key] = Forecast(
+                market.market_id,
+                self.name,
+                ev.cutoff.isoformat(),
+                clip(sum(a[0] for a in answers) / len(answers)),
+                "\n---\n".join(a[1] for a in answers),
+                cost_usd=sum(c["cost"] for c in group),
+                meta={
+                    "model": self.model,
+                    "samples": str(self.samples),
+                    "batch": "true",
+                },
+            )
+
+    def _record(
+        self, response: Any, market: BinaryMarket, batched: bool = False
+    ) -> float:
         usage = response.usage
         price_in, price_out = PRICES[self.model]
-        usd = (usage.input_tokens * price_in + usage.output_tokens * price_out) / 1e6
+        cache_read = getattr(usage, "cache_read_input_tokens", None) or 0
+        cache_write = getattr(usage, "cache_creation_input_tokens", None) or 0
+        usd = (
+            usage.input_tokens * price_in
+            + cache_write * price_in * CACHE_WRITE
+            + cache_read * price_in * CACHE_READ
+            + usage.output_tokens * price_out
+        ) / 1e6
+        if batched:
+            usd *= BATCH_DISCOUNT
         self.calls.append(
             {
                 "market_id": market.market_id,
                 "input_tokens": usage.input_tokens,
                 "output_tokens": usage.output_tokens,
+                "cache_read_tokens": cache_read,
+                "cache_write_tokens": cache_write,
                 "cost_usd": usd,
+                "batched": batched,
                 "stop_reason": response.stop_reason,
             }
         )

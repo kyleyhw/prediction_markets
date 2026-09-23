@@ -57,7 +57,7 @@ def standing(pool: ConnectionPool, principal: Principal) -> Standing:
         sums = conn.execute(
             "select coalesce(sum(usd) filter (where kind = 'charge'), 0), "
             "coalesce(sum(usd) filter (where kind in ('reservation', 'release')), 0) "
-            "from spend where at >= %s",
+            "from spend where at >= %s and paid_by = 'platform'",
             (_month_start(),),
         ).fetchone()
     charged, reserved = sums if sums else (Decimal(0), Decimal(0))
@@ -86,7 +86,8 @@ def reserve(pool: ConnectionPool, principal: Principal, usd: float) -> None:
         row = conn.execute("select monthly_limit_usd from budgets").fetchone()
         limit = row[0] if row else DEFAULT_LIMIT_USD
         (used,) = conn.execute(
-            "select coalesce(sum(usd), 0) from spend where at >= %s",
+            "select coalesce(sum(usd), 0) from spend "
+            "where at >= %s and paid_by = 'platform'",
             (_month_start(),),
         ).fetchone() or (Decimal(0),)
         if Decimal(used) + amount > limit:
@@ -108,6 +109,7 @@ def settle_job(
     job_id: UUID,
     reserved_usd: float,
     charges: list[dict[str, Any]],
+    paid_by: str = "platform",
 ) -> Decimal:
     """Release a job's reservation and charge what it actually spent.
 
@@ -133,8 +135,8 @@ def settle_job(
             conn.execute(
                 "insert into spend (workspace_id, job_id, kind, forecaster, domain, "
                 "model, input_tokens, output_tokens, cache_read_tokens, "
-                "cache_write_tokens, usd) "
-                "values (%s, %s, 'charge', %s, %s, %s, %s, %s, %s, %s, %s)",
+                "cache_write_tokens, usd, paid_by) "
+                "values (%s, %s, 'charge', %s, %s, %s, %s, %s, %s, %s, %s, %s)",
                 (
                     principal.workspace,
                     job_id,
@@ -146,10 +148,12 @@ def settle_job(
                     int(c.get("cache_read_tokens", 0)),
                     int(c.get("cache_write_tokens", 0)),
                     usd,
+                    paid_by,
                 ),
             )
             total += usd
-            SPEND_USD.labels(c.get("forecaster") or "unknown").inc(float(usd))
+            if paid_by == "platform":
+                SPEND_USD.labels(c.get("forecaster") or "unknown").inc(float(usd))
     return total
 
 
@@ -158,8 +162,8 @@ def breakdown(pool: ConnectionPool, principal: Principal) -> list[dict[str, Any]
     with pool.connection() as conn, tenant_session(conn, principal):
         rows = conn.execute(
             "select forecaster, domain, model, count(*), sum(input_tokens), "
-            "sum(output_tokens), sum(cache_read_tokens), sum(usd) from spend "
-            "where kind = 'charge' and at >= %s group by 1, 2, 3 order by 8 desc",
+            "sum(output_tokens), sum(cache_read_tokens), sum(usd), paid_by from spend "
+            "where kind = 'charge' and at >= %s group by 1, 2, 3, 9 order by 8 desc",
             (_month_start(),),
         ).fetchall()
     keys = (
@@ -171,5 +175,6 @@ def breakdown(pool: ConnectionPool, principal: Principal) -> list[dict[str, Any]
         "output_tokens",
         "cache_read_tokens",
         "usd",
+        "paid_by",
     )
     return [dict(zip(keys, r, strict=True)) for r in rows]

@@ -105,3 +105,92 @@ def test_llm_failure_declines(tmp_path: Path) -> None:
     ev = Evidence(datetime(2026, 3, 5, tzinfo=timezone.utc), tmp_path)
     llm = LLMForecaster(client=SimpleNamespace(messages=Broken()))
     assert llm.forecast(EPL[4], ev) is None
+
+
+class FakeBatches:
+    """The Message Batches API over the same fake model: each batch's
+    requests are answered by `FakeMessages.create`, one round per batch."""
+
+    def __init__(self, model: FakeMessages) -> None:
+        self.model = model
+        self.created: list[list[dict[str, Any]]] = []
+        self._results: dict[str, list[Any]] = {}
+
+    def create(self, *, requests: list[dict[str, Any]]) -> Any:
+        self.created.append(requests)
+        batch_id = f"b{len(self.created)}"
+        self._results[batch_id] = [
+            SimpleNamespace(
+                custom_id=r["custom_id"],
+                result=SimpleNamespace(
+                    type="succeeded", message=self.model.create(**r["params"])
+                ),
+            )
+            for r in requests
+        ]
+        return SimpleNamespace(id=batch_id, processing_status="in_progress")
+
+    def retrieve(self, batch_id: str) -> Any:
+        return SimpleNamespace(id=batch_id, processing_status="ended")
+
+    def results(self, batch_id: str) -> list[Any]:
+        return self._results[batch_id]
+
+
+def test_batch_mode_answers_round_by_round_at_half_price(tmp_path: Path) -> None:
+    write_markets(tmp_path / "markets" / "epl" / "resolved.parquet", EPL)
+    ev = Evidence(datetime(2026, 3, 5, tzinfo=timezone.utc), tmp_path)
+    fake = FakeMessages([0.6, 0.7])
+    batches = FakeBatches(fake)
+    client = SimpleNamespace(
+        messages=SimpleNamespace(create=fake.create, batches=batches)
+    )
+    llm = LLMForecaster(client=client, samples=2, batch=True, poll_seconds=0)
+    llm.prefetch([(EPL[4], ev)])
+    # Round one asks both samples for evidence in one batch; round two answers.
+    assert [len(b) for b in batches.created] == [2, 2]
+    f = llm.forecast(EPL[4], ev)
+    assert (
+        f is not None and f.p_hat == pytest.approx(0.65) and f.meta["batch"] == "true"
+    )
+    price_in, price_out = PRICES["claude-opus-5"]
+    assert f.cost_usd == pytest.approx(
+        0.5 * 4 * (1000 * price_in + 100 * price_out) / 1e6
+    )
+    # The answer is handed out once; a second ask would elicit afresh.
+    assert llm.prefetched == {}
+
+
+def test_cache_reads_and_writes_are_priced_and_the_prefix_marked(
+    tmp_path: Path,
+) -> None:
+    from vp.forecast.llm import CACHE_READ, CACHE_WRITE, estimate_usd
+
+    write_markets(tmp_path / "markets" / "epl" / "resolved.parquet", EPL)
+    ev = Evidence(datetime(2026, 3, 5, tzinfo=timezone.utc), tmp_path)
+    fake = FakeMessages([0.6])
+    original = fake.create
+
+    def with_cache(**kwargs: Any) -> Any:
+        response = original(**kwargs)
+        response.usage.cache_read_input_tokens = 2000
+        response.usage.cache_creation_input_tokens = 500
+        return response
+
+    llm = LLMForecaster(
+        client=SimpleNamespace(messages=SimpleNamespace(create=with_cache))
+    )
+    f = llm.forecast(EPL[4], ev)
+    assert f is not None
+    assert fake.requests[0]["system"][0]["cache_control"] == {"type": "ephemeral"}
+    price_in, price_out = PRICES["claude-opus-5"]
+    per_turn = (
+        1000 * price_in
+        + 500 * price_in * CACHE_WRITE
+        + 2000 * price_in * CACHE_READ
+        + 100 * price_out
+    ) / 1e6
+    assert f.cost_usd == pytest.approx(2 * per_turn)
+    assert llm.calls[0]["cache_read_tokens"] == 2000
+    assert estimate_usd(10, batch=True) == pytest.approx(estimate_usd(10) / 2)
+    assert estimate_usd(0) == 0

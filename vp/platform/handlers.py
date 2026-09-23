@@ -52,7 +52,7 @@ from vp.markets.schema import BinaryMarket, utc_now_iso
 from vp.markets.snapshot import collect_snapshot
 from vp.paper import leakage
 from vp.paper.loop import run_cycle, settle
-from vp.platform import budgets
+from vp.platform import budgets, llmops
 from vp.platform.config import Settings
 from vp.platform.db import tenant_session
 from vp.platform.jobs import Handler, JobContext, run_scheduler
@@ -183,7 +183,19 @@ def backtest(ctx: JobContext) -> dict[str, Any]:
     with tempfile.TemporaryDirectory(dir=svc.work_dir) as tmp:
         root = svc.shared.workroot(Path(tmp) / "root")
         out = Path(tmp) / "out"
-        forecasters = forecasters_for(config.forecasters, domain, svc.pool, salt)
+        llm: dict[str, Any] = {}
+        paid_by = "platform"
+        if "llm" in config.forecasters:
+            client, paid_by = llmops.client_for(
+                svc.pool,
+                ctx.principal,
+                svc.settings.anthropic_api_key,
+                svc.settings.master_key,
+            )
+            llm = {"client": client, "batch": bool(p.get("batch", False))}
+            if p.get("model"):
+                llm["model"] = str(p["model"])
+        forecasters = forecasters_for(config.forecasters, domain, svc.pool, salt, **llm)
         result = run_backtest(
             config,
             root,
@@ -214,16 +226,27 @@ def backtest(ctx: JobContext) -> dict[str, Any]:
                 ctx.principal.user_id,
             ),
         )
+    charges = []
+    for f in forecasters:
+        calls = getattr(f, "calls", None)
+        if not calls:
+            continue
+        charges.append(
+            {
+                "forecaster": f.name,
+                "domain": domain,
+                "model": getattr(f, "model", None),
+                "input_tokens": sum(c["input_tokens"] for c in calls),
+                "output_tokens": sum(c["output_tokens"] for c in calls),
+                "cache_read_tokens": sum(c.get("cache_read_tokens", 0) for c in calls),
+                "cache_write_tokens": sum(
+                    c.get("cache_write_tokens", 0) for c in calls
+                ),
+                "usd": sum(c["cost_usd"] for c in calls),
+            }
+        )
     charged = budgets.settle_job(
-        svc.pool,
-        ctx.principal,
-        ctx.job.id,
-        ctx.job.reserved_usd,
-        [
-            {"forecaster": r.name, "domain": domain, "usd": r.cost_usd}
-            for r in result.results
-            if r.cost_usd
-        ],
+        svc.pool, ctx.principal, ctx.job.id, ctx.job.reserved_usd, charges, paid_by
     )
     return {
         "run_id": str(run_id),
