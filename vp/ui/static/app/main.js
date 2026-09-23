@@ -15,12 +15,13 @@ import market from './views/market.js';
 import markets from './views/markets.js';
 import research from './views/research.js';
 import settings from './views/settings.js';
+import signals from './views/signals.js';
 import start from './views/start.js';
 import strategies from './views/strategies.js';
 import strategy from './views/strategy.js';
 
-const ROUTES = { home, markets, market, strategies, strategy, describe, research, backtests, learn, settings, start };
-const NAV = ['home', 'markets', 'strategies', 'backtests', 'learn', 'settings'];
+const ROUTES = { home, markets, market, strategies, strategy, describe, research, backtests, signals, learn, settings, start };
+const NAV = ['home', 'markets', 'strategies', 'backtests', 'signals', 'learn', 'settings'];
 const SECTION = { market: 'markets', start: 'home', strategy: 'strategies', describe: 'strategies', research: 'strategies' };
 
 export function applyTheme() {
@@ -78,6 +79,14 @@ export async function render(moveFocus = true) {
       <a class="btn primary" href="#home">${t('error.home')}</a>`;
   }
   runHooks();
+  // A table wider than the page scrolls; a keyboard can reach it only if it
+  // is focusable, and a screen reader names it by its caption (WCAG 2.1.1).
+  document.querySelectorAll('#main .wrap').forEach((w) => {
+    if (w.scrollWidth <= w.clientWidth) return;
+    w.tabIndex = 0;
+    w.setAttribute('role', 'region');
+    w.setAttribute('aria-label', w.querySelector('caption')?.textContent || tp('app.table'));
+  });
   const title = document.getElementById('page-title');
   document.title = `${title ? title.textContent : ''} · vibe-predict`;
   if (moveFocus && title) title.focus();

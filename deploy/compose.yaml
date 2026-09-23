@@ -102,7 +102,7 @@ services:
   # dataset builds, which run for hours and get a pool of their own.
   worker-platform:
     <<: *app
-    command: ["worker", "--kinds", "scheduler", "partitions", "sweep", "--concurrency", "1", "--metrics-port", "9103"]
+    command: ["worker", "--kinds", "scheduler", "partitions", "sweep", "benchmark_freeze", "benchmark_score", "--concurrency", "1", "--metrics-port", "9103"]
 
   worker-capture:
     <<: *app
@@ -110,7 +110,7 @@ services:
 
   worker-data:
     <<: *app
-    command: ["worker", "--kinds", "dataset", "--concurrency", "2", "--metrics-port", "9105"]
+    command: ["worker", "--kinds", "dataset", "signal_bench", "--concurrency", "2", "--metrics-port", "9105"]
 
   ingest:
     <<: *app

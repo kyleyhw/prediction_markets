@@ -193,6 +193,17 @@ class WorkspaceView(DataView):
             )
         return out
 
+    def signals(self) -> dict[str, Any]:
+        from vp.platform.signals import latest_bench
+        from vp.signals.registry import manifest
+
+        return {"signals": manifest(), "bench": latest_bench(self.pool)}
+
+    def benchmark(self) -> list[dict[str, Any]]:
+        from vp.platform.signals import weeks
+
+        return weeks(self.pool)
+
     def overview(self) -> dict[str, Any]:
         view = super().overview()
         view.pop("root", None)

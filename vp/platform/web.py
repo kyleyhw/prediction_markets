@@ -816,6 +816,17 @@ def create_app(
         """Per-domain counts, the paper accounts, and the workspace's account."""
         return _json(view_for(principal).overview())
 
+    @app.get("/api/signals")
+    def signals(principal: Reader) -> Response:
+        """Every signal with its metadata and each domain's latest bench."""
+        return _json(view_for(principal).signals())
+
+    @app.get("/api/benchmark")
+    def benchmark_weeks(principal: Reader) -> Response:
+        """The public benchmark: frozen weeks, commitments, and once a week
+        is revealed its forecasts, salts and scores."""
+        return _json(view_for(principal).benchmark())
+
     @app.get("/api/backtests")
     def backtests(principal: Reader) -> Response:
         """The workspace's backtest runs, newest first."""

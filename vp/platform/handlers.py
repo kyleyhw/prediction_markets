@@ -834,7 +834,12 @@ def sweep(ctx: JobContext) -> dict[str, Any]:
 def handlers(extra: dict[str, Handler] | None = None) -> dict[str, Handler]:
     """Every kind this module handles, plus any given (the ingest's and the
     evidence collectors', which live with their services)."""
+    from vp.platform import signals
+
     table: dict[str, Handler] = {
+        "signal_bench": signals.signal_bench,
+        "benchmark_freeze": signals.benchmark_freeze,
+        "benchmark_score": signals.benchmark_score,
         "backtest": backtest,
         "compile": compile_turn,
         "research": research_message,

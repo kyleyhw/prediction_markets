@@ -64,6 +64,9 @@ PLATFORM_KINDS = frozenset(
         "sweep",
         "sample_cycle",
         "sample_settle",
+        "signal_bench",
+        "benchmark_freeze",
+        "benchmark_score",
     }
 )
 #: Interactive work first, scheduled work next, maintenance last.

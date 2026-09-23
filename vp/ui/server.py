@@ -251,6 +251,20 @@ class DataView:
             "series": series,
         }
 
+    def signals(self) -> dict[str, Any]:
+        """The signal library and each domain's latest bench
+        (`vp signals bench` writes them under the data root)."""
+        from vp.signals.registry import manifest
+
+        bench = {}
+        for path in sorted((self.root / "signals" / "bench").glob("*.json")):
+            bench[path.stem] = json.loads(path.read_text())
+        return {"signals": manifest(), "bench": bench}
+
+    def benchmark(self) -> list[dict[str, Any]]:
+        """The public benchmark's weeks; the platform keeps them."""
+        return []
+
     def forecasts(self, *, limit: int = 100) -> list[dict[str, Any]]:
         path = self.root / "paper" / "forecasts.jsonl"
         if not path.exists():
@@ -446,6 +460,10 @@ class Handler(SimpleHTTPRequestHandler):
                 self._json(market)
             case ["forecasts"]:
                 self._json(self.view.forecasts(limit=limit))
+            case ["signals"]:
+                self._json(self.view.signals())
+            case ["benchmark"]:
+                self._json(self.view.benchmark())
             case _:
                 self.send_error(404)
 

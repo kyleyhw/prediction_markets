@@ -65,7 +65,10 @@ def test_keys_built_from_fixed_lists_exist() -> None:
         assert is_message(page["title"]) and is_message(page["blurb"]), topic
     for key in (
         [f"start.titles.{i}" for i in range(5)]
-        + [f"nav.{n}" for n in ("home", "markets", "strategies", "backtests")]
+        + [
+            f"nav.{n}"
+            for n in ("home", "markets", "strategies", "backtests", "signals")
+        ]
         + ["nav.learn", "nav.settings", "level.simple", "level.detailed"]
         + [f"settings.theme_{v}" for v in ("system", "light", "dark")]
         + [f"settings.later_{v}" for v in ("play_money", "notifications", "model")]
@@ -75,6 +78,9 @@ def test_keys_built_from_fixed_lists_exist() -> None:
                 "backtest",
                 "compile",
                 "research",
+                "signal_bench",
+                "benchmark_freeze",
+                "benchmark_score",
                 "paper_cycle",
                 "settle",
                 "leakage",
@@ -86,6 +92,7 @@ def test_keys_built_from_fixed_lists_exist() -> None:
         ]
         + [f"describe.example_{k}" for k in ("one", "two", "three")]
         + [f"research.example_{k}" for k in ("one", "two", "three")]
+        + [f"signals.verdict.{k}" for k in ("alive", "par", "anti", "too_few")]
         + [
             f"jobs.state.{k}"
             for k in ("queued", "running", "succeeded", "failed", "dead", "cancelled")

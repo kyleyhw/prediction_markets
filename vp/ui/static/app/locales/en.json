@@ -1,7 +1,8 @@
 {
   "app": {
     "tagline": "build and test forecasting strategies",
-    "skip": "Skip to content"
+    "skip": "Skip to content",
+    "table": "A table"
   },
   "nav": {
     "home": "Home",
@@ -9,7 +10,8 @@
     "strategies": "Strategies",
     "backtests": "Backtests",
     "learn": "Learn",
-    "settings": "Settings"
+    "settings": "Settings",
+    "signals": "Signals"
   },
   "level": {
     "label": "Reading level",
@@ -792,7 +794,10 @@
       "settle": "Settlement check",
       "leakage": "Leakage check",
       "compile": "Reading your description",
-      "research": "Looking into your question"
+      "research": "Looking into your question",
+      "signal_bench": "Signal bench",
+      "benchmark_freeze": "Benchmark freeze",
+      "benchmark_score": "Benchmark scoring"
     },
     "state": {
       "queued": "Waiting",
@@ -911,5 +916,45 @@
       "one": "It looked at 1 thing.",
       "other": "It looked at {n} things."
     }
+  },
+  "signals": {
+    "title": "Signals",
+    "lede": "Tested ways of turning evidence into a chance, each scored against the market's own price on the same settled markets. A signal that beats the market says so here, with how sure that is.",
+    "bench_title": "Against the market",
+    "domain_line": "{alive} of {n} signals beat the market, {par} cannot be told apart from it, {anti} did worse, and {few} had too few markets to judge; up to {markets} settled markets with a price.",
+    "verdict": {
+      "alive": "beats the market",
+      "par": "level with the market",
+      "anti": "worse than the market",
+      "too_few": "too few markets to tell"
+    },
+    "col_signal": "Signal",
+    "col_verdict": "Result",
+    "col_n": "Markets",
+    "col_advantage": "Advantage over the market",
+    "col_needed": "Markets needed",
+    "col_price": "Reads the price",
+    "col_config": "Configuration",
+    "col_brier": "Brier",
+    "col_skill": "Skill",
+    "col_ranked": "Ranked",
+    "yes": "yes",
+    "no": "no",
+    "bench_caption": "Each signal against the market's price {hours} hours before settlement, on the markets the signal answered: the mean difference in Brier score with a 95% interval (above zero is better than the market), and the markets that difference would need to be told from zero.",
+    "reproduce": "The same numbers from the same data:",
+    "no_bench_title": "No bench yet",
+    "no_bench_text": "The bench runs every week on the platform's data.",
+    "benchmark_title": "The public benchmark",
+    "benchmark_text": "Each Monday a set of open markets is frozen and every configuration's forecasts on it are sealed with a fingerprint published at once. When the markets settle, the forecasts are revealed, anyone can check them against their fingerprints, and they are scored. Nothing is ranked below 50 settled questions.",
+    "no_weeks": "No week has been frozen yet.",
+    "week_title": "Week {week}",
+    "week_sealed": "{n} questions frozen on {when}; {configs} configurations sealed. Scores appear when the questions settle.",
+    "week_scored": "{n} questions frozen on {when}; {configs} configurations revealed and scored.",
+    "week_hash": "Question set fingerprint {hash}, drawn with seed {seed}.",
+    "scores_caption": "Each configuration on the week's settled questions: Brier score, skill against the market's price at freezing, and whether it has enough questions to be ranked.",
+    "library_title": "The library",
+    "cutoff": "Reads: {text}.",
+    "warmup": "Needs: {text}.",
+    "reads_price": "It reads the market's own price, so it is judged as a correction of it."
   }
 }
