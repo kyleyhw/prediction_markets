@@ -25,6 +25,7 @@ from vp.paper.ledger import ChainLedger
 from vp.platform.db import tenant_session
 from vp.platform.ledger import PgLedger
 from vp.platform.principal import Principal
+from vp.platform.sample import SampleLedger, sample_account
 from vp.platform.storage import ObjectStore, SharedRoot
 from vp.ui.server import START_CASH, DataView
 
@@ -75,12 +76,19 @@ class WorkspaceView(DataView):
         self.principal = principal
         self.store = store
         self.account = paper_account(pool, principal)
+        # Without an account of its own, a workspace reads the sample
+        # strategies' account, which the platform runs for everyone (F17).
+        self.sample = sample_account(pool) if self.account is None else None
         self._runs: list[dict[str, Any]] | None = None
 
     def ledger(self) -> ChainLedger:
-        if self.account is None:
-            return NoLedger()
-        return PgLedger(self.pool, self.principal, self.account["id"], store=self.store)
+        if self.account is not None:
+            return PgLedger(
+                self.pool, self.principal, self.account["id"], store=self.store
+            )
+        if self.sample is not None:
+            return SampleLedger(self.pool, self.sample["id"], self.store)
+        return NoLedger()
 
     def paper(self, *, limit: int = 50, now: datetime | None = None) -> dict[str, Any]:
         """The paper view, computed once per ledger head and minute.
@@ -91,14 +99,18 @@ class WorkspaceView(DataView):
         head, so the view is kept per account and head, and recomputed at
         most once a minute for the last-24-hours figures.
         """
-        if self.account is None or now is not None:
+        if now is not None or (self.account is None and self.sample is None):
             return super().paper(limit=limit, now=now)
-        with self.pool.connection() as conn, tenant_session(conn, self.principal):
-            row = conn.execute(
-                "select seq from ledger_heads where account_id = %s",
-                (self.account["id"],),
-            ).fetchone()
-        key = (self.account["id"], row[0] if row else -1, limit)
+        if self.account is not None:
+            with self.pool.connection() as conn, tenant_session(conn, self.principal):
+                row = conn.execute(
+                    "select seq from ledger_heads where account_id = %s",
+                    (self.account["id"],),
+                ).fetchone()
+            key = (self.account["id"], row[0] if row else -1, limit)
+        else:
+            assert self.sample is not None
+            key = (self.sample["id"], self.sample["head_seq"], limit)
         with _PAPER_LOCK:
             hit = _PAPER.get(key)
         if hit is not None and time.monotonic() - hit[0] < PAPER_TTL_SECONDS:
@@ -111,7 +123,8 @@ class WorkspaceView(DataView):
         return view
 
     def start_cash(self) -> float:
-        return float(self.account["initial_cash"]) if self.account else START_CASH
+        account = self.account or self.sample
+        return float(account["initial_cash"]) if account else START_CASH
 
     def _all_runs(self) -> list[dict[str, Any]]:
         if self._runs is None:
@@ -181,4 +194,6 @@ class WorkspaceView(DataView):
             if self.account
             else None
         )
+        # The paper figures are the sample strategies', shared by everyone.
+        view["sample"] = self.account is None
         return view

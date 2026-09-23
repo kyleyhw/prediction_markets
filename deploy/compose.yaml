@@ -94,7 +94,7 @@ services:
 
   worker-paper:
     <<: *app
-    command: ["worker", "--kinds", "paper_cycle", "settle", "--concurrency", "2", "--metrics-port", "9102"]
+    command: ["worker", "--kinds", "paper_cycle", "settle", "sample_cycle", "sample_settle", "--concurrency", "2", "--metrics-port", "9102"]
 
   # The scheduler shares a pool only with short maintenance jobs, so it is
   # never queued behind a long one; captures (evidence, snapshots, the

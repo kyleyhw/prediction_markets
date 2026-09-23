@@ -58,6 +58,8 @@ from vp.platform.config import Settings
 from vp.platform.db import tenant_session
 from vp.platform.jobs import Handler, JobContext, run_scheduler
 from vp.platform.ledger import PgLedger
+from vp.platform.principal import Principal
+from vp.platform.sample import ensure_sample_account, sample_principal
 from vp.platform.storage import (
     SHARED,
     ObjectStore,
@@ -265,9 +267,8 @@ def backtest(ctx: JobContext) -> dict[str, Any]:
     }
 
 
-def _account(ctx: JobContext, account_id: UUID) -> dict[str, Any]:
-    svc: Services = ctx.services
-    with svc.pool.connection() as conn, tenant_session(conn, ctx.principal):
+def _account(svc: Services, principal: Principal, account_id: UUID) -> dict[str, Any]:
+    with svc.pool.connection() as conn, tenant_session(conn, principal):
         row = conn.execute(
             "select id, domains, forecasters, initial_cash from paper_accounts "
             "where id = %s",
@@ -277,22 +278,36 @@ def _account(ctx: JobContext, account_id: UUID) -> dict[str, Any]:
         raise ValueError("no such paper account in this workspace")
     return {
         "id": row[0],
-        "domains": row[1],
+        # `*` is every domain the engine has (the sample account's list).
+        "domains": list(DOMAINS)
+        if "*" in row[1]
+        else [d for d in row[1] if d in DOMAINS],
         "forecasters": row[2],
         "cash": float(row[3]),
     }
 
 
 def paper_cycle(ctx: JobContext) -> dict[str, Any]:
+    account_id = UUID(str(ctx.job.payload["account_id"]))
+    return _trade(ctx, ctx.principal, account_id)
+
+
+def sample_cycle(ctx: JobContext) -> dict[str, Any]:
+    """The platform's hourly cycle of the sample account everyone reads."""
+    account_id = ensure_sample_account(ctx.pool)
+    return _trade(ctx, sample_principal(), account_id)
+
+
+def _trade(ctx: JobContext, principal: Principal, account_id: UUID) -> dict[str, Any]:
     svc: Services = ctx.services
-    account = _account(ctx, UUID(str(ctx.job.payload["account_id"])))
-    ledger = PgLedger(svc.pool, ctx.principal, account["id"], store=svc.store)
+    account = _account(svc, principal, account_id)
+    ledger = PgLedger(svc.pool, principal, account["id"], store=svc.store)
     broken = ledger.verify()
     if broken is not None:
         raise RuntimeError(f"ledger chain broken at entry {broken}; refusing to trade")
     svc.refresh(account["domains"])
     counts: dict[str, Any] = {}
-    domains = [d for d in account["domains"] if d in DOMAINS]
+    domains = account["domains"]
     for i, domain in enumerate(domains):
         ctx.progress(i / max(len(domains), 1), f"trading {domain}")
         snaps = sorted((svc.shared.root / "snapshots" / domain).glob("*.parquet"))
@@ -322,13 +337,17 @@ def paper_cycle(ctx: JobContext) -> dict[str, Any]:
                     now=_captured_at(snaps[-1].stem),
                 )
             _store_forecasts(
-                ctx, root / "paper" / "forecasts.jsonl", domain, account["id"]
+                ctx,
+                principal,
+                root / "paper" / "forecasts.jsonl",
+                domain,
+                account["id"],
             )
     return {"account_id": str(account["id"]), "domains": counts}
 
 
 def _store_forecasts(
-    ctx: JobContext, path: Path, domain: str, account_id: UUID
+    ctx: JobContext, principal: Principal, path: Path, domain: str, account_id: UUID
 ) -> None:
     if not path.exists():
         return
@@ -336,7 +355,7 @@ def _store_forecasts(
     rows = [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
     with (
         svc.pool.connection() as conn,
-        tenant_session(conn, ctx.principal),
+        tenant_session(conn, principal),
         conn.cursor() as cur,
     ):
         cur.executemany(
@@ -345,7 +364,7 @@ def _store_forecasts(
             "values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
             [
                 (
-                    ctx.principal.workspace,
+                    principal.workspace,
                     account_id,
                     ctx.job.id,
                     r["forecaster"],
@@ -412,9 +431,19 @@ class ResolvedFirst:
 
 
 def settle_account(ctx: JobContext) -> dict[str, Any]:
+    account_id = UUID(str(ctx.job.payload["account_id"]))
+    return _settle(ctx, ctx.principal, account_id)
+
+
+def sample_settle(ctx: JobContext) -> dict[str, Any]:
+    """The platform's hourly settlement of the sample account."""
+    return _settle(ctx, sample_principal(), ensure_sample_account(ctx.pool))
+
+
+def _settle(ctx: JobContext, principal: Principal, account_id: UUID) -> dict[str, Any]:
     svc: Services = ctx.services
-    account = _account(ctx, UUID(str(ctx.job.payload["account_id"])))
-    ledger = PgLedger(svc.pool, ctx.principal, account["id"], store=svc.store)
+    account = _account(svc, principal, account_id)
+    ledger = PgLedger(svc.pool, principal, account["id"], store=svc.store)
     lookup = ResolvedFirst(svc.pool, svc.source())
     counts = settle(lookup, ledger, initial_cash=account["cash"])
     return {**counts, "venue_requests": lookup.asked}
@@ -423,7 +452,7 @@ def settle_account(ctx: JobContext) -> dict[str, Any]:
 def leakage_check(ctx: JobContext) -> dict[str, Any]:
     svc: Services = ctx.services
     p = ctx.job.payload
-    account = _account(ctx, UUID(str(p["account_id"])))
+    account = _account(svc, ctx.principal, UUID(str(p["account_id"])))
     with svc.pool.connection() as conn, tenant_session(conn, ctx.principal):
         run = conn.execute(
             "select artifacts, config from runs where id = %s",
@@ -534,6 +563,8 @@ def handlers(extra: dict[str, Handler] | None = None) -> dict[str, Handler]:
         "backtest": backtest,
         "paper_cycle": paper_cycle,
         "settle": settle_account,
+        "sample_cycle": sample_cycle,
+        "sample_settle": sample_settle,
         "leakage": leakage_check,
         "dataset": dataset,
         "snapshot": snapshot,

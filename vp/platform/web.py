@@ -81,7 +81,6 @@ from vp.domains import DOMAINS
 from vp.platform import auth, budgets, jobs, llmops
 from vp.platform.config import Settings
 from vp.platform.db import tenant_session
-from vp.platform.ledger import PgLedger
 from vp.platform.mail import Mailer, Message, OutboxMailer
 from vp.platform.observe import HTTP_REQUESTS, HTTP_SECONDS, exposition, span
 from vp.platform.principal import AuthMethod, Principal
@@ -348,42 +347,9 @@ class BacktestRequest(BaseModel):
         return value
 
 
-class PaperStart(BaseModel):
-    """Open the workspace's paper account with the sample strategies."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    domains: list[str] = Field(default_factory=list, max_length=20)
-    timezone: str = "UTC"
-
-    @field_validator("domains")
-    @classmethod
-    def known(cls, value: list[str]) -> list[str]:
-        unknown = sorted(set(value) - set(DOMAINS))
-        if unknown:
-            raise ValueError(f"unknown domains: {', '.join(unknown)}")
-        return list(dict.fromkeys(value))
-
-    @field_validator("timezone")
-    @classmethod
-    def real_zone(cls, value: str) -> str:
-        from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
-
-        try:
-            ZoneInfo(value)
-        except ZoneInfoNotFoundError, ValueError:
-            raise ValueError(f"unknown time zone {value!r}") from None
-        return value
-
-
 class KeyBody(BaseModel):
     model_config = ConfigDict(extra="forbid")
     key: str = Field(min_length=20, max_length=300)
-
-
-#: The sample strategies a new paper account runs: the statistical ones,
-#: which cost nothing. The model joins them in Phase 15, as a choice.
-SAMPLE_FORECASTERS = ["market", "constant", "elo", "climatology"]
 
 
 def _eligible_kinds(path: Path) -> dict[str | None, int]:
@@ -751,13 +717,14 @@ def create_app(
 
     @app.get("/api/paper/export")
     def paper_export(principal: Reader) -> Response:
-        """The account's hash-chained ledger as JSON lines, to verify offline."""
+        """The paper ledger the workspace reads (its own account's, or the
+        sample strategies'), as JSON lines, to verify offline."""
         view = view_for(principal)
-        if view.account is None:
-            raise HTTPException(404, "this workspace has no paper account")
-        ledger = PgLedger(pool, principal, view.account["id"], store=store)
+        if view.account is None and view.sample is None:
+            raise HTTPException(404, "there is no paper ledger yet")
+        entries = view.ledger().entries()
         return Response(
-            ledger.export_jsonl(),
+            "".join(json.dumps(e, sort_keys=True) + "\n" for e in entries),
             media_type="application/x-ndjson",
             headers={"Content-Disposition": 'attachment; filename="ledger.jsonl"'},
         )
@@ -878,56 +845,19 @@ def create_app(
             raise
         return {"job_id": job_id, **estimate}
 
-    @app.post("/api/paper/start", status_code=201)
-    def start_paper(body: PaperStart, principal: Writer) -> dict[str, Any]:
-        """Open the paper account with the sample strategies, schedule its
-        hourly cycle and settlement in the person's time zone, and run the
-        first cycle now."""
-        from datetime import UTC, datetime
-
-        domains = body.domains or list(DOMAINS)
-        with pool.connection() as conn, tenant_session(conn, principal):
-            if conn.execute("select 1 from paper_accounts").fetchone():
-                raise HTTPException(409, "this workspace already has a paper account")
-            (account_id,) = conn.execute(
-                "insert into paper_accounts (workspace_id, name, domains, forecasters, "
-                "created_by) values (%s, 'Sample strategies', %s, %s, %s) returning id",
-                (principal.workspace, domains, SAMPLE_FORECASTERS, principal.user_id),
-            ).fetchone() or (None,)
-            now = datetime.now(tz=UTC)
-            for name, kind, cron in (
-                ("paper cycle", "paper_cycle", "7 * * * *"),
-                ("settlement", "settle", "37 * * * *"),
-            ):
-                conn.execute(
-                    "insert into schedules (workspace_id, created_by, name, kind, "
-                    "payload, cron, timezone, next_run_at) "
-                    "values (%s, %s, %s, %s, %s, %s, %s, %s)",
-                    (
-                        principal.workspace,
-                        principal.user_id,
-                        name,
-                        kind,
-                        Jsonb({"account_id": str(account_id)}),
-                        cron,
-                        body.timezone,
-                        jobs.next_fire(cron, body.timezone, now),
-                    ),
-                )
-        job_id = jobs.enqueue(
-            pool, principal, "paper_cycle", {"account_id": str(account_id)}
-        )
-        return {"account_id": account_id, "job_id": job_id}
-
     @app.post("/api/paper/run", status_code=202)
     def run_paper(principal: Writer, what: str = "cycle") -> dict[str, Any]:
-        """Run a paper cycle or a settlement pass now."""
+        """Run a paper cycle or a settlement pass of the workspace's own
+        account now. The sample account everyone reads runs every hour on
+        its own."""
         kind = {"cycle": "paper_cycle", "settle": "settle"}.get(what)
         if kind is None:
             raise HTTPException(422, "what must be cycle or settle")
         account = view_for(principal).account
         if account is None:
-            raise HTTPException(409, "start paper trading first")
+            raise HTTPException(
+                409, "the sample strategies run every hour on their own"
+            )
         return {
             "job_id": jobs.enqueue(
                 pool, principal, kind, {"account_id": str(account["id"])}

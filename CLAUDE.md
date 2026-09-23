@@ -126,8 +126,8 @@ walk-through of the "done when" and the measurements are in
 `tests/reports/phase13_platform.md`. Measuring found and fixed 23
 faults (the report lists them). Open from it: **flag F17** (every sample
 paper account is the same account; about 40,000 ledger rows a person a
-day; the owner accepted a shared sample account, to be built before
-public sign-up), the
+day; the owner accepted a shared sample account, built the same day
+in `vp/platform/sample.py`), the
 fifteen stand-in test workspaces paused with broken ledger chains (from a
 negative-zero fault, now fixed; they stay until a general cleanup of
 test data, by the owner's decision), and the

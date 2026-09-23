@@ -52,7 +52,17 @@ logger = logging.getLogger(__name__)
 WORKSPACE_KINDS = frozenset({"backtest", "paper_cycle", "settle", "leakage"})
 #: Kinds the platform runs for everyone.
 PLATFORM_KINDS = frozenset(
-    {"scheduler", "snapshot", "dataset", "evidence", "partitions", "reconcile", "sweep"}
+    {
+        "scheduler",
+        "snapshot",
+        "dataset",
+        "evidence",
+        "partitions",
+        "reconcile",
+        "sweep",
+        "sample_cycle",
+        "sample_settle",
+    }
 )
 #: Interactive work first, scheduled work next, maintenance last.
 PRIORITY_INTERACTIVE, PRIORITY_SCHEDULED, PRIORITY_MAINTENANCE = 50, 100, 200

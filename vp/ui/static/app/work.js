@@ -57,8 +57,3 @@ async function watch(id, kinds, limit, onDone) {
   };
   await draw();
 }
-
-export async function startPaper(domains) {
-  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-  return send('POST', 'paper/start', { domains, timezone });
-}

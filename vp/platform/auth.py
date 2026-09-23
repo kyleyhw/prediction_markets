@@ -49,6 +49,10 @@ def normalize_email(raw: str) -> str | None:
     email = raw.strip().lower()
     if len(email) > 254 or not _EMAIL.match(email):
         return None
+    # The reserved `.invalid` domain (RFC 2606) delivers nowhere; the
+    # platform's own user lives there, and nobody may sign in as it.
+    if email.endswith(".invalid"):
+        return None
     return email
 
 

@@ -15,10 +15,14 @@ from tests.conftest import APP_URL, needs_db
 from tests.test_forecast import EPL
 from tests.test_platform_web import ORIGIN, _as, _email, _sign_in
 from vp.markets.store import write_markets
+from vp.paper.ledger import Ledger
+from vp.platform.auth import resolve_session
 from vp.platform.config import Settings
 from vp.platform.handlers import Services, handlers
 from vp.platform.jobs import Worker
+from vp.platform.ledger import PgLedger
 from vp.platform.mail import OutboxMailer
+from vp.platform.sample import ensure_sample_account, sample_principal
 from vp.platform.storage import LocalStore, SharedRoot, publish_dataset
 from vp.platform.web import create_app
 
@@ -57,40 +61,63 @@ def people(world) -> tuple[str, str]:
     return _sign_in(c, m, _email()), _sign_in(c, m, _email())
 
 
-def test_starting_paper_trading_opens_an_account_schedules_and_a_first_cycle(
-    world,
+def test_everyone_reads_the_one_sample_account_and_only_the_platform_writes_it(
+    world, app_pool
 ) -> None:
     client = world["client"]
     ada, bob = people(world)
-    started = _as(client, ada).post(
-        "/api/paper/start",
-        json={"domains": ["epl"], "timezone": "Europe/London"},
-        headers=ORIGIN,
+    account = ensure_sample_account(app_pool)
+    ledger = PgLedger(app_pool, sample_principal(), account)
+    ledger.append("cycle", {"domain": "epl", "markets": 1})
+    entries = []
+    for who in (ada, bob):
+        _as(client, who)
+        overview = client.get("/api/overview").json()
+        assert overview["sample"] is True and overview["account"] is None
+        entries.append(client.get("/api/paper").json()["entries"])
+        # The sample runs on its own; nobody starts or runs it from the page.
+        assert client.post("/api/paper/run", headers=ORIGIN).status_code == 409
+        assert client.post("/api/paper/start", json={}, headers=ORIGIN).status_code in (
+            404,
+            405,
+        )
+        exported = client.get("/api/paper/export")
+        assert exported.status_code == 200
+        path = world["root"] / "sample.jsonl"
+        path.write_text(exported.text)
+        assert Ledger(path).verify() is None
+    assert entries[0] == entries[1] >= 1
+    # A workspace cannot write to the sample account, even naming it.
+    with app_pool.connection() as conn:
+        principal = resolve_session(conn, bob)
+    assert principal is not None
+    with pytest.raises(Exception):  # noqa: B017 - row-level security refuses it
+        PgLedger(app_pool, principal, account).append("cycle", {"domain": "epl"})
+    # The reserved address the platform acts as cannot be signed in.
+    client.cookies.clear()
+    asked = client.post(
+        "/auth/sign-in", data={"email": "platform@vibe-predict.invalid"}, headers=ORIGIN
     )
-    assert started.status_code == 201, started.text
-    job_id = started.json()["job_id"]
-    again = client.post("/api/paper/start", json={}, headers=ORIGIN)
-    assert again.status_code == 409
-    overview = client.get("/api/overview").json()
-    assert overview["account"]["domains"] == ["epl"]
-    jobs = client.get("/api/jobs").json()
-    assert [j["kind"] for j in jobs] == ["paper_cycle"] and jobs[0]["id"] == job_id
+    assert asked.status_code == 422
+
+
+def test_a_job_is_cancelled_by_its_workspace_only(world) -> None:
+    client = world["client"]
+    ada, bob = people(world)
+    body = {"domain": "epl", "forecasters": ["market"], "kinds": ["match"]}
+    job_id = (
+        _as(client, ada)
+        .post("/api/backtests", json=body, headers=ORIGIN)
+        .json()["job_id"]
+    )
     assert client.get(f"/api/jobs/{job_id}").json()["state"] == "queued"
-    # Bob sees none of it, and cannot cancel Ada's job.
     _as(client, bob)
-    assert client.get("/api/overview").json()["account"] is None
     assert client.get("/api/jobs").json() == []
     assert client.get(f"/api/jobs/{job_id}").status_code == 404
     assert client.post(f"/api/jobs/{job_id}/cancel", headers=ORIGIN).status_code == 404
-    assert client.get("/api/paper/export").status_code == 404
-    # Ada cancels her own.
     _as(client, ada)
     assert client.post(f"/api/jobs/{job_id}/cancel", headers=ORIGIN).status_code == 202
     assert client.get(f"/api/jobs/{job_id}").json()["state"] == "cancelled"
-    bad = client.post(
-        "/api/paper/start", json={"timezone": "Mars/Olympus"}, headers=ORIGIN
-    )
-    assert bad.status_code == 422
 
 
 def test_a_backtest_from_the_page_is_estimated_run_and_its_files_kept_private(
@@ -193,20 +220,12 @@ def test_spending_refresh_and_metrics(world) -> None:
 def test_the_paper_view_is_kept_per_ledger_head_and_never_stale(
     world, app_pool
 ) -> None:
-    from uuid import UUID
-
-    from vp.platform.auth import resolve_session
-    from vp.platform.ledger import PgLedger
-
     client = world["client"]
     ada, _ = people(world)
-    _as(client, ada).post("/api/paper/start", json={}, headers=ORIGIN)
-    account = UUID(client.get("/api/overview").json()["account"]["id"])
-    assert client.get("/api/paper").json()["entries"] == 0
-    with app_pool.connection() as conn:
-        principal = resolve_session(conn, ada)
-    assert principal is not None
-    PgLedger(app_pool, principal, account).append("cycle", {"domain": "epl"})
+    account = ensure_sample_account(app_pool)
+    before = _as(client, ada).get("/api/paper").json()["entries"]
+    assert client.get("/api/paper").json()["entries"] == before
+    PgLedger(app_pool, sample_principal(), account).append("cycle", {"domain": "epl"})
     # The head moved, so the next answer is computed afresh.
-    assert client.get("/api/paper").json()["entries"] == 1
-    assert client.get("/api/overview").json()["paper"]["entries"] == 1
+    assert client.get("/api/paper").json()["entries"] == before + 1
+    assert client.get("/api/overview").json()["paper"]["entries"] == before + 1

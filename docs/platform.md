@@ -330,9 +330,21 @@ shared tables, through `SECURITY DEFINER` functions.
 schedules (cron with an IANA time zone, via croniter) and queues itself for
 the next minute under an idempotency key naming that minute, so however
 many workers try, one scheduler runs per minute, and a lost one is
-replaced a minute later. A person's paper trading is two schedules in
-their own time zone: a cycle at seven past each hour and a settlement at
+replaced a minute later. The sample strategies' paper trading is two
+platform schedules: a cycle at seven past each hour and a settlement at
 thirty-seven past.
+
+**One sample account for everyone** (flag F17, accepted 2026-09-23).
+Every workspace used to open its own account running the same sample
+strategies on the same capture, so every account held the same orders:
+about 40,000 ledger rows a person a day. Now the platform trades one
+account, in a workspace of its own, as a system user whose address is in
+the reserved `.invalid` domain (sign-in refuses it). A workspace without
+an account of its own reads that one, through two `SECURITY DEFINER`
+functions (`vp_sample_account`, `vp_sample_entries`) rather than a wider
+policy, so no existing query sees a row it did not see before; the
+workspace can export it and verify the chain offline like its own. A
+person's own account arrives with a strategy of their own (Phase 15).
 
 **Pools.** A worker serves the kinds it is started with, so pools are
 sized independently and long work never blocks short work. Compose runs

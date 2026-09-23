@@ -6,7 +6,7 @@ import { api, send, session } from '../api.js';
 import { render } from '../main.js';
 import { jobsPanel } from '../work.js';
 import { after, detailed, empty, esc, fmt, head, raw, signed, strategyName, strategySentence, t, table, term, tp } from '../ui.js';
-import { balanceChart, startCard } from './home.js';
+import { balanceChart } from './home.js';
 
 const SHOWN = 5;
 
@@ -75,11 +75,16 @@ export default async function strategies() {
   h += `<div class="aside"><p>${t('strategies.own_soon')}</p></div>`;
   if (session.hosted) {
     const o = await api('overview');
-    if (!o.account) return h + startCard();
+    const exportLink = detailed() ? `<a class="btn quiet" href="/api/paper/export" download>${t('work.export_ledger')}</a>` : '';
+    if (o.sample) {
+      h += `<p class="muted">${t('work.sample_shared')} ${t('work.sample_hourly')}</p>${exportLink ? `<div class="row">${exportLink}</div>` : ''}`;
+      if (!p.accounts.length) return h;
+      return h + (detailed() ? full(p) : simple(p));
+    }
     h += `<div class="row">
       <button class="btn" type="button" data-run="cycle">${t('work.run_cycle')}</button>
       <button class="btn" type="button" data-run="settle">${t('work.run_settle')}</button>
-      ${detailed() ? `<a class="btn quiet" href="/api/paper/export" download>${t('work.export_ledger')}</a>` : ''}</div>
+      ${exportLink}</div>
       <p class="small" id="run-status" role="status"></p>`;
     h += jobsPanel(['paper_cycle', 'settle'], { onDone: () => render(false) });
     after(() => document.querySelectorAll('[data-run]').forEach((b) => b.addEventListener('click', async () => {

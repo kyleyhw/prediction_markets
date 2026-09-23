@@ -208,10 +208,10 @@ the cross-site checks of the web service.
 
 Under `vp serve` the page starts work and shows it progressing:
 
-- **Paper trading.** A workspace without a paper account sees an offer on
-  Home to start one with the sample strategies; accepting opens the
-  account, schedules an hourly cycle and a settlement in the person's own
-  time zone, and runs the first cycle at once. Strategies adds "run a
+- **Paper trading.** Home and Strategies show the sample strategies'
+  account, which the platform trades every hour for everyone and says so
+  (flag F17); Detailed offers its ledger to download and verify. A
+  workspace with an account of its own sees that instead, with "run a
   cycle now" and "settle now".
 - **Backtests.** Backtests has a form: the markets, the strategies, and in
   Detailed the hours before close and a cap on markets. Before anything

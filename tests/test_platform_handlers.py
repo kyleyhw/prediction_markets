@@ -208,3 +208,26 @@ def test_a_dataset_build_keeps_each_history_and_never_fetches_one_twice(
         added.append(row["result"]["histories_added"])
     assert added[0] > 0 and added[1] == 0
     assert len(services.store.keys("shared/histories/epl/")) >= added[0]
+
+
+def test_the_platform_trades_the_sample_account_everyone_reads(
+    app_pool, pg_owner, two_workspaces, services: Services
+) -> None:
+    from vp.platform.sample import SampleLedger, sample_account
+
+    pg_owner.execute("delete from jobs where idempotency_key like 'test-%%'")
+    job_id = jobs.enqueue_platform(
+        app_pool, "sample_cycle", idempotency_key="test-sample-cycle"
+    )
+    run_all(app_pool, services, ("sample_cycle",))
+    row = job_row(pg_owner, job_id)
+    assert row["state"] == "succeeded", row["error"]
+    # Every domain the engine has, including those with no capture yet.
+    assert row["result"]["domains"]["cs2"]["forecasts"] >= 1
+    account = sample_account(app_pool)
+    assert account is not None and account["head_seq"] >= 1
+    ledger = SampleLedger(app_pool, account["id"], None)
+    assert ledger.verify() is None
+    assert any(e["kind"] == "cycle" for e in ledger.entries())
+    with pytest.raises(PermissionError):
+        ledger.append("cycle", {})

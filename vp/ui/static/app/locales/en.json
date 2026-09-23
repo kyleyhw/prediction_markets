@@ -751,15 +751,12 @@
     }
   },
   "work": {
-    "start_title": "Start paper trading",
-    "start_text": "The sample strategies will trade your interests with play money against the real prices, every hour, and settle their positions as markets resolve.",
-    "start_note": "Nothing here uses real money. You can see every trade, and download the record to check it yourself.",
-    "start_button": "Start with play money",
-    "starting_title": "Your sample strategies are starting",
-    "starting_text": "Their first trades are being placed now. This page updates when they are done.",
     "run_cycle": "Trade now",
     "run_settle": "Check for settled markets",
-    "export_ledger": "Download the ledger to verify it yourself"
+    "export_ledger": "Download the ledger to verify it yourself",
+    "sample_shared": "These are the sample strategies, trading with play money for everyone who uses this site. Strategies of your own will have accounts of their own.",
+    "sample_waiting": "The sample strategies trade every hour and settle as markets resolve. Their first trades appear here after the next hourly run.",
+    "sample_hourly": "The sample strategies trade every hour on their own."
   },
   "jobs": {
     "title": "Working on it",

@@ -1333,8 +1333,8 @@ called done.
   every other numbered phase, including the scale proof. `docs/security.md`
   is the base for the design's version 2. The invariant stands until that
   version is agreed: no order-signing code anywhere.
-- **F17 (accepted 2026-09-23, found in task 38; to be built before
-  Phase 14's public sign-up). Every sample account is the same account.** Starting paper
+- **F17 (accepted and built 2026-09-23, found in task 38). Every sample
+  account is the same account.** Starting paper
   trading gives each workspace its own account running the four sample
   strategies over every parsed market of every domain. On the stand-in the
   first cycle wrote about 11,800 ledger entries and 11,700 forecast rows
@@ -1350,8 +1350,9 @@ called done.
   and a person's own paper account only when they have a strategy of their
   own (Phase 15) or change something the sample cannot share, such as the
   play-money amount. The cost of a person then falls to what their own
-  strategies select. The owner accepted the proposal the same day; until it
-  is built the per-person sample account stays, and the measured cost is in
+  strategies select. The owner accepted the proposal the same day and it
+  was built then (migration 0014, `vp/platform/sample.py`); accounts opened
+  before it stay as they are. The measured cost is in
   `tests/reports/phase13_platform.md`. Also decided that day: the fifteen
   stand-in test workspaces whose ledgers the negative-zero fault broke stay
   paused until a general cleanup of test data.
