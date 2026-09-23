@@ -143,6 +143,9 @@ def main() -> None:
     srv = sub.add_parser("serve", help="run the platform web service (Postgres)")
     srv.add_argument("--host", default="127.0.0.1")
     srv.add_argument("--port", type=int, default=8000)
+    srv.add_argument(
+        "--workers", type=int, default=1, help="web processes sharing the port"
+    )
 
     dbp = sub.add_parser("db", help="the platform database")
     db_sub = dbp.add_subparsers(dest="db_command", required=True)
@@ -213,7 +216,7 @@ def main() -> None:
     if args.command == "serve":
         from vp.platform.run import serve as serve_platform
 
-        serve_platform(args.host, args.port)
+        serve_platform(args.host, args.port, args.workers)
         return
 
     if args.command == "setup":

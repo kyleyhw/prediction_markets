@@ -25,7 +25,8 @@ makes a cache that never revalidates correct:
 
 from __future__ import annotations
 
-import shutil
+import os
+import threading
 from collections.abc import Iterable
 from pathlib import Path
 from typing import Any, Protocol
@@ -70,6 +71,17 @@ def _check_key(key: str) -> str:
     return key
 
 
+def _write(dest: Path, data: bytes) -> None:
+    """Write a file whole or not at all. The temporary name is unique to the
+    process and thread, because several web processes share one cache and
+    may fetch the same file at once; the last rename wins, and every
+    version is complete."""
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    tmp = dest.with_name(f"{dest.name}.{os.getpid()}.{threading.get_ident()}.part")
+    tmp.write_bytes(data)
+    tmp.replace(dest)
+
+
 class LocalStore:
     """An object store in a directory."""
 
@@ -80,11 +92,7 @@ class LocalStore:
         return self.root / _check_key(key)
 
     def put_bytes(self, key: str, data: bytes) -> None:
-        path = self._path(key)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        tmp = path.with_name(path.name + ".part")
-        tmp.write_bytes(data)
-        tmp.replace(path)
+        _write(self._path(key), data)
 
     def put_file(self, key: str, path: Path) -> None:
         self.put_bytes(key, path.read_bytes())
@@ -97,8 +105,7 @@ class LocalStore:
         path = self._path(key)
         if not path.is_file():
             return False
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(path, dest)
+        _write(dest, path.read_bytes())
         return True
 
     def keys(self, prefix: str) -> list[str]:
@@ -161,10 +168,7 @@ class S3Store:
         data = self.get_bytes(key)
         if data is None:
             return False
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        tmp = dest.with_name(dest.name + ".part")
-        tmp.write_bytes(data)
-        tmp.replace(dest)
+        _write(dest, data)
         return True
 
     def keys(self, prefix: str) -> list[str]:
@@ -254,7 +258,7 @@ class SharedRoot:
         key = f"{SHARED}/markets/{domain}/versions/{version}.parquet"
         if not self.store.download(key, target):
             return 0
-        marker.write_text(version)
+        _write(marker, version.encode())
         return 1
 
     def _mirror(self, prefix: str, newest: int | None) -> int:

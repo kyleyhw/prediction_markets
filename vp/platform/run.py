@@ -10,10 +10,13 @@ inside those commands, so the engine's commands never load the platform.
 from __future__ import annotations
 
 import logging
+import os
 import signal
+import tempfile
 import threading
 
 import uvicorn
+from fastapi import FastAPI
 from psycopg_pool import ConnectionPool
 
 from vp.platform.config import ConfigError, Settings, load_settings
@@ -23,9 +26,40 @@ from vp.platform.web import create_app, install_log_redaction
 logger = logging.getLogger(__name__)
 
 
-def serve(host: str, port: int) -> None:
-    """Run the web service until interrupted."""
+def web_app() -> FastAPI:
+    """The app of one web process among several (uvicorn's factory)."""
+    app = create_app(load_settings())
+    install_log_redaction()
+    return app
+
+
+def serve(host: str, port: int, workers: int = 1) -> None:
+    """Run the web service until interrupted, in `workers` processes.
+
+    One Python process serves about 35 requests a second of the dashboard's
+    mix before the interpreter lock queues everything behind the largest
+    answers (tests/reports/phase13_platform.md); more processes share the
+    port. Their metrics go to files in one directory, which `/metrics` adds
+    up, so a scrape sees the whole service rather than one process.
+    """
     settings = load_settings()
+    if workers > 1:
+        metrics = tempfile.mkdtemp(prefix="vp-metrics-")
+        os.environ["PROMETHEUS_MULTIPROC_DIR"] = metrics
+        print(
+            f"vp serve: http://{host}:{port}/ in {workers} processes "
+            f"(public URL {settings.public_url}, "
+            f"database {settings.redacted_database_url})"
+        )
+        uvicorn.run(
+            "vp.platform.run:web_app",
+            factory=True,
+            host=host,
+            port=port,
+            workers=workers,
+            proxy_headers=True,
+        )
+        return
     app = create_app(settings)
     # uvicorn configures its loggers when the config is built, so the filter
     # is attached after that and before the first request is logged.

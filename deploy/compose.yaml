@@ -79,7 +79,9 @@ services:
 
   web:
     <<: *app
-    command: ["serve", "--host", "0.0.0.0", "--port", "8000"]
+    # One process serves about 35 requests a second of the dashboard's mix;
+    # more share the port (tests/reports/phase13_platform.md).
+    command: ["serve", "--host", "0.0.0.0", "--port", "8000", "--workers", "${VP_WEB_WORKERS:-4}"]
     ports:
       - "8000:8000"
 

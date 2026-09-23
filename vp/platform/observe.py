@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import contextlib
 import logging
+import os
 import time
 from collections.abc import Iterator
 from typing import Any
@@ -122,7 +123,14 @@ ERRORS = Counter("vp_errors", "Unhandled errors", ["component"], registry=REGIST
 
 
 def exposition() -> bytes:
-    """The registry in Prometheus text format."""
+    """The registry in Prometheus text format; under `vp serve --workers`,
+    every web process's metrics added together."""
+    if os.environ.get("PROMETHEUS_MULTIPROC_DIR"):
+        from prometheus_client import multiprocess
+
+        registry = CollectorRegistry()
+        multiprocess.MultiProcessCollector(registry)
+        return generate_latest(registry)
     return generate_latest(REGISTRY)
 
 
