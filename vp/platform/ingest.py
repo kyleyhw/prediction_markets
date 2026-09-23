@@ -234,6 +234,7 @@ class Ingest:
         connect: Callable[..., Any] | None = None,
         discover_seconds: float = 600.0,
         snapshot_seconds: float = 900.0,
+        quote_seconds: float = 300.0,
         depth: int = 5,
         metrics: Any = None,
     ) -> None:
@@ -244,6 +245,7 @@ class Ingest:
         self.connect = connect
         self.discover_seconds = discover_seconds
         self.snapshot_seconds = snapshot_seconds
+        self.quote_seconds = quote_seconds
         self.depth = depth
         self.metrics = metrics
         self.state = MarketState()
@@ -303,14 +305,17 @@ class Ingest:
     # -- quotes and snapshots --
 
     def flush_quotes(self, moved: Iterable[str] | None = None) -> int:
-        """Write tokens' tops: those whose best bid or ask moved since the
-        last flush to this minute's row, or `moved` now.
+        """Write first outcomes' tops: those whose best bid or ask moved
+        since the last flush to this minute's row, or `moved` now.
 
-        A book whose top has not moved writes no row: the quote at any minute
-        is the latest row at or before it. Writing every token every minute
-        was 26 million rows a day for 18,000 tokens; writing every book that
-        saw any event (most see a size change somewhere each minute) was
-        still 17 million.
+        Only a market's first outcome is written: the second token of a
+        binary market trades on the same book, mirrored, so its quote is the
+        first's complement. A book whose top has not moved writes no row: the
+        quote at any minute is the latest row at or before it. The service
+        flushes every `quote_seconds` (five minutes), and a held market on
+        every move of its top. Measured on 2026-09-23 with 18,600 tokens:
+        every token every minute was 26 million rows a day, every book that
+        saw any event 17 million, every moved top 12 million.
         """
         now = datetime.now(tz=UTC)
         minute = now.replace(second=0, microsecond=0) if moved is None else now
@@ -320,6 +325,9 @@ class Ingest:
             book = self.state.books.get(token)
             market = self.state.token_market.get(token)
             if book is None or market is None:
+                continue
+            record = self.state.markets.get(market)
+            if record is not None and record.outcomes[0].clob_token_id != token:
                 continue
             bid, ask = book.top()
             if moved is None and self._flushed.get(token) == (bid, ask):
@@ -528,7 +536,7 @@ class Ingest:
 
         tasks += [
             asyncio.create_task(discover_and_subscribe()),
-            asyncio.create_task(every(60.0, self.flush_quotes, "quote flush")),
+            asyncio.create_task(every(self.quote_seconds, self.flush_quotes, "quotes")),
             asyncio.create_task(every(300.0, self.refresh_held, "held markets")),
             asyncio.create_task(every(30.0, self.record_resolutions, "resolutions")),
             asyncio.create_task(every(15.0, self._measure, "metrics")),

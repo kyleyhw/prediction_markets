@@ -117,6 +117,16 @@ def test_the_service_records_markets_quotes_snapshots_and_resolutions(
     )
     assert service.flush_quotes() == 1
     assert service.flush_quotes() == 0  # a quiet book writes nothing more
+    # The second outcome trades on the same book, mirrored: never written.
+    service.state.apply(
+        {
+            "event_type": "book",
+            "asset_id": fresh[1],
+            "bids": [{"price": "0.47", "size": "8"}],
+            "asks": [{"price": "0.53", "size": "2"}],
+        }
+    )
+    assert service.flush_quotes() == 0
     service.state.apply(
         {
             "event_type": "price_change",
