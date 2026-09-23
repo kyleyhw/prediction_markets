@@ -51,6 +51,7 @@ from __future__ import annotations
 
 import hmac
 import html
+import json
 import logging
 import re
 import threading
@@ -384,6 +385,16 @@ class KeyBody(BaseModel):
 SAMPLE_FORECASTERS = ["market", "constant", "elo", "climatology"]
 
 
+def _json(value: Any) -> Response:
+    """A view's answer, encoded directly.
+
+    The views return plain JSON values, so FastAPI's `jsonable_encoder`,
+    which walks every value in Python, is skipped: on a 2.4 MB market list
+    it took 135 ms against 22 ms for `json.dumps` (docs/platform.md).
+    """
+    return Response(json.dumps(value, default=str), media_type="application/json")
+
+
 def create_app(
     settings: Settings,
     *,
@@ -690,14 +701,14 @@ def create_app(
     # ----------------------------------------------------------- dashboard
 
     @app.get("/api/overview")
-    def overview(principal: Reader) -> Any:
+    def overview(principal: Reader) -> Response:
         """Per-domain counts, the paper accounts, and the workspace's account."""
-        return view_for(principal).overview()
+        return _json(view_for(principal).overview())
 
     @app.get("/api/backtests")
-    def backtests(principal: Reader) -> Any:
+    def backtests(principal: Reader) -> Response:
         """The workspace's backtest runs, newest first."""
-        return view_for(principal).backtests()
+        return _json(view_for(principal).backtests())
 
     @app.get("/api/runs/{run_id}/{name}")
     def run_file(run_id: UUID, name: str, principal: Reader) -> Response:
@@ -719,9 +730,9 @@ def create_app(
     @app.get("/api/paper")
     def paper(
         principal: Reader, limit: Annotated[int, Query(ge=1, le=1000)] = 50
-    ) -> Any:
+    ) -> Response:
         """The workspace's paper ledger: integrity, accounts, positions, settlements."""
-        return view_for(principal).paper(limit=limit)
+        return _json(view_for(principal).paper(limit=limit))
 
     @app.get("/api/paper/export")
     def paper_export(principal: Reader) -> Response:
@@ -737,14 +748,14 @@ def create_app(
         )
 
     @app.get("/api/snapshots/{domain}")
-    def snapshot(domain: str, principal: Reader) -> Any:
+    def snapshot(domain: str, principal: Reader) -> Response:
         """The latest capture of a domain's open markets."""
         if domain not in DOMAINS:
             raise HTTPException(404, "no such domain")
-        return view_for(principal).snapshot(domain)
+        return _json(view_for(principal).snapshot(domain))
 
     @app.get("/api/markets/{domain}/{market_id}")
-    def market(domain: str, market_id: str, principal: Reader) -> Any:
+    def market(domain: str, market_id: str, principal: Reader) -> Response:
         """One market: book depth, fee, forecasts and its recent prices."""
         found = (
             view_for(principal).market(domain, market_id)
@@ -753,14 +764,14 @@ def create_app(
         )
         if found is None:
             raise HTTPException(404, "no such market")
-        return found
+        return _json(found)
 
     @app.get("/api/forecasts")
     def forecasts(
         principal: Reader, limit: Annotated[int, Query(ge=1, le=1000)] = 100
-    ) -> Any:
+    ) -> Response:
         """The workspace's most recent forecasts."""
-        return view_for(principal).forecasts(limit=limit)
+        return _json(view_for(principal).forecasts(limit=limit))
 
     # ----------------------------------------------------------------- work
 

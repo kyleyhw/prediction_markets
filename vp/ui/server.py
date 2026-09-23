@@ -112,11 +112,15 @@ class DataView:
                 "latest_snapshot": snaps[-1].stem if snaps else None,
                 "backtests": self.backtest_count(domain),
             }
-        return {
-            "root": str(self.root),
-            "domains": domains,
-            "paper": self.paper(limit=0),
+        paper = self.paper(limit=0)
+        # The summary pages need the number of open positions, not the
+        # positions: with thousands open, the list was most of a 1 MB answer.
+        paper = paper | {
+            "accounts": [
+                {k: v for k, v in a.items() if k != "open"} for a in paper["accounts"]
+            ]
         }
+        return {"root": str(self.root), "domains": domains, "paper": paper}
 
     def backtests(self) -> list[dict[str, Any]]:
         runs = []
@@ -301,6 +305,7 @@ def _account(
             {k: v for k, v in o.items() if k != "forecaster"}
             for o in account.open.values()
         ],
+        "open_count": len(account.open),
         "settled": len(own),
         "scored": len(scored),
         "brier": brier,

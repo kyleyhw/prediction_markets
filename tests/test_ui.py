@@ -93,7 +93,11 @@ def test_page_and_api(served: str) -> None:
         p["entries"] == 3
         and len(p["recent"]) == 3
         and p["accounts"][0]["open"][0]["side"] == "yes"
+        and p["accounts"][0]["open_count"] == 1
     )
+    # The overview carries the count, not the positions.
+    summary = json.loads(get(served, "/api/overview")[2])["paper"]["accounts"][0]
+    assert summary["open_count"] == 1 and "open" not in summary
 
     account = p["accounts"][0]
     assert (

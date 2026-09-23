@@ -13,7 +13,7 @@ import { after, detailed, empty, esc, fmt, head, raw, signed, strategyLabel, str
 export function followed(accounts) {
   const trading = accounts.filter((a) => a.forecaster !== 'market');
   return accounts.find((a) => a.forecaster === prefs().follow)
-    || trading.find((a) => a.settled || a.open.length) || trading[0] || null;
+    || trading.find((a) => a.settled || a.open_count) || trading[0] || null;
 }
 
 // Balance over time from the first order, with doing nothing (keeping the
@@ -57,7 +57,7 @@ function today(paper) {
 function nextStep(accounts) {
   const [href, label] = !prefs().interests.length ? ['#start/1', t('next.interests')]
     : !accounts.length ? ['#learn/paper', t('next.learn_paper')]
-      : accounts.some((a) => a.open.length) ? ['#strategies', t('next.positions')]
+      : accounts.some((a) => a.open_count) ? ['#strategies', t('next.positions')]
         : ['#markets', t('next.markets')];
   return `<a class="btn primary" href="${href}">${label}</a>`;
 }
@@ -105,7 +105,7 @@ export default async function home() {
   h += `<div class="card hero"><div class="k">${t('home.play_money_of', { name: raw(strategyName(a.forecaster)) })}</div>
     <div class="v num">${esc(fmt.money(a.bankroll))}</div>
     <p>${t('home.since_start', { change: raw(signed(change, esc(fmt.signedMoney(change)))), pct: fmt.signedPct(change / start), start: fmt.money(start) })} ${comparison(a, start)}</p>
-    <p class="muted small">${esc(strategySentence(a.forecaster))} ${a.open.length ? t('home.open', { n: a.open.length, stake: fmt.money(a.exposure) }) : ''} ${a.fees ? t('home.fees_paid', { fees: fmt.money(a.fees) }) : ''}</p>
+    <p class="muted small">${esc(strategySentence(a.forecaster))} ${a.open_count ? t('home.open', { n: a.open_count, stake: fmt.money(a.exposure) }) : ''} ${a.fees ? t('home.fees_paid', { fees: fmt.money(a.fees) }) : ''}</p>
     ${a.settled ? balanceChart([a], start) : `<p class="muted small">${t('home.chart_later')}</p>`}
     <p class="small" style="margin:6px 0 0"><a class="target" href="#settings">${t('home.follow_other')}</a></p></div>`;
   h += `<div class="grid cols-2" style="margin-top:14px">
