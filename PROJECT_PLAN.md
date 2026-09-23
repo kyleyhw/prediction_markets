@@ -600,14 +600,16 @@ interval. One backend, two reading levels.
     skill and settled counts.
     - Landed 2026-09-23 over the paper ledger: the balance is the followed
       sample strategy's until strategies are the person's own (Phase 15).
-42. [in-progress] Market cards, from the snapshot files first and from the
+42. [completed] Market cards, from the snapshot files first and from the
     market-data service once it lands (build order, step 3): the question in
     plain words, "62% chance", closes in two days, and in Detailed the
     quotes, depth, parsed fields, forecasts and history.
     - Landed 2026-09-23 from the snapshot files, with a market page whose
       history is the market's price across the last 30 snapshots.
-    - Outstanding: moving onto the market-data service (build order, step
-      3).
+    - Landed with Phase 13: the cards read the captures the market-data
+      service writes every fifteen minutes. The price history still spans
+      the last 30 captures; the quotes table holds a longer one the page
+      does not read yet.
 43. [completed] A P&L chart wherever money is shown, with the market-following
     baseline drawn alongside so "better than doing nothing" is visible
     without a number; every number has a sentence in Simple mode and a
@@ -630,10 +632,11 @@ interval. One backend, two reading levels.
       interests, the strategy Home follows, the guided start again; in
       Detailed API tokens and the export; settings per person in Postgres
       (migration 0003) under row-level security.
+    - Landed with Phase 13: the month's model spending against the budget,
+      one's own model key, and a data refresh per domain.
     - Outstanding, each listed on the page with where it arrives: the
       play-money amount (the person's own paper account), notifications
-      (Phase 18), the model tier (Phase 15), budget and own key (task 35),
-      data refresh (task 31).
+      (Phase 18), the model tier (Phase 15).
 47. [in-progress] Internationalisation structure (message catalogues, locale
     switch, number and date formatting) with English shipped; accessibility
     to WCAG 2.2 AA (keyboard, contrast, screen-reader labels on charts).
