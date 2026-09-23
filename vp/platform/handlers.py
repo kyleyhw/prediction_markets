@@ -368,7 +368,9 @@ class ResolvedFirst:
     not list as resolved is still pending, and is reported so without a
     request. One it does list is fetched from the venue by condition id,
     because the label comes only from the venue's own settlement record
-    (closed is not resolved).
+    (closed is not resolved). Once the venue's record says resolved it no
+    longer changes, so it is kept in `settled_markets` and every other
+    account holding the market reads it there instead of asking again.
     """
 
     def __init__(self, pool: ConnectionPool, source: PolymarketSource) -> None:
@@ -385,12 +387,28 @@ class ResolvedFirst:
                 "select record from tracked_markets where condition_id = %s",
                 (identifier,),
             ).fetchone()
-        if (known is None or known[0] != "resolved") and record is not None:
-            from vp.markets.store import market_from_row
+        from vp.markets.store import market_from_row, market_to_row
 
+        if (known is None or known[0] != "resolved") and record is not None:
             return market_from_row(record[0])
+        with self.pool.connection() as conn:
+            kept = conn.execute(
+                "select record from settled_markets where condition_id = %s",
+                (identifier,),
+            ).fetchone()
+        if kept is not None:
+            return market_from_row(kept[0])
         self.asked += 1
-        return self.source.market(identifier, depth=depth)
+        market = self.source.market(identifier, depth=depth)
+        if market.resolution_state == "resolved":
+            row = json.loads(json.dumps(market_to_row(market), default=str))
+            with self.pool.connection() as conn:
+                conn.execute(
+                    "insert into settled_markets (condition_id, record) "
+                    "values (%s, %s) on conflict do nothing",
+                    (identifier, Jsonb(row)),
+                )
+        return market
 
 
 def settle_account(ctx: JobContext) -> dict[str, Any]:

@@ -31,6 +31,7 @@ def services(app_pool, pg_owner, root: Path, tmp_path: Path) -> Services:  # noq
         pg_owner.execute("delete from forecast_memo")
         pg_owner.execute("delete from resolutions")
         pg_owner.execute("delete from tracked_markets")
+        pg_owner.execute("delete from settled_markets")
     store = LocalStore(tmp_path / "store")
     publish_dataset(
         store, "epl", root / "markets/epl/resolved.parquet", "20260901T000000Z"
@@ -146,36 +147,41 @@ def test_a_paper_cycle_trades_the_shared_capture_into_the_account_s_ledger(
 def test_settlement_asks_the_venue_only_about_resolved_markets(
     app_pool, pg_owner, two_workspaces, services: Services
 ) -> None:
-    ada = two_workspaces["a"]
-    with app_pool.connection() as conn, tenant_session(conn, ada):
-        (account,) = conn.execute(
-            "insert into paper_accounts (workspace_id, name, domains, forecasters, "
-            "created_by) values (%s, 'Settle', %s, %s, %s) returning id",
-            (ada.workspace, ["cs2"], ["constant"], ada.user_id),
-        ).fetchone()
-    ledger = PgLedger(app_pool, ada, account)
-    ledger.append(
-        "order",
-        {
-            "forecaster": "constant",
-            "market_id": "6",
-            "condition_id": "0x6",
-            "question": "Spirit vs Team Falcons",
-            "side": "yes",
-            "price": 0.51,
-            "shares": 7.0,
-            "stake": 3.57,
-            "p_hat": 0.9,
-            "q": 0.5,
-            "bankroll_before": 1000.0,
-        },
-    )
-    first = enqueue(app_pool, ada, "settle", {"account_id": str(account)})
-    run_all(app_pool, services, ("settle",))
-    # Not in the resolutions table and not tracked: the venue is asked once.
-    assert job_row(pg_owner, first)["result"]["settled"] == 1
-    kinds = [e["kind"] for e in ledger.entries()]
-    assert kinds[-1] == "settlement" and ledger.verify() is None
+    ada, bob = two_workspaces["a"], two_workspaces["b"]
+    order = {
+        "forecaster": "constant",
+        "market_id": "6",
+        "condition_id": "0x6",
+        "question": "Spirit vs Team Falcons",
+        "side": "yes",
+        "price": 0.51,
+        "shares": 7.0,
+        "stake": 3.57,
+        "p_hat": 0.9,
+        "q": 0.5,
+        "bankroll_before": 1000.0,
+    }
+    results = []
+    for who in (ada, bob):
+        with app_pool.connection() as conn, tenant_session(conn, who):
+            (account,) = conn.execute(
+                "insert into paper_accounts (workspace_id, name, domains, "
+                "forecasters, created_by) values (%s, 'Settle', %s, %s, %s) "
+                "returning id",
+                (who.workspace, ["cs2"], ["constant"], who.user_id),
+            ).fetchone()
+        ledger = PgLedger(app_pool, who, account)
+        ledger.append("order", order)
+        job = enqueue(app_pool, who, "settle", {"account_id": str(account)})
+        run_all(app_pool, services, ("settle",))
+        results.append(job_row(pg_owner, job)["result"])
+        kinds = [e["kind"] for e in ledger.entries()]
+        assert kinds[-1] == "settlement" and ledger.verify() is None
+    # Not in the resolutions table and not tracked: the venue is asked once,
+    # by the first; the second reads the venue's record the first kept (the
+    # fake venue answers only once, so a second request would fail).
+    assert [r["settled"] for r in results] == [1, 1]
+    assert [r["venue_requests"] for r in results] == [1, 0]
 
 
 def test_platform_maintenance_jobs_run(app_pool, pg_owner, services: Services) -> None:
