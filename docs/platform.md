@@ -458,6 +458,39 @@ skipped, not saved up), and its waiting jobs do not age the queue the
 backlog alert watches. Every operator action is an entry in a hash-chained audit log that
 names the operator.
 
+## Terms, Age and Deletion (task 48)
+
+The terms of use and the privacy notice live in `vp/platform/legal.py`,
+versioned, and are served at `/terms` and `/privacy`. Every claim in them
+is a fact about this code; what belongs to the deploy (the host's region,
+backup retention, the email provider) is named there when it exists rather
+than guessed. Both are drafts until a lawyer has read them (flag F18).
+
+- **Age and terms at sign-in.** The confirm page a sign-in link opens asks
+  for one tick: 18 or older, and the terms and privacy notice accepted.
+  The box is checked before the token is spent, so a person who forgot it
+  can use the same link. The version accepted and the time are kept on the
+  user (`vp_accept_terms`, migration 0016).
+- **When the terms change,** or for anyone who signed in before them, the
+  app shows nothing but the consent screen until the current version is
+  accepted (`/auth/me` says whether it is current).
+- **The statement** that this is a tool for building and testing
+  strategies with play money, not advice, and the jurisdiction notice, are
+  on the sign-in page, on the confirm page, in the terms, and on the guided
+  start's first screen.
+- **Deletion.** Settings deletes the account after the words "delete my
+  account" are typed. `vp_delete_account` finds the tables by their
+  columns, so a table added later is not missed: every table with a
+  `workspace_id` loses the workspace's rows (when the person is its only
+  member), every table with a `user_id` loses the person's, `created_by`
+  references are cleared, and a reference left over makes the final delete
+  fail rather than leave a person half-deleted. The web then removes the
+  workspace's files from the object store and rewrites every archived
+  month without its rows (`purge_workspace`). The operator's audit chain
+  records the deletion under the random identifiers only.
+- **Export** was already there: Settings downloads every record held for
+  the person, and the paper ledger as a file that verifies offline.
+
 ## The Local Stand-in
 
 `deploy/compose.yaml` runs the platform from one image: Postgres 16, MinIO,

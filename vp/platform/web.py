@@ -1061,10 +1061,10 @@ def _confirm_form(token: str, error: str = "") -> str:
         f"<p>{html.escape(legal.STATEMENT)}</p>" + message + '<form method="post" '
         'action="/auth/verify">'
         f'<input type="hidden" name="token" value="{html.escape(token)}">'
-        "<label class=check><input type=checkbox name=agree required> "
+        "<label class=check><input type=checkbox name=agree required> <span>"
         f"I am {legal.MINIMUM_AGE} or older, and I accept the "
         '<a href="/terms" target="_blank">terms of use</a> and the '
-        '<a href="/privacy" target="_blank">privacy notice</a>.</label>'
+        '<a href="/privacy" target="_blank">privacy notice</a>.</span></label>'
         "<button type=submit>Sign in</button></form>"
     )
 
@@ -1073,12 +1073,13 @@ _STYLE = """
 @font-face { font-family: "Instrument Sans";
   src: url(/fonts/InstrumentSans-latin.woff2) format("woff2");
   font-weight: 400 700; font-display: swap; }
-:root { color-scheme: light dark; --plane: #f9f9f7; --surface: #fcfcfb;
-  --ink: #0b0b0b; --ink-2: #52514e; --ring: rgba(11,11,11,.10);
-  --accent: #2a78d6; --bad: #d03b3b; }
-@media (prefers-color-scheme: dark) { :root { --plane: #0d0d0d;
-  --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7;
-  --ring: rgba(255,255,255,.10); --accent: #3987e5; --bad: #e66767; } }
+/* The app's "paper" palette (docs/interface.md), measured at WCAG AA. */
+:root { color-scheme: light dark; --plane: #FAF8F3; --surface: #FFFEFB;
+  --ink: #1B1B1F; --ink-2: #5C5B57; --ring: #E4E0D6;
+  --accent: #0F6E63; --on-accent: #FFFFFF; --bad: #B3261E; }
+@media (prefers-color-scheme: dark) { :root { --plane: #121316;
+  --surface: #17181C; --ink: #E8E6DF; --ink-2: #A3A198; --ring: #2A2B30;
+  --accent: #4FB3A6; --on-accent: #121316; --bad: #F07A6E; } }
 * { box-sizing: border-box; }
 body { margin: 0; min-height: 100vh; display: grid; place-items: center;
   background: var(--plane); color: var(--ink); padding: 16px;
@@ -1094,7 +1095,7 @@ input { width: 100%; font: inherit; padding: 10px 12px; border-radius: 8px;
   border: 1px solid var(--ring); background: var(--plane); color: var(--ink);
   margin-bottom: 14px; }
 button { width: 100%; font: inherit; font-weight: 600; padding: 10px 12px;
-  border: 0; border-radius: 8px; background: var(--accent); color: #fff;
+  border: 0; border-radius: 8px; background: var(--accent); color: var(--on-accent);
   cursor: pointer; }
 button:focus-visible, input:focus-visible, a:focus-visible {
   outline: 2px solid var(--accent); outline-offset: 2px; }

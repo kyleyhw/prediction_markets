@@ -649,9 +649,14 @@ interval. One backend, two reading levels.
       themes and both servers (`docs/interface.md`, "Verified").
     - Outstanding: a pass with a real screen reader, which an automated
       audit does not replace.
-48. [pending] Terms of use, age gate, jurisdiction notice, privacy notice
+48. [completed] Terms of use, age gate, jurisdiction notice, privacy notice
     (export and delete per workspace), and the first-screen statement that
     this is a tool for building and testing strategies, not advice.
+    - Landed 2026-09-23 (`docs/platform.md`, "Terms, Age and Deletion"):
+      versioned texts at `/terms` and `/privacy`, 18 or older and the terms
+      ticked before a sign-in link is spent, a consent screen when the
+      terms change, account deletion that reaches the object store and the
+      archived months. The texts are drafts until legal review (flag F18).
 49. [pending] Usability sessions with at least three people who have never
     used a prediction market, the fixes they produce, and the Phase 14
     report (task completion, time to first strategy watched, words that
@@ -1356,3 +1361,10 @@ called done.
   `tests/reports/phase13_platform.md`. Also decided that day: the fifteen
   stand-in test workspaces whose ledgers the negative-zero fault broke stay
   paused until a general cleanup of test data.
+- **F18 (open, gating public sign-up). The terms of use and the privacy
+  notice are drafts.** Written on 2026-09-23 from what the code does
+  (`vp/platform/legal.py`), they need a lawyer's reading, in the
+  jurisdictions of the host and of the first users, before anyone outside
+  the project signs in; the same review settles the minimum age (18 is
+  the draft's), and the facts that belong to the deploy (host region,
+  backup retention, email provider) are filled in then.
