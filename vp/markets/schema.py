@@ -84,6 +84,8 @@ class BinaryMarket:
     parsed: dict[str, str] = field(default_factory=dict)
     fee_rate: float | None = None  # taker rate r; None when the venue did not say
     fee_exponent: float = 1.0
+    market_type: str | None = None  # the venue's `sportsMarketType`, if any
+    description: str | None = None  # the venue's resolution rules, verbatim
 
     @property
     def p_yes(self) -> float | None:
@@ -171,4 +173,6 @@ def market_from_record(
         fetched_at=fetched_at,
         fee_rate=record.get("fee_rate"),
         fee_exponent=record.get("fee_exponent") or 1.0,
+        market_type=record.get("market_type"),
+        description=record.get("description"),
     )

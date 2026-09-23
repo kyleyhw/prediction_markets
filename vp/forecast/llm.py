@@ -64,6 +64,10 @@ CACHE_WRITE, CACHE_READ, BATCH_DISCOUNT = 1.25, 0.10, 0.5
 # run: the prompt and tool results in, the reasoning and answer out.
 EXPECTED_INPUT, EXPECTED_OUTPUT, EXPECTED_ROUNDS = 1500, 600, 3
 
+# The strategy spec's model tiers (docs/strategies.md, F8): a cheaper model
+# for breadth by default, the strongest on demand.
+TIERS: dict[str, str] = {"standard": "claude-sonnet-5", "strong": "claude-opus-5"}
+
 # USD per million tokens, input and output, for cost accounting.
 PRICES: dict[str, tuple[float, float]] = {
     "claude-opus-5": (5.0, 25.0),
@@ -185,10 +189,30 @@ def _lines(items: Any) -> str:
     return text or "no records before the cutoff"
 
 
-def question_block(market: BinaryMarket, ev: Evidence) -> str:
-    """The user turn: question, outcomes, parsed fields and the cutoff."""
+def question_block(
+    market: BinaryMarket, ev: Evidence, instructions: str = "", price: bool = False
+) -> str:
+    """The user turn: question, outcomes, parsed fields and the cutoff.
+
+    A strategy may add the person's own ``instructions``, and may show the
+    market's ``price`` at the cutoff (never by default; F7). The market's
+    resolution rules are included when the venue gave them: for a prop they
+    are the contract (what counts, what voids it), and they are fixed when
+    the market is listed, so they are known at any cutoff.
+    """
     first, second = market.outcomes
     fields = "\n".join(f"  {k}: {v}" for k, v in sorted(market.parsed.items()))
+    extra = ""
+    if market.description:
+        extra += f"Resolution rules:\n{market.description[:2000]}\n\n"
+    if price:
+        q = ev.price_at(market)
+        if q is None and not market.trading_closed:
+            q = market.p_yes
+        shown = f"{q:.3f}" if q is not None else "unknown"
+        extra += f"Market price of the first outcome at the cutoff: {shown}\n\n"
+    if instructions:
+        extra += f"Guidance from the strategy's author:\n{instructions}\n\n"
     return (
         f"Information cutoff: {ev.cutoff.isoformat()}\n"
         f"Domain: {market.domain}\n"
@@ -197,6 +221,7 @@ def question_block(market: BinaryMarket, ev: Evidence) -> str:
         f"Outcomes: first = {first.name!r}, second = {second.name!r}\n"
         f"Market end date: {market.end_date}\n"
         f"Structured fields:\n{fields or '  (none)'}\n\n"
+        f"{extra}"
         "What is the probability that the first outcome occurs?"
     )
 
@@ -223,6 +248,8 @@ class LLMForecaster:
     name: str = "llm"
     batch: bool = False
     poll_seconds: float = 30.0
+    instructions: str = ""
+    sees_price: bool = False
     calls: list[dict[str, Any]] = field(default_factory=list)
     prefetched: dict[str, Forecast | None] = field(default_factory=dict)
 
@@ -258,7 +285,11 @@ class LLMForecaster:
             clip(p_hat),
             "\n---\n".join(rationales),
             cost_usd=cost,
-            meta={"model": self.model, "samples": str(self.samples)},
+            meta={
+                "model": self.model,
+                "samples": str(self.samples),
+                "sees_price": str(self.sees_price).lower(),
+            },
         )
 
     def _params(self, messages: list[dict[str, Any]]) -> dict[str, Any]:
@@ -308,7 +339,12 @@ class LLMForecaster:
 
     def _elicit(self, market: BinaryMarket, ev: Evidence) -> tuple[float, str, float]:
         messages: list[dict[str, Any]] = [
-            {"role": "user", "content": question_block(market, ev)}
+            {
+                "role": "user",
+                "content": question_block(
+                    market, ev, self.instructions, self.sees_price
+                ),
+            }
         ]
         cost = 0.0
         for _ in range(self.max_turns):
@@ -338,7 +374,12 @@ class LLMForecaster:
                     "market": market,
                     "ev": ev,
                     "messages": [
-                        {"role": "user", "content": question_block(market, ev)}
+                        {
+                            "role": "user",
+                            "content": question_block(
+                                market, ev, self.instructions, self.sees_price
+                            ),
+                        }
                     ],
                     "cost": 0.0,
                 }

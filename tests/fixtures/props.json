@@ -1,0 +1,1202 @@
+{
+ "captured": "2026-09-23, Gamma events for tags 82, 100780 (open and closed)",
+ "markets": [
+  {
+   "question": "Fulham FC vs. Manchester United FC: Both Teams to Score",
+   "event_title": "Fulham FC vs. Manchester United FC - More Markets",
+   "venue_type": "both_teams_to_score",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "Manchester City FC vs. Sunderland AFC: Both Teams to Score",
+   "event_title": "Manchester City FC vs. Sunderland AFC - More Markets",
+   "venue_type": "both_teams_to_score",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "Leeds United FC vs. Crystal Palace FC: Both Teams to Score",
+   "event_title": "Leeds United FC vs. Crystal Palace FC - More Markets",
+   "venue_type": "both_teams_to_score",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "AFC Bournemouth vs. Liverpool FC: Both Teams to Score",
+   "event_title": "AFC Bournemouth vs. Liverpool FC - More Markets",
+   "venue_type": "both_teams_to_score",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "Fulham FC vs. Manchester United FC: Both Teams to Score in First Half",
+   "event_title": "Fulham FC vs. Manchester United FC - More Markets",
+   "venue_type": "both_teams_to_score_first_half",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "Manchester City FC vs. Sunderland AFC: Both Teams to Score in First Half",
+   "event_title": "Manchester City FC vs. Sunderland AFC - More Markets",
+   "venue_type": "both_teams_to_score_first_half",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "Leeds United FC vs. Crystal Palace FC: Both Teams to Score in First Half",
+   "event_title": "Leeds United FC vs. Crystal Palace FC - More Markets",
+   "venue_type": "both_teams_to_score_first_half",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "AFC Bournemouth vs. Liverpool FC: Both Teams to Score in First Half",
+   "event_title": "AFC Bournemouth vs. Liverpool FC - More Markets",
+   "venue_type": "both_teams_to_score_first_half",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "Fulham FC vs. Manchester United FC: Both Teams to Score in Second Half",
+   "event_title": "Fulham FC vs. Manchester United FC - More Markets",
+   "venue_type": "both_teams_to_score_second_half",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "Manchester City FC vs. Sunderland AFC: Both Teams to Score in Second Half",
+   "event_title": "Manchester City FC vs. Sunderland AFC - More Markets",
+   "venue_type": "both_teams_to_score_second_half",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "Leeds United FC vs. Crystal Palace FC: Both Teams to Score in Second Half",
+   "event_title": "Leeds United FC vs. Crystal Palace FC - More Markets",
+   "venue_type": "both_teams_to_score_second_half",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "AFC Bournemouth vs. Liverpool FC: Both Teams to Score in Second Half",
+   "event_title": "AFC Bournemouth vs. Liverpool FC - More Markets",
+   "venue_type": "both_teams_to_score_second_half",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "Counter-Strike: Peladona vs your end - Map 1 Winner",
+   "event_title": "Counter-Strike: Peladona vs your end (BO3) - CCT South America Series 6 Group Stage",
+   "venue_type": "child_moneyline",
+   "outcomes": [
+    "Peladona",
+    "your end"
+   ]
+  },
+  {
+   "question": "Counter-Strike: Just Players vs Bushido Wildcats - Map 1 Winner",
+   "event_title": "Counter-Strike: Just Players vs Bushido Wildcats (BO3) - CCT Europe Series #9 Group Stage",
+   "venue_type": "child_moneyline",
+   "outcomes": [
+    "Just Players",
+    "Bushido Wildcats"
+   ]
+  },
+  {
+   "question": "Counter-Strike: Bounty Hunters Esports vs Keyd - Map 1 Winner",
+   "event_title": "Counter-Strike: Bounty Hunters Esports vs Keyd (BO3) - FERJEE In House Group A",
+   "venue_type": "child_moneyline",
+   "outcomes": [
+    "Bounty Hunters Esports",
+    "Keyd"
+   ]
+  },
+  {
+   "question": "Counter-Strike: LPH Gaming vs Revise - Map 1 Winner",
+   "event_title": "Counter-Strike: LPH Gaming vs Revise (BO3) - ESL Challenger League Europe Cup #7 Group C",
+   "venue_type": "child_moneyline",
+   "outcomes": [
+    "LPH Gaming",
+    "Revise"
+   ]
+  },
+  {
+   "question": "1st Half Spread: Fulham FC (-2.5)",
+   "event_title": "Fulham FC vs. Manchester United FC - More Markets",
+   "venue_type": "first_half_spreads",
+   "outcomes": [
+    "Fulham FC",
+    "Manchester United FC"
+   ]
+  },
+  {
+   "question": "1st Half Spread: Manchester United FC (-2.5)",
+   "event_title": "Fulham FC vs. Manchester United FC - More Markets",
+   "venue_type": "first_half_spreads",
+   "outcomes": [
+    "Manchester United FC",
+    "Fulham FC"
+   ]
+  },
+  {
+   "question": "1st Half Spread: Manchester City FC (-1.5)",
+   "event_title": "Manchester City FC vs. Sunderland AFC - More Markets",
+   "venue_type": "first_half_spreads",
+   "outcomes": [
+    "Manchester City FC",
+    "Sunderland AFC"
+   ]
+  },
+  {
+   "question": "1st Half Spread: Sunderland AFC (-1.5)",
+   "event_title": "Manchester City FC vs. Sunderland AFC - More Markets",
+   "venue_type": "first_half_spreads",
+   "outcomes": [
+    "Sunderland AFC",
+    "Manchester City FC"
+   ]
+  },
+  {
+   "question": "Fulham FC vs. Manchester United FC: 1st Half O/U 0.5",
+   "event_title": "Fulham FC vs. Manchester United FC - More Markets",
+   "venue_type": "first_half_totals",
+   "outcomes": [
+    "Over",
+    "Under"
+   ]
+  },
+  {
+   "question": "Manchester City FC vs. Sunderland AFC: 1st Half O/U 0.5",
+   "event_title": "Manchester City FC vs. Sunderland AFC - More Markets",
+   "venue_type": "first_half_totals",
+   "outcomes": [
+    "Over",
+    "Under"
+   ]
+  },
+  {
+   "question": "Leeds United FC vs. Crystal Palace FC: 1st Half O/U 0.5",
+   "event_title": "Leeds United FC vs. Crystal Palace FC - More Markets",
+   "venue_type": "first_half_totals",
+   "outcomes": [
+    "Over",
+    "Under"
+   ]
+  },
+  {
+   "question": "AFC Bournemouth vs. Liverpool FC: 1st Half O/U 0.5",
+   "event_title": "AFC Bournemouth vs. Liverpool FC - More Markets",
+   "venue_type": "first_half_totals",
+   "outcomes": [
+    "Over",
+    "Under"
+   ]
+  },
+  {
+   "question": "Map Handicap: PLD (-1.5) vs your end (+1.5)",
+   "event_title": "Counter-Strike: Peladona vs your end (BO3) - CCT South America Series 6 Group Stage",
+   "venue_type": "map_handicap",
+   "outcomes": [
+    "Peladona",
+    "your end"
+   ]
+  },
+  {
+   "question": "Map Handicap: BW (-1.5) vs Just Players (+1.5)",
+   "event_title": "Counter-Strike: Just Players vs Bushido Wildcats (BO3) - CCT Europe Series #9 Group Stage",
+   "venue_type": "map_handicap",
+   "outcomes": [
+    "Bushido Wildcats",
+    "Just Players"
+   ]
+  },
+  {
+   "question": "Map Handicap: JustP (-1.5) vs Bushido Wildcats (+1.5)",
+   "event_title": "Counter-Strike: Just Players vs Bushido Wildcats (BO3) - CCT Europe Series #9 Group Stage",
+   "venue_type": "map_handicap",
+   "outcomes": [
+    "Just Players",
+    "Bushido Wildcats"
+   ]
+  },
+  {
+   "question": "Map Handicap: BHE (-1.5) vs Keyd (+1.5)",
+   "event_title": "Counter-Strike: Bounty Hunters Esports vs Keyd (BO3) - FERJEE In House Group A",
+   "venue_type": "map_handicap",
+   "outcomes": [
+    "Bounty Hunters Esports",
+    "Keyd"
+   ]
+  },
+  {
+   "question": "Will Fulham FC win on 2026-09-20?",
+   "event_title": "Fulham FC vs. Manchester United FC",
+   "venue_type": "moneyline",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "Will Fulham FC vs. Manchester United FC end in a draw?",
+   "event_title": "Fulham FC vs. Manchester United FC",
+   "venue_type": "moneyline",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "Will Manchester United FC win on 2026-09-20?",
+   "event_title": "Fulham FC vs. Manchester United FC",
+   "venue_type": "moneyline",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "Will AFC Bournemouth win on 2026-09-20?",
+   "event_title": "AFC Bournemouth vs. Liverpool FC",
+   "venue_type": "moneyline",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "Map 1 Rounds Handicap: Peladona (-6.5) vs your end (+6.5)",
+   "event_title": "Counter-Strike: Peladona vs your end (BO3) - CCT South America Series 6 Group Stage",
+   "venue_type": "round_handicap_game_1",
+   "outcomes": [
+    "Peladona",
+    "your end"
+   ]
+  },
+  {
+   "question": "Map 1 Rounds Handicap: Bushido Wildcats (-3.5) vs Just Players (+3.5)",
+   "event_title": "Counter-Strike: Just Players vs Bushido Wildcats (BO3) - CCT Europe Series #9 Group Stage",
+   "venue_type": "round_handicap_game_1",
+   "outcomes": [
+    "Bushido Wildcats",
+    "Just Players"
+   ]
+  },
+  {
+   "question": "Map 1 Rounds Handicap: Bounty Hunters Esports (-3.5) vs Keyd (+3.5)",
+   "event_title": "Counter-Strike: Bounty Hunters Esports vs Keyd (BO3) - FERJEE In House Group A",
+   "venue_type": "round_handicap_game_1",
+   "outcomes": [
+    "Bounty Hunters Esports",
+    "Keyd"
+   ]
+  },
+  {
+   "question": "Map 1 Rounds Handicap: Revise (-3.5) vs LPH Gaming (+3.5)",
+   "event_title": "Counter-Strike: LPH Gaming vs Revise (BO3) - ESL Challenger League Europe Cup #7 Group C",
+   "venue_type": "round_handicap_game_1",
+   "outcomes": [
+    "Revise",
+    "LPH Gaming"
+   ]
+  },
+  {
+   "question": "Map 2 Rounds Handicap: Peladona (-6.5) vs your end (+6.5)",
+   "event_title": "Counter-Strike: Peladona vs your end (BO3) - CCT South America Series 6 Group Stage",
+   "venue_type": "round_handicap_game_2",
+   "outcomes": [
+    "Peladona",
+    "your end"
+   ]
+  },
+  {
+   "question": "Map 2 Rounds Handicap: Bushido Wildcats (-3.5) vs Just Players (+3.5)",
+   "event_title": "Counter-Strike: Just Players vs Bushido Wildcats (BO3) - CCT Europe Series #9 Group Stage",
+   "venue_type": "round_handicap_game_2",
+   "outcomes": [
+    "Bushido Wildcats",
+    "Just Players"
+   ]
+  },
+  {
+   "question": "Map 2 Rounds Handicap: Just Players (-3.5) vs Bushido Wildcats (+3.5)",
+   "event_title": "Counter-Strike: Just Players vs Bushido Wildcats (BO3) - CCT Europe Series #9 Group Stage",
+   "venue_type": "round_handicap_game_2",
+   "outcomes": [
+    "Just Players",
+    "Bushido Wildcats"
+   ]
+  },
+  {
+   "question": "Map 2 Rounds Handicap: Bounty Hunters Esports (-3.5) vs Keyd (+3.5)",
+   "event_title": "Counter-Strike: Bounty Hunters Esports vs Keyd (BO3) - FERJEE In House Group A",
+   "venue_type": "round_handicap_game_2",
+   "outcomes": [
+    "Bounty Hunters Esports",
+    "Keyd"
+   ]
+  },
+  {
+   "question": "Map 3 Rounds Handicap: Peladona (-6.5) vs your end (+6.5)",
+   "event_title": "Counter-Strike: Peladona vs your end (BO3) - CCT South America Series 6 Group Stage",
+   "venue_type": "round_handicap_game_3",
+   "outcomes": [
+    "Peladona",
+    "your end"
+   ]
+  },
+  {
+   "question": "Map 3 Rounds Handicap: paiN (-3.5) vs Turma do Pagode (+3.5)",
+   "event_title": "Counter-Strike: paiN vs Turma do Pagode (BO3) - FERJEE In House Group A",
+   "venue_type": "round_handicap_game_3",
+   "outcomes": [
+    "paiN",
+    "Turma do Pagode"
+   ]
+  },
+  {
+   "question": "Map 3 Rounds Handicap: fnatic (-3.5) vs Esport Academy Copenhagen (+3.5)",
+   "event_title": "Counter-Strike: Esport Academy Copenhagen vs fnatic (BO3) - Stake Pulse Beat II Group C",
+   "venue_type": "round_handicap_game_3",
+   "outcomes": [
+    "fnatic",
+    "Esport Academy Copenhagen"
+   ]
+  },
+  {
+   "question": "Map 3 Rounds Handicap: 100 Thieves (-3.5) vs Phantom (+3.5)",
+   "event_title": "Counter-Strike: 100 Thieves vs Phantom (BO3) - Stake Pulse Beat II Group C",
+   "venue_type": "round_handicap_game_3",
+   "outcomes": [
+    "100 Thieves",
+    "Phantom"
+   ]
+  },
+  {
+   "question": "Map 1 Total Rounds: Over/Under 18.5",
+   "event_title": "Counter-Strike: Peladona vs your end (BO3) - CCT South America Series 6 Group Stage",
+   "venue_type": "round_over_under_game_1",
+   "outcomes": [
+    "Over",
+    "Under"
+   ]
+  },
+  {
+   "question": "Map 2 Total Rounds: Over/Under 18.5",
+   "event_title": "Counter-Strike: Peladona vs your end (BO3) - CCT South America Series 6 Group Stage",
+   "venue_type": "round_over_under_game_2",
+   "outcomes": [
+    "Over",
+    "Under"
+   ]
+  },
+  {
+   "question": "Map 3 Total Rounds: Over/Under 18.5",
+   "event_title": "Counter-Strike: Peladona vs your end (BO3) - CCT South America Series 6 Group Stage",
+   "venue_type": "round_over_under_game_3",
+   "outcomes": [
+    "Over",
+    "Under"
+   ]
+  },
+  {
+   "question": "2nd Half Spread: Fulham FC (-1.5)",
+   "event_title": "Fulham FC vs. Manchester United FC - More Markets",
+   "venue_type": "second_half_spreads",
+   "outcomes": [
+    "Fulham FC",
+    "Manchester United FC"
+   ]
+  },
+  {
+   "question": "2nd Half Spread: Manchester United FC (-1.5)",
+   "event_title": "Fulham FC vs. Manchester United FC - More Markets",
+   "venue_type": "second_half_spreads",
+   "outcomes": [
+    "Manchester United FC",
+    "Fulham FC"
+   ]
+  },
+  {
+   "question": "2nd Half Spread: Manchester City FC (-2.5)",
+   "event_title": "Manchester City FC vs. Sunderland AFC - More Markets",
+   "venue_type": "second_half_spreads",
+   "outcomes": [
+    "Manchester City FC",
+    "Sunderland AFC"
+   ]
+  },
+  {
+   "question": "2nd Half Spread: Sunderland AFC (-1.5)",
+   "event_title": "Manchester City FC vs. Sunderland AFC - More Markets",
+   "venue_type": "second_half_spreads",
+   "outcomes": [
+    "Sunderland AFC",
+    "Manchester City FC"
+   ]
+  },
+  {
+   "question": "Fulham FC vs. Manchester United FC: 2nd Half O/U 0.5",
+   "event_title": "Fulham FC vs. Manchester United FC - More Markets",
+   "venue_type": "second_half_totals",
+   "outcomes": [
+    "Over",
+    "Under"
+   ]
+  },
+  {
+   "question": "Manchester City FC vs. Sunderland AFC: 2nd Half O/U 0.5",
+   "event_title": "Manchester City FC vs. Sunderland AFC - More Markets",
+   "venue_type": "second_half_totals",
+   "outcomes": [
+    "Over",
+    "Under"
+   ]
+  },
+  {
+   "question": "Leeds United FC vs. Crystal Palace FC: 2nd Half O/U 0.5",
+   "event_title": "Leeds United FC vs. Crystal Palace FC - More Markets",
+   "venue_type": "second_half_totals",
+   "outcomes": [
+    "Over",
+    "Under"
+   ]
+  },
+  {
+   "question": "AFC Bournemouth vs. Liverpool FC: 2nd Half O/U 0.5",
+   "event_title": "AFC Bournemouth vs. Liverpool FC - More Markets",
+   "venue_type": "second_half_totals",
+   "outcomes": [
+    "Over",
+    "Under"
+   ]
+  },
+  {
+   "question": "Benjamin Sesko: Anytime Goalscorer",
+   "event_title": "Fulham FC vs. Manchester United FC - Player Props",
+   "venue_type": "soccer_anytime_goalscorer",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "Bruno Fernandes: Anytime Goalscorer",
+   "event_title": "Fulham FC vs. Manchester United FC - Player Props",
+   "venue_type": "soccer_anytime_goalscorer",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "Bryan Mbeumo: Anytime Goalscorer",
+   "event_title": "Fulham FC vs. Manchester United FC - Player Props",
+   "venue_type": "soccer_anytime_goalscorer",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "Gonzalo Garcia: Anytime Goalscorer",
+   "event_title": "Fulham FC vs. Manchester United FC - Player Props",
+   "venue_type": "soccer_anytime_goalscorer",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "Exact Score: Fulham FC 0 - 0 Manchester United FC?",
+   "event_title": "Fulham FC vs. Manchester United FC - Exact Score",
+   "venue_type": "soccer_exact_score",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "Exact Score: Any Other Score?",
+   "event_title": "Fulham FC vs. Manchester United FC - Exact Score",
+   "venue_type": "soccer_exact_score",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "Exact Score: AFC Bournemouth 0 - 0 Liverpool FC?",
+   "event_title": "AFC Bournemouth vs. Liverpool FC - Exact Score",
+   "venue_type": "soccer_exact_score",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "Exact Score: Leeds United FC 0 - 0 Crystal Palace FC?",
+   "event_title": "Leeds United FC vs. Crystal Palace FC - Exact Score",
+   "venue_type": "soccer_exact_score",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "Fulham FC vs. Manchester United FC: Team to Take First Corner",
+   "event_title": "Fulham FC vs. Manchester United FC - Total Corners",
+   "venue_type": "soccer_first_corner",
+   "outcomes": [
+    "Fulham FC",
+    "Manchester United FC"
+   ]
+  },
+  {
+   "question": "Manchester City FC vs. Sunderland AFC: Team to Take First Corner",
+   "event_title": "Manchester City FC vs. Sunderland AFC - Total Corners",
+   "venue_type": "soccer_first_corner",
+   "outcomes": [
+    "Manchester City FC",
+    "Sunderland AFC"
+   ]
+  },
+  {
+   "question": "Leeds United FC vs. Crystal Palace FC: Team to Take First Corner",
+   "event_title": "Leeds United FC vs. Crystal Palace FC - Total Corners",
+   "venue_type": "soccer_first_corner",
+   "outcomes": [
+    "Leeds United FC",
+    "Crystal Palace FC"
+   ]
+  },
+  {
+   "question": "AFC Bournemouth vs. Liverpool FC: Team to Take First Corner",
+   "event_title": "AFC Bournemouth vs. Liverpool FC - Total Corners",
+   "venue_type": "soccer_first_corner",
+   "outcomes": [
+    "AFC Bournemouth",
+    "Liverpool FC"
+   ]
+  },
+  {
+   "question": "1st Half Exact Score: Fulham FC 0 - 0 Manchester United FC?",
+   "event_title": "Fulham FC vs. Manchester United FC - 1st Half Exact Score",
+   "venue_type": "soccer_first_half_exact_score",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "1st Half Exact Score: Any Other Score?",
+   "event_title": "Fulham FC vs. Manchester United FC - 1st Half Exact Score",
+   "venue_type": "soccer_first_half_exact_score",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "1st Half Exact Score: Manchester City FC 0 - 0 Sunderland AFC?",
+   "event_title": "Manchester City FC vs. Sunderland AFC - 1st Half Exact Score",
+   "venue_type": "soccer_first_half_exact_score",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "1st Half Exact Score: Leeds United FC 0 - 0 Crystal Palace FC?",
+   "event_title": "Leeds United FC vs. Crystal Palace FC - 1st Half Exact Score",
+   "venue_type": "soccer_first_half_exact_score",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "Fulham FC to score first in the 1st half vs. Manchester United FC?",
+   "event_title": "Fulham FC vs. Manchester United FC - 1st Half First Team to Score",
+   "venue_type": "soccer_first_half_first_to_score",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "Manchester United FC to score first in the 1st half vs. Fulham FC?",
+   "event_title": "Fulham FC vs. Manchester United FC - 1st Half First Team to Score",
+   "venue_type": "soccer_first_half_first_to_score",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "Fulham FC vs. Manchester United FC: Neither team to score first in the 1st half?",
+   "event_title": "Fulham FC vs. Manchester United FC - 1st Half First Team to Score",
+   "venue_type": "soccer_first_half_first_to_score",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "Manchester City FC to score first in the 1st half vs. Sunderland AFC?",
+   "event_title": "Manchester City FC vs. Sunderland AFC - 1st Half First Team to Score",
+   "venue_type": "soccer_first_half_first_to_score",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "Fulham FC vs. Manchester United FC: Fulham FC 1st Half O/U 0.5",
+   "event_title": "Fulham FC vs. Manchester United FC - More Markets",
+   "venue_type": "soccer_first_half_team_totals",
+   "outcomes": [
+    "Over",
+    "Under"
+   ]
+  },
+  {
+   "question": "Fulham FC vs. Manchester United FC: Manchester United FC 1st Half O/U 0.5",
+   "event_title": "Fulham FC vs. Manchester United FC - More Markets",
+   "venue_type": "soccer_first_half_team_totals",
+   "outcomes": [
+    "Over",
+    "Under"
+   ]
+  },
+  {
+   "question": "Manchester City FC vs. Sunderland AFC: Manchester City FC 1st Half O/U 0.5",
+   "event_title": "Manchester City FC vs. Sunderland AFC - More Markets",
+   "venue_type": "soccer_first_half_team_totals",
+   "outcomes": [
+    "Over",
+    "Under"
+   ]
+  },
+  {
+   "question": "Manchester City FC vs. Sunderland AFC: Sunderland AFC 1st Half O/U 0.5",
+   "event_title": "Manchester City FC vs. Sunderland AFC - More Markets",
+   "venue_type": "soccer_first_half_team_totals",
+   "outcomes": [
+    "Over",
+    "Under"
+   ]
+  },
+  {
+   "question": "Fulham FC vs. Manchester United FC: 1st Half O/U 3.5 Total Corners",
+   "event_title": "Fulham FC vs. Manchester United FC - Total Corners",
+   "venue_type": "soccer_first_half_total_corners",
+   "outcomes": [
+    "Over",
+    "Under"
+   ]
+  },
+  {
+   "question": "Manchester City FC vs. Sunderland AFC: 1st Half O/U 3.5 Total Corners",
+   "event_title": "Manchester City FC vs. Sunderland AFC - Total Corners",
+   "venue_type": "soccer_first_half_total_corners",
+   "outcomes": [
+    "Over",
+    "Under"
+   ]
+  },
+  {
+   "question": "Leeds United FC vs. Crystal Palace FC: 1st Half O/U 3.5 Total Corners",
+   "event_title": "Leeds United FC vs. Crystal Palace FC - Total Corners",
+   "venue_type": "soccer_first_half_total_corners",
+   "outcomes": [
+    "Over",
+    "Under"
+   ]
+  },
+  {
+   "question": "AFC Bournemouth vs. Liverpool FC: 1st Half O/U 3.5 Total Corners",
+   "event_title": "AFC Bournemouth vs. Liverpool FC - Total Corners",
+   "venue_type": "soccer_first_half_total_corners",
+   "outcomes": [
+    "Over",
+    "Under"
+   ]
+  },
+  {
+   "question": "Fulham FC to score first vs. Manchester United FC?",
+   "event_title": "Fulham FC vs. Manchester United FC - First Team to Score",
+   "venue_type": "soccer_first_to_score",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "Manchester United FC to score first vs. Fulham FC?",
+   "event_title": "Fulham FC vs. Manchester United FC - First Team to Score",
+   "venue_type": "soccer_first_to_score",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "Fulham FC vs. Manchester United FC: Neither team to score first?",
+   "event_title": "Fulham FC vs. Manchester United FC - First Team to Score",
+   "venue_type": "soccer_first_to_score",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "AFC Bournemouth to score first vs. Liverpool FC?",
+   "event_title": "AFC Bournemouth vs. Liverpool FC - First Team to Score",
+   "venue_type": "soccer_first_to_score",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "Fulham FC vs. Manchester United FC: Total Corners Odd or Even?",
+   "event_title": "Fulham FC vs. Manchester United FC - Total Corners",
+   "venue_type": "soccer_game_corners_odd_even",
+   "outcomes": [
+    "Odd",
+    "Even"
+   ]
+  },
+  {
+   "question": "Manchester City FC vs. Sunderland AFC: Total Corners Odd or Even?",
+   "event_title": "Manchester City FC vs. Sunderland AFC - Total Corners",
+   "venue_type": "soccer_game_corners_odd_even",
+   "outcomes": [
+    "Odd",
+    "Even"
+   ]
+  },
+  {
+   "question": "Leeds United FC vs. Crystal Palace FC: Total Corners Odd or Even?",
+   "event_title": "Leeds United FC vs. Crystal Palace FC - Total Corners",
+   "venue_type": "soccer_game_corners_odd_even",
+   "outcomes": [
+    "Odd",
+    "Even"
+   ]
+  },
+  {
+   "question": "AFC Bournemouth vs. Liverpool FC: Total Corners Odd or Even?",
+   "event_title": "AFC Bournemouth vs. Liverpool FC - Total Corners",
+   "venue_type": "soccer_game_corners_odd_even",
+   "outcomes": [
+    "Odd",
+    "Even"
+   ]
+  },
+  {
+   "question": "Fulham FC leading at halftime?",
+   "event_title": "Fulham FC vs. Manchester United FC - Halftime Result",
+   "venue_type": "soccer_halftime_result",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "Fulham FC vs. Manchester United FC: Draw at halftime?",
+   "event_title": "Fulham FC vs. Manchester United FC - Halftime Result",
+   "venue_type": "soccer_halftime_result",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "Manchester United FC leading at halftime?",
+   "event_title": "Fulham FC vs. Manchester United FC - Halftime Result",
+   "venue_type": "soccer_halftime_result",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "AFC Bournemouth leading at halftime?",
+   "event_title": "AFC Bournemouth vs. Liverpool FC - Halftime Result",
+   "venue_type": "soccer_halftime_result",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "Fulham FC to score first in the 2nd half vs. Manchester United FC?",
+   "event_title": "Fulham FC vs. Manchester United FC - 2nd Half First Team to Score",
+   "venue_type": "soccer_second_half_first_to_score",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "Manchester United FC to score first in the 2nd half vs. Fulham FC?",
+   "event_title": "Fulham FC vs. Manchester United FC - 2nd Half First Team to Score",
+   "venue_type": "soccer_second_half_first_to_score",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "Fulham FC vs. Manchester United FC: Neither team to score first in the 2nd half?",
+   "event_title": "Fulham FC vs. Manchester United FC - 2nd Half First Team to Score",
+   "venue_type": "soccer_second_half_first_to_score",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "Manchester City FC to score first in the 2nd half vs. Sunderland AFC?",
+   "event_title": "Manchester City FC vs. Sunderland AFC - 2nd Half First Team to Score",
+   "venue_type": "soccer_second_half_first_to_score",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "Fulham FC to win the second half?",
+   "event_title": "Fulham FC vs. Manchester United FC - Second Half Result",
+   "venue_type": "soccer_second_half_result",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "Fulham FC vs. Manchester United FC: Second half draw?",
+   "event_title": "Fulham FC vs. Manchester United FC - Second Half Result",
+   "venue_type": "soccer_second_half_result",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "Manchester United FC to win the second half?",
+   "event_title": "Fulham FC vs. Manchester United FC - Second Half Result",
+   "venue_type": "soccer_second_half_result",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "AFC Bournemouth to win the second half?",
+   "event_title": "AFC Bournemouth vs. Liverpool FC - Second Half Result",
+   "venue_type": "soccer_second_half_result",
+   "outcomes": [
+    "Yes",
+    "No"
+   ]
+  },
+  {
+   "question": "Fulham FC vs. Manchester United FC: Fulham FC 2nd Half O/U 0.5",
+   "event_title": "Fulham FC vs. Manchester United FC - More Markets",
+   "venue_type": "soccer_second_half_team_totals",
+   "outcomes": [
+    "Over",
+    "Under"
+   ]
+  },
+  {
+   "question": "Fulham FC vs. Manchester United FC: Manchester United FC 2nd Half O/U 0.5",
+   "event_title": "Fulham FC vs. Manchester United FC - More Markets",
+   "venue_type": "soccer_second_half_team_totals",
+   "outcomes": [
+    "Over",
+    "Under"
+   ]
+  },
+  {
+   "question": "Manchester City FC vs. Sunderland AFC: Manchester City FC 2nd Half O/U 0.5",
+   "event_title": "Manchester City FC vs. Sunderland AFC - More Markets",
+   "venue_type": "soccer_second_half_team_totals",
+   "outcomes": [
+    "Over",
+    "Under"
+   ]
+  },
+  {
+   "question": "Manchester City FC vs. Sunderland AFC: Sunderland AFC 2nd Half O/U 0.5",
+   "event_title": "Manchester City FC vs. Sunderland AFC - More Markets",
+   "venue_type": "soccer_second_half_team_totals",
+   "outcomes": [
+    "Over",
+    "Under"
+   ]
+  },
+  {
+   "question": "Fulham FC vs. Manchester United FC: 2nd Half O/U 3.5 Total Corners",
+   "event_title": "Fulham FC vs. Manchester United FC - Total Corners",
+   "venue_type": "soccer_second_half_total_corners",
+   "outcomes": [
+    "Over",
+    "Under"
+   ]
+  },
+  {
+   "question": "Manchester City FC vs. Sunderland AFC: 2nd Half O/U 3.5 Total Corners",
+   "event_title": "Manchester City FC vs. Sunderland AFC - Total Corners",
+   "venue_type": "soccer_second_half_total_corners",
+   "outcomes": [
+    "Over",
+    "Under"
+   ]
+  },
+  {
+   "question": "Leeds United FC vs. Crystal Palace FC: 2nd Half O/U 3.5 Total Corners",
+   "event_title": "Leeds United FC vs. Crystal Palace FC - Total Corners",
+   "venue_type": "soccer_second_half_total_corners",
+   "outcomes": [
+    "Over",
+    "Under"
+   ]
+  },
+  {
+   "question": "AFC Bournemouth vs. Liverpool FC: 2nd Half O/U 3.5 Total Corners",
+   "event_title": "AFC Bournemouth vs. Liverpool FC - Total Corners",
+   "venue_type": "soccer_second_half_total_corners",
+   "outcomes": [
+    "Over",
+    "Under"
+   ]
+  },
+  {
+   "question": "Fulham FC vs. Manchester United FC: Fulham FC O/U 2.5 Corners",
+   "event_title": "Fulham FC vs. Manchester United FC - Total Corners",
+   "venue_type": "soccer_team_total_corners",
+   "outcomes": [
+    "Over",
+    "Under"
+   ]
+  },
+  {
+   "question": "Fulham FC vs. Manchester United FC: Manchester United FC O/U 2.5 Corners",
+   "event_title": "Fulham FC vs. Manchester United FC - Total Corners",
+   "venue_type": "soccer_team_total_corners",
+   "outcomes": [
+    "Over",
+    "Under"
+   ]
+  },
+  {
+   "question": "Manchester City FC vs. Sunderland AFC: Manchester City FC O/U 2.5 Corners",
+   "event_title": "Manchester City FC vs. Sunderland AFC - Total Corners",
+   "venue_type": "soccer_team_total_corners",
+   "outcomes": [
+    "Over",
+    "Under"
+   ]
+  },
+  {
+   "question": "Manchester City FC vs. Sunderland AFC: Sunderland AFC O/U 2.5 Corners",
+   "event_title": "Manchester City FC vs. Sunderland AFC - Total Corners",
+   "venue_type": "soccer_team_total_corners",
+   "outcomes": [
+    "Over",
+    "Under"
+   ]
+  },
+  {
+   "question": "Fulham FC vs. Manchester United FC: Fulham FC O/U 0.5",
+   "event_title": "Fulham FC vs. Manchester United FC - More Markets",
+   "venue_type": "soccer_team_totals",
+   "outcomes": [
+    "Over",
+    "Under"
+   ]
+  },
+  {
+   "question": "Fulham FC vs. Manchester United FC: Manchester United FC O/U 0.5",
+   "event_title": "Fulham FC vs. Manchester United FC - More Markets",
+   "venue_type": "soccer_team_totals",
+   "outcomes": [
+    "Over",
+    "Under"
+   ]
+  },
+  {
+   "question": "Manchester City FC vs. Sunderland AFC: Manchester City FC O/U 0.5",
+   "event_title": "Manchester City FC vs. Sunderland AFC - More Markets",
+   "venue_type": "soccer_team_totals",
+   "outcomes": [
+    "Over",
+    "Under"
+   ]
+  },
+  {
+   "question": "Manchester City FC vs. Sunderland AFC: Sunderland AFC O/U 0.5",
+   "event_title": "Manchester City FC vs. Sunderland AFC - More Markets",
+   "venue_type": "soccer_team_totals",
+   "outcomes": [
+    "Over",
+    "Under"
+   ]
+  },
+  {
+   "question": "Spread: Fulham FC (-1.5)",
+   "event_title": "Fulham FC vs. Manchester United FC - More Markets",
+   "venue_type": "spreads",
+   "outcomes": [
+    "Fulham FC",
+    "Manchester United FC"
+   ]
+  },
+  {
+   "question": "Spread: Manchester United FC (-1.5)",
+   "event_title": "Fulham FC vs. Manchester United FC - More Markets",
+   "venue_type": "spreads",
+   "outcomes": [
+    "Manchester United FC",
+    "Fulham FC"
+   ]
+  },
+  {
+   "question": "Spread: Manchester City FC (-1.5)",
+   "event_title": "Manchester City FC vs. Sunderland AFC - More Markets",
+   "venue_type": "spreads",
+   "outcomes": [
+    "Manchester City FC",
+    "Sunderland AFC"
+   ]
+  },
+  {
+   "question": "Spread: Sunderland AFC (-1.5)",
+   "event_title": "Manchester City FC vs. Sunderland AFC - More Markets",
+   "venue_type": "spreads",
+   "outcomes": [
+    "Sunderland AFC",
+    "Manchester City FC"
+   ]
+  },
+  {
+   "question": "Fulham FC vs. Manchester United FC: O/U 7.5 Total Corners",
+   "event_title": "Fulham FC vs. Manchester United FC - Total Corners",
+   "venue_type": "total_corners",
+   "outcomes": [
+    "Over",
+    "Under"
+   ]
+  },
+  {
+   "question": "Manchester City FC vs. Sunderland AFC: O/U 7.5 Total Corners",
+   "event_title": "Manchester City FC vs. Sunderland AFC - Total Corners",
+   "venue_type": "total_corners",
+   "outcomes": [
+    "Over",
+    "Under"
+   ]
+  },
+  {
+   "question": "Leeds United FC vs. Crystal Palace FC: O/U 7.5 Total Corners",
+   "event_title": "Leeds United FC vs. Crystal Palace FC - Total Corners",
+   "venue_type": "total_corners",
+   "outcomes": [
+    "Over",
+    "Under"
+   ]
+  },
+  {
+   "question": "AFC Bournemouth vs. Liverpool FC: O/U 7.5 Total Corners",
+   "event_title": "AFC Bournemouth vs. Liverpool FC - Total Corners",
+   "venue_type": "total_corners",
+   "outcomes": [
+    "Over",
+    "Under"
+   ]
+  },
+  {
+   "question": "Fulham FC vs. Manchester United FC: O/U 0.5",
+   "event_title": "Fulham FC vs. Manchester United FC - More Markets",
+   "venue_type": "totals",
+   "outcomes": [
+    "Over",
+    "Under"
+   ]
+  },
+  {
+   "question": "Manchester City FC vs. Sunderland AFC: O/U 0.5",
+   "event_title": "Manchester City FC vs. Sunderland AFC - More Markets",
+   "venue_type": "totals",
+   "outcomes": [
+    "Over",
+    "Under"
+   ]
+  },
+  {
+   "question": "Leeds United FC vs. Crystal Palace FC: O/U 0.5",
+   "event_title": "Leeds United FC vs. Crystal Palace FC - More Markets",
+   "venue_type": "totals",
+   "outcomes": [
+    "Over",
+    "Under"
+   ]
+  },
+  {
+   "question": "AFC Bournemouth vs. Liverpool FC: O/U 0.5",
+   "event_title": "AFC Bournemouth vs. Liverpool FC - More Markets",
+   "venue_type": "totals",
+   "outcomes": [
+    "Over",
+    "Under"
+   ]
+  },
+  {
+   "question": "Map 1: Odd/Even Total Kills?",
+   "event_title": "Counter-Strike: against All authority vs INFURITY Gaming (BO3) - United21 Group A",
+   "venue_type": null,
+   "outcomes": [
+    "Odd",
+    "Even"
+   ]
+  },
+  {
+   "question": "Map 1: Odd/Even Total Rounds?",
+   "event_title": "Counter-Strike: against All authority vs INFURITY Gaming (BO3) - United21 Group A",
+   "venue_type": null,
+   "outcomes": [
+    "Odd",
+    "Even"
+   ]
+  }
+ ]
+}

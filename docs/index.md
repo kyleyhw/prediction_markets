@@ -40,6 +40,10 @@ Polymarket, scored by backtest and paper trading before any live execution. The
   and Detailed reading levels; words, formats and accessibility.
 - [Usability sessions](usability.md): the protocol for watching people
   new to prediction markets use the app (Phase 14, task 49).
+- [Strategies from conversation](strategies.md): the strategy spec
+  (markets, belief, rule, sizing, schedule), what a prompt may override,
+  props, model tiers, the compiler, preview, number gate and lifecycle
+  (Phase 15).
 - [Browser dashboard](ui.md): the Phase 12 page the interface grew from,
   and `vp ui`, the developer's local view over a data root.
 - [Security design](security.md): the proposed design for live execution

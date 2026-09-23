@@ -132,4 +132,9 @@ WEATHER = Domain(
         "over/under",
     ),
     parse=parse,
+    kinds={
+        "daily_temperature": ("statistic", "city", "date", "low", "high", "unit"),
+        "record_rank": ("period", "rank", "or_lower"),
+        "global_anomaly": ("bucket", "period"),
+    },
 )

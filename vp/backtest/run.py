@@ -31,7 +31,8 @@ import numpy as np
 
 from vp.backtest import bankroll, scoring
 from vp.backtest.simulate import Bet, Opportunity, simulate
-from vp.backtest.sizing import FeeModel
+from vp.backtest.sizing import FeeModel, Policy, fees_for
+from vp.domains.props import PROP_KINDS
 from vp.forecast import Evidence, Forecaster, make_forecaster
 from vp.forecast.base import Forecast
 from vp.forecast.evidence import settled_at
@@ -59,6 +60,9 @@ class BacktestConfig:
     kelly_multiplier: float = 0.25
     max_fraction: float = 0.05
     min_edge: float = 0.0
+    # Charge each market's own taker fee (its `feeSchedule`) rather than
+    # `fee_rate`; strategies do, the Phase 9 baselines did not (task 77).
+    market_fees: bool = False
 
 
 @dataclass
@@ -96,7 +100,11 @@ def select_markets(
         for m in markets
         if m.resolved_outcome is not None
         and settled_at(m) is not None
-        and (not config.kinds or m.parsed.get("kind") in config.kinds)
+        and (
+            m.parsed.get("kind") in config.kinds
+            if config.kinds
+            else m.parsed.get("kind") not in PROP_KINDS
+        )
     ]
     if config.max_markets is not None and len(rows) > config.max_markets:
         rng = np.random.default_rng(config.seed)
@@ -114,17 +122,24 @@ def run_backtest(
     forecasters: Sequence[Forecaster] | None = None,
     llm_options: dict[str, object] | None = None,
     progress: Callable[[float, str], None] | None = None,
+    policy: Policy | None = None,
+    where: Callable[[BinaryMarket], bool] | None = None,
 ) -> BacktestResult:
     """Run the backtest and write its outputs; returns the result.
 
     ``progress``, when given, is called with the fraction of markets done
     and a short message as the forecasting loop advances, so a caller that
     runs this in the background can report how far it has got.
+    ``policy`` and ``where`` are a strategy's rule and selector
+    (`vp.strategy`): the second narrows the markets, the first replaces the
+    config's three sizing numbers in the simulation.
     """
     started = time.monotonic()
     out_dir.mkdir(parents=True, exist_ok=True)
     resolved = read_markets(root / "markets" / config.domain / "resolved.parquet")
     markets = select_markets(resolved, config)
+    if where is not None:
+        markets = [m for m in markets if where(m)]
     if forecasters is None:
         forecasters = [
             make_forecaster(name, config.domain, **(llm_options or {}))
@@ -195,9 +210,15 @@ def run_backtest(
             cost_usd=sum(f.cost_usd for f in rows),
         )
         if forecaster.name != "market" and rows:
+            fallback = FeeModel(config.fee_rate)
             opportunities = [
                 Opportunity(
-                    m.market_id or "", when, f.p_hat, q, int(m.resolved_outcome or 0)
+                    m.market_id or "",
+                    when,
+                    f.p_hat,
+                    q,
+                    int(m.resolved_outcome or 0),
+                    fees_for(m, fallback)[0] if config.market_fees else None,
                 )
                 for (m, q, when), f in zip(scored, rows, strict=True)
             ]
@@ -209,6 +230,7 @@ def run_backtest(
                 kelly_multiplier=config.kelly_multiplier,
                 max_fraction=config.max_fraction,
                 min_edge=config.min_edge,
+                policy=policy,
             )
             pnl = np.array([b.pnl for b in result.bets], dtype=float)
             result.stats = bankroll.bet_stats(pnl, config.initial_cash)
@@ -310,7 +332,12 @@ def summary(result: BacktestResult) -> str:
     lines += [
         "",
         f"Simulated bets from {c.initial_cash:.0f}, half-spread {c.half_spread}, "
-        f"fee rate {c.fee_rate}, {c.kelly_multiplier} Kelly, cap {c.max_fraction:.0%} "
+        + (
+            "each market's own taker fee, "
+            if c.market_fees
+            else f"fee rate {c.fee_rate}, "
+        )
+        + f"{c.kelly_multiplier} Kelly, cap {c.max_fraction:.0%} "
         f"per bet, minimum edge {c.min_edge}:",
         "",
         "| Forecaster | Bets | Return | Max drawdown | Win rate | Profit factor "

@@ -15,7 +15,9 @@ member of the domain, it just has no structured fields.
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+
+from vp.domains import props
 
 Parser = Callable[[str, str | None], dict[str, str] | None]
 
@@ -32,6 +34,21 @@ class Domain:
     parse: Parser
     title: str = ""  # what a person calls it, for the interface
     summary: str = ""  # one plain sentence on what its markets are about
+    # The parsed kinds of its main contracts and the fields each carries; a
+    # strategy's selector is checked against these (docs/strategies.md).
+    kinds: dict[str, tuple[str, ...]] = field(default_factory=dict)
+    # Whether its match events carry the sports props of `vp.domains.props`.
+    has_props: bool = False
+
+    @property
+    def all_kinds(self) -> dict[str, tuple[str, ...]]:
+        """Every kind a market of this domain can parse to, props included."""
+        return {**self.kinds, **(props.PROP_KINDS if self.has_props else {})}
+
+    def read(self, question: str, event_title: str | None) -> dict[str, str] | None:
+        """The parsed fields of a member market: a prop form, else the domain's."""
+        found = props.parse(question, event_title) if self.has_props else None
+        return found or self.parse(question, event_title)
 
     def matches(
         self, question: str, event_title: str | None, tags: tuple[str, ...]

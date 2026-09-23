@@ -78,7 +78,7 @@ class PolymarketSource:
             if domain is not None:
                 if not domain.matches(market.question, title, tags):
                     continue
-                parsed = domain.parse(market.question, title) or {}
+                parsed = domain.read(market.question, title) or {}
                 market = replace(market, domain=domain.name, parsed=parsed)
             out.append(market)
         return out

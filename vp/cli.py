@@ -12,6 +12,9 @@ Subcommands:
 * ``vp paper run|settle|leakage``: one forward paper-trading cycle, the
   settlement pass over open positions, and the forward-versus-backtest
   leakage check, all recorded in a hash-chained ledger.
+* ``vp strategy check|diff|backtest``: a strategy spec (a JSON file): its
+  problems, plain-language rendering and hash; what changed between two
+  versions; its backtest on each of its domains.
 * ``vp ui``: a local, read-only browser dashboard over the data root.
 * ``vp serve``: the platform web service, with sign-in, over Postgres.
 * ``vp db migrate``: apply the platform's pending database migrations.
@@ -120,6 +123,20 @@ def main() -> None:
     back.add_argument(
         "--out", type=Path, default=None, help="report directory (default: under root)"
     )
+
+    strat = sub.add_parser("strategy", help="a strategy spec (JSON)")
+    strat_sub = strat.add_subparsers(dest="strategy_command", required=True)
+    strat_sub.add_parser("check", help="validate, render and hash").add_argument(
+        "spec", type=Path
+    )
+    sdiff = strat_sub.add_parser("diff", help="what changed between two versions")
+    sdiff.add_argument("old", type=Path)
+    sdiff.add_argument("new", type=Path)
+    sback = strat_sub.add_parser("backtest", help="backtest a spec")
+    sback.add_argument("spec", type=Path)
+    sback.add_argument("--root", type=Path, default=Path("data"))
+    sback.add_argument("--max-markets", type=int, default=None)
+    sback.add_argument("--out", type=Path, default=None)
 
     paper = sub.add_parser("paper", help="paper trading")
     paper_sub = paper.add_subparsers(dest="paper_command", required=True)
@@ -285,6 +302,9 @@ def main() -> None:
                 print(f"{name}: {counts}")
         return
 
+    if args.command == "strategy":
+        _strategy(args)
+        return
     if args.command == "backtest":
         config = BacktestConfig(
             domain=args.domain,
@@ -326,3 +346,30 @@ def main() -> None:
                 max_markets=args.max_markets,
             )
             print(f"{name}: {count} markets written to {path}")
+
+
+def _strategy(args: argparse.Namespace) -> None:
+    from vp.strategy import run
+    from vp.strategy.spec import Spec, diff, render, spec_hash, validate
+
+    def load(path: Path) -> Spec:
+        return Spec.model_validate_json(path.read_text())
+
+    if args.strategy_command == "diff":
+        for path, old, new in diff(load(args.old), load(args.new)):
+            print(f"{path}: {old!r} -> {new!r}")
+        return
+    spec = load(args.spec)
+    problems = validate(spec)
+    print("\n".join(render(spec)))
+    print(f"version {spec_hash(spec)}")
+    for problem in problems:
+        print(f"problem: {problem}")
+    if problems:
+        raise SystemExit(1)
+    if args.strategy_command == "backtest":
+        out = args.out or args.root / "strategies" / spec_hash(spec)[:12]
+        results = run.backtest(spec, args.root, out, max_markets=args.max_markets)
+        for domain, result in results.items():
+            print(f"{domain}: {result.common} markets scored; {out / domain}")
+            print((out / domain / "summary.md").read_text())

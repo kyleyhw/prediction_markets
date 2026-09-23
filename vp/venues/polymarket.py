@@ -451,6 +451,8 @@ def normalize_market(raw: dict[str, Any]) -> dict[str, Any]:
         "spread": _to_float(raw.get("spread")),
         "last_trade_price": _to_float(raw.get("lastTradePrice")),
         "one_day_probability_change": _to_float(raw.get("oneDayPriceChange")),
+        "market_type": raw.get("sportsMarketType"),
+        "description": raw.get("description"),
         **_fee_terms(raw),
     }
 

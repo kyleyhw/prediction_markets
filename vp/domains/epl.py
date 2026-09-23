@@ -95,6 +95,15 @@ EPL = Domain(
         "community shield",
         "women's super league",
         " wfc",
+        # "epl " also names Dota 2's EPL Masters and World Series and a
+        # Kerala cricket league (found 2026-09-23, docs/strategies.md).
+        "dota",
+        "t20",
     ),
     parse=parse,
+    kinds={
+        "match": ("team_a", "team_b", "side", "date"),
+        "season_winner": ("team", "season"),
+    },
+    has_props=True,
 )

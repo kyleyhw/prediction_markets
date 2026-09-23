@@ -91,4 +91,9 @@ CS2 = Domain(
     ),
     exclude=("simulator", "skin", "case opening"),
     parse=parse,
+    kinds={
+        "match": ("team_a", "team_b", "format", "map", "stage"),
+        "tournament_winner": ("team", "tournament"),
+    },
+    has_props=True,
 )

@@ -121,3 +121,80 @@ def size(
     if fraction <= 0.0:
         return None
     return Position(side, price, fraction, edge=(p - price) / price)
+
+
+@dataclass(frozen=True)
+class Policy:
+    """How a belief becomes a position: a strategy's rule and caps.
+
+    The default is the engine's behaviour before strategies (the side with
+    edge, fractional Kelly, capped per position), so the backtest and the
+    paper loop run unchanged without one. A strategy's spec supplies the
+    rest (docs/strategies.md): the sides it may take, the band its price
+    must lie in, a ``follow`` rule that makes no forecast and stakes a flat
+    fraction on the favourite or the underdog, and caps in dollars, open
+    positions and positions per event.
+    """
+
+    kelly_multiplier: float = 0.25
+    max_fraction: float = 0.05
+    min_edge: float = 0.0
+    sides: str = "both"  # "both", "yes" or "no"
+    follow: str | None = None  # "favourite" or "underdog"
+    flat_fraction: float = 0.01
+    price_min: float = 0.0
+    price_max: float = 1.0
+    max_stake_usd: float | None = None
+    max_open: int | None = None
+    max_per_event: int | None = None
+
+    def position(
+        self, p_hat: float, *, ask: float, bid: float, fees: FeeModel
+    ) -> Position | None:
+        """The position to take at this touch, or ``None``."""
+        if self.follow is not None:
+            favourite = "yes" if ask + bid >= 1.0 else "no"
+            side = favourite if self.follow == "favourite" else _other(favourite)
+            fraction = min(self.flat_fraction, self.max_fraction)
+            position = Position(side, 0.0, fraction, 0.0)
+        else:
+            found = size(
+                p_hat,
+                ask=ask,
+                bid=bid,
+                fees=fees,
+                kelly_multiplier=self.kelly_multiplier,
+                max_fraction=self.max_fraction,
+                min_edge=self.min_edge,
+            )
+            if found is None or self.sides not in ("both", found.side):
+                return None
+            position = found
+        quote = ask if position.side == "yes" else 1.0 - bid
+        if not self.price_min <= quote <= self.price_max or not 0.0 < quote < 1.0:
+            return None
+        if self.follow is not None:
+            price = quote + fees.per_share(quote)
+            return Position(position.side, price, position.fraction, 0.0)
+        return position
+
+    def stake(self, fraction: float, bankroll: float, cash: float) -> float:
+        """Dollars to stake: the fraction of the bankroll, within cash and cap."""
+        stake = min(fraction * bankroll, cash)
+        if self.max_stake_usd is not None:
+            stake = min(stake, self.max_stake_usd)
+        return stake
+
+    def admits(self, open_orders: list[dict], event_id: str | None) -> bool:
+        """Whether one more position fits the open-position caps."""
+        if self.max_open is not None and len(open_orders) >= self.max_open:
+            return False
+        if self.max_per_event is not None and event_id is not None:
+            same = sum(1 for o in open_orders if o.get("event_id") == event_id)
+            if same >= self.max_per_event:
+                return False
+        return True
+
+
+def _other(side: str) -> str:
+    return "no" if side == "yes" else "yes"

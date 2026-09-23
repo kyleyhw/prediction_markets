@@ -36,15 +36,16 @@ store and a fresh process resumes exactly where the last one stopped.
 from __future__ import annotations
 
 import logging
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Protocol
 
 from vp.backtest.scoring import brier_one
-from vp.backtest.sizing import FeeModel, fees_for, size
+from vp.backtest.sizing import FeeModel, Policy, fees_for
 from vp.domains.base import Domain
+from vp.domains.props import PROP_KINDS
 from vp.forecast import Evidence, Forecaster
 from vp.forecast.base import clip
 from vp.forecast.registry import Registry
@@ -131,13 +132,23 @@ def run_cycle(
     min_edge: float = 0.0,
     now: datetime | None = None,
     snapshot: Path | None = None,
+    policy: Policy | None = None,
+    where: Callable[[BinaryMarket], bool] | None = None,
+    window_hours: float | None = None,
 ) -> dict[str, int]:
     """Snapshot, forecast, and place simulated orders; returns counts.
 
     With ``snapshot`` the cycle trades against that existing capture
     instead of taking its own, which is how the platform runs many
     accounts off one capture of the venue rather than one each.
+
+    A strategy (`vp.strategy`) passes its ``policy`` (rule and caps, in
+    place of the three sizing numbers), its selector as ``where`` (without
+    one, every parsed market but the props), and ``window_hours``: only
+    markets whose scheduled end is at most that far away are forecast.
     """
+    policy = policy or Policy(kelly_multiplier, max_fraction, min_edge)
+    where = where or (lambda m: m.parsed.get("kind") not in PROP_KINDS)
     now = now or datetime.now(tz=timezone.utc)
     if snapshot is None:
         if source is None:
@@ -150,7 +161,11 @@ def run_cycle(
     captured = read_markets(path)
     if snapshot is not None:
         count = len(captured)
-    markets = [m for m in captured if m.parsed.get("kind")]
+    markets = [
+        m
+        for m in captured
+        if m.parsed.get("kind") and where(m) and _within(m, now, window_hours)
+    ]
     evidence = Evidence(now, root)
     registry = Registry(root / "paper" / "forecasts.jsonl")
     accounts = replay(ledger, initial_cash)
@@ -204,16 +219,12 @@ def run_cycle(
                 counts["recorded"] += 1
             if quote is None or forecaster.name == "market":
                 continue
+            if not policy.admits(list(account.open.values()), market.event_id):
+                continue
             bid, ask, bid_size, ask_size = quote
             market_fees, fee_source = fees_for(market, fees)
-            position = size(
-                forecast.p_hat,
-                ask=ask,
-                bid=bid,
-                fees=market_fees,
-                kelly_multiplier=kelly_multiplier,
-                max_fraction=max_fraction,
-                min_edge=min_edge,
+            position = policy.position(
+                forecast.p_hat, ask=ask, bid=bid, fees=market_fees
             )
             if position is None:
                 continue
@@ -222,7 +233,7 @@ def run_cycle(
             # account stake 135 times its bankroll across a cycle's markets
             # (found 2026-09-23, docs/paper_trading.md).
             cash = account.bankroll - sum(o["stake"] for o in account.open.values())
-            stake = min(position.fraction * account.bankroll, cash)
+            stake = policy.stake(position.fraction, account.bankroll, cash)
             if stake < MIN_STAKE:
                 continue
             shares = stake / position.price
@@ -235,6 +246,7 @@ def run_cycle(
                 "forecaster": forecaster.name,
                 "market_id": market.market_id,
                 "condition_id": market.condition_id,
+                "event_id": market.event_id,
                 "question": market.question,
                 "side": position.side,
                 "price": position.price,
@@ -251,6 +263,23 @@ def run_cycle(
             account.open[market.market_id] = order
             counts["orders"] += 1
     return counts
+
+
+def _within(market: BinaryMarket, now: datetime, hours: float | None) -> bool:
+    """Whether the market's scheduled end is in the next ``hours`` (always
+    true without a window; false for a market with no end date)."""
+    if hours is None:
+        return True
+    if not market.end_date:
+        return False
+    try:
+        end = datetime.fromisoformat(market.end_date.replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    if end.tzinfo is None:
+        end = end.replace(tzinfo=timezone.utc)
+    left = (end - now).total_seconds() / 3600
+    return 0 < left <= hours
 
 
 def settle(

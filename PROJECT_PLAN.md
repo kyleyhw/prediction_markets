@@ -673,10 +673,17 @@ interval. One backend, two reading levels.
 ## Phase 15: Research sessions and strategies from conversation
 Design: `docs/strategies.md`, written and agreed before any code; it fixes
 the spec, the sizing defaults, what a prompt may override, and the number
-gate. This is the "vibe": the conversation that turns an idea into something
+gate. Started 2026-09-23 under the owner's goal "implement the next three
+phases"; the page was written first and its decisions are the plan's
+Phase 15 rows as proposed. This is the "vibe": the conversation that turns an idea into something
 that runs, is scored, and is shown honestly.
 
-50. [pending] Strategy spec, version 1 (data, not code).
+50. [done 2026-09-23] Strategy spec, version 1 (data, not code):
+    `vp/strategy/spec.py` (closed pydantic models, `Caps`, `validate`,
+    `render`, `diff`, canonical JSON and hash), `vp/strategy/run.py`
+    (selector, policy, belief; backtest and paper options), the `Policy`
+    hook in `vp/backtest/sizing.py` used by the simulator and the paper
+    loop, `vp strategy check|diff|backtest`.
     - **Selector**: domains, market kinds, parsed-field filters (team,
       league, city, bucket width, series format), time-to-close window,
       liquidity and spread floors, tags, exclusions.
@@ -696,9 +703,12 @@ that runs, is scored, and is shown honestly.
     - JSON schema; immutable versions; a deterministic plain-language
       rendering (not by the model) so that what the user confirms is exactly
       what runs; a diff between versions.
-51. [pending] Prop markets the spec needs: over/under totals, handicaps,
+51. [done 2026-09-23] Prop markets the spec needs: over/under totals, handicaps,
     halftime, exact score, odd/even, anytime scorer, per-map, with each
-    market's resolution description stored and shown.
+    market's resolution description stored and shown. `vp/domains/props.py`,
+    checked against the venue's own `sportsMarketType` on 133 captured
+    questions; the record stores `market_type` and `description`; props are
+    opt-in by kind; the EPL domain now excludes Dota 2 and cricket.
 52. [pending] Compiler: prompt to spec through structured output, with
     clarifying questions when a field is ambiguous, a refusal when a request
     needs a field the spec lacks (a constraint is never silently dropped),

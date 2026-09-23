@@ -23,7 +23,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from vp.backtest.sizing import FeeModel, size
+from vp.backtest.sizing import FeeModel, Policy
 
 
 @dataclass(frozen=True)
@@ -35,6 +35,7 @@ class Opportunity:
     p_hat: float
     q: float
     label: int
+    fees: FeeModel | None = None  # the market's own; the run's when None
 
 
 @dataclass(frozen=True)
@@ -60,8 +61,15 @@ def simulate(
     kelly_multiplier: float = 0.25,
     max_fraction: float = 0.05,
     min_edge: float = 0.0,
+    policy: Policy | None = None,
 ) -> list[Bet]:
-    """Fill and settle every opportunity with edge, in settlement order."""
+    """Fill and settle every opportunity with edge, in settlement order.
+
+    ``policy`` replaces the three sizing arguments when given. Its
+    open-position caps cannot bind here, since each bet settles before the
+    next; its dollar cap does.
+    """
+    policy = policy or Policy(kelly_multiplier, max_fraction, min_edge)
     bankroll = initial_cash
     bets: list[Bet] = []
     for opp in sorted(opportunities, key=lambda o: o.settled):
@@ -69,18 +77,10 @@ def simulate(
             break
         bid = max(opp.q - half_spread, 0.0)
         ask = min(opp.q + half_spread, 1.0)
-        position = size(
-            opp.p_hat,
-            ask=ask,
-            bid=bid,
-            fees=fees,
-            kelly_multiplier=kelly_multiplier,
-            max_fraction=max_fraction,
-            min_edge=min_edge,
-        )
+        position = policy.position(opp.p_hat, ask=ask, bid=bid, fees=opp.fees or fees)
         if position is None:
             continue
-        stake = position.fraction * bankroll
+        stake = policy.stake(position.fraction, bankroll, bankroll)
         shares = stake / position.price
         won = opp.label == (1 if position.side == "yes" else 0)
         pnl = shares - stake if won else -stake
