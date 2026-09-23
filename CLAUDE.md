@@ -213,18 +213,22 @@ Things a future session should know:
   environment, so the first keyed run needs only the key, and
   `vp backtest --forecasters market llm --max-markets 50` on a domain is
   the first thing to do with it. The cost per forecast is printed.
-- The Phase 9 backtests ran with the zero-fee default. The venue's 2026
-  schedule charges takers on sports and weather markets ($C \cdot r \cdot
-  p(1-p)$, $r$ = 0.05, read from each market's `feeSchedule`); the plan's
-  task 77 re-runs the baselines fee-aware and `docs/sizing.md` still
-  carries the 2026-09-13 assumption until then.
+- Fees: the venue sets each market's taker rate ($C \cdot r \cdot
+  p(1-p)$; zero before spring 2026, then 3% or 5%), datasets built since
+  2026-09-23 carry it, and `vp backtest --market-fees` charges it; the
+  Phase 9 report has the fee-aware amendment (task 77).
 - Live baseline results (Phase 9 report): no baseline beats the market
   (weather climatology skill −0.19, EPL Elo −0.02, CS2 Elo −0.12). Edge is
   not the goal; these are the benchmark a user's strategy is measured
   against.
-- Evidence comes from the resolved dataset itself. Open-Meteo's archive and
-  previous-runs endpoints were rate-limited from the container; wiring them
-  in is the obvious next step for weather.
+- Evidence comes from the resolved dataset itself and, since Phase 17, the
+  archive under `<root>/evidence/`: `vp evidence weather-runs` backfills
+  point-in-time forecasts at every station (about 12 minutes; the free
+  Open-Meteo hosts answer 429 from this container at times, and the
+  command resumes), `vp evidence football --season 2025-26` the results,
+  `vp evidence ensemble` needs a snapshot of open weather markets first
+  (about an hour with books). Read `docs/evidence.md` on the fetch-latency
+  rule before touching visibility.
 - Known follow-up: `vp paper run --max-markets N` caps the snapshot, not the
   parsed markets, so a small N can yield nothing to forecast in EPL.
 - `data/` is git-ignored; a session starts with no datasets. Rebuilding:
