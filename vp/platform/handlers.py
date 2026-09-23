@@ -36,6 +36,7 @@ import logging
 import tempfile
 from collections.abc import Callable, Sequence
 from dataclasses import asdict, dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 from uuid import UUID, uuid4
@@ -146,6 +147,14 @@ def forecasters_for(
         else:
             out.append(Memoised(make_forecaster(name, domain), pool, salt))
     return out
+
+
+def _captured_at(stem: str) -> datetime | None:
+    """The time in a capture's name (20260923T120936Z), or None."""
+    try:
+        return datetime.strptime(stem, "%Y%m%dT%H%M%SZ").replace(tzinfo=UTC)
+    except ValueError:
+        return None
 
 
 def _stamp() -> str:
@@ -295,6 +304,10 @@ def paper_cycle(ctx: JobContext) -> dict[str, Any]:
             forecasters = forecasters_for(
                 account["forecasters"], domain, svc.pool, snaps[-1].stem
             )
+            # The information cutoff is the capture's time: what was known
+            # when the prices traded against were seen, never later than now.
+            # Every account trading this capture then asks the same question,
+            # so the statistical forecasts are shared through the memo.
             counts[domain] = run_cycle(
                 DOMAINS[domain],
                 forecasters,
@@ -303,6 +316,7 @@ def paper_cycle(ctx: JobContext) -> dict[str, Any]:
                 ledger,
                 initial_cash=account["cash"],
                 snapshot=root / "snapshots" / domain / snaps[-1].name,
+                now=_captured_at(snaps[-1].stem),
             )
             _store_forecasts(
                 ctx, root / "paper" / "forecasts.jsonl", domain, account["id"]

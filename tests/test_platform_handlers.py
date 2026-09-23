@@ -115,6 +115,22 @@ def test_a_paper_cycle_trades_the_shared_capture_into_the_account_s_ledger(
     theirs = enqueue(app_pool, bob, "paper_cycle", {"account_id": str(account)})
     run_all(app_pool, services, ("paper_cycle",))
     assert "no such paper account" in (job_row(pg_owner, theirs)["error"] or "")
+    # The cutoff is the capture's time, so Bob's own account trading the same
+    # capture reuses Ada's memoised forecast instead of making another.
+    memo = pg_owner.execute("select count(*) from forecast_memo").fetchone()
+    with app_pool.connection() as conn, tenant_session(conn, bob):
+        (own,) = conn.execute(
+            "insert into paper_accounts (workspace_id, name, domains, forecasters, "
+            "created_by) values (%s, 'Sample', %s, %s, %s) returning id",
+            (bob.workspace, ["cs2"], ["constant"], bob.user_id),
+        ).fetchone()
+    enqueue(app_pool, bob, "paper_cycle", {"account_id": str(own)})
+    run_all(app_pool, services, ("paper_cycle",))
+    assert pg_owner.execute("select count(*) from forecast_memo").fetchone() == memo
+    with app_pool.connection() as conn, tenant_session(conn, bob):
+        (cutoff,) = conn.execute("select cutoff from forecasts").fetchone()
+    stem = next((services.shared.root / "snapshots" / "cs2").glob("*.parquet")).stem
+    assert cutoff.strftime("%Y%m%dT%H%M%SZ") == stem
 
 
 def test_settlement_asks_the_venue_only_about_resolved_markets(
@@ -153,6 +169,8 @@ def test_settlement_asks_the_venue_only_about_resolved_markets(
 
 
 def test_platform_maintenance_jobs_run(app_pool, pg_owner, services: Services) -> None:
+    # The test database outlives a run; an earlier run's jobs hold the keys.
+    pg_owner.execute("delete from jobs where idempotency_key like 'test-%%'")
     for kind in ("partitions", "sweep"):
         job_id = jobs.enqueue_platform(app_pool, kind, idempotency_key=f"test-{kind}")
         run_all(app_pool, services, (kind,))

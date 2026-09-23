@@ -84,7 +84,7 @@ def test_a_data_refresh_does_what_the_daily_build_does(pg_owner) -> None:
     pg_owner.execute(
         "insert into schedules (name, kind, payload, cron, timezone, next_run_at) "
         "values ('dataset-testland', 'dataset', "
-        "'{\"domain\": \"testland\", \"history_limit\": 7}', '0 4 * * *', "
+        '\'{"domain": "testland", "history_limit": 7}\', \'0 4 * * *\', '
         "'UTC', now() + interval '1 day')"
     )
     ids = ops.refresh(pg_owner, "testland", ("dataset",))
