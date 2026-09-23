@@ -251,6 +251,16 @@ class Evidence:
         ]
         return [(_unlabelled(m), self.price_at(m)) for m in siblings]
 
+    def settled(self, domain: str) -> list[BinaryMarket]:
+        """The domain's markets settled (with a label) before the cutoff."""
+        return [
+            m
+            for m in self._resolved(domain)
+            if m.resolved_outcome is not None
+            and (when := settled_at(m)) is not None
+            and when < self.cutoff
+        ]
+
     def settled_prices(
         self, domain: str, hours: float
     ) -> list[tuple[datetime, float, int]]:

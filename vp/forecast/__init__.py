@@ -25,8 +25,31 @@ def forecaster_names() -> tuple[str, ...]:
     return FORECASTER_NAMES + tuple(f"signal:{i}" for i in ids())
 
 
+def known(name: str) -> bool:
+    """Whether a belief name can be built: a forecaster, a signal, or a blend
+    of signals written ``blend:<id>+<id>`` (docs/signals.md)."""
+    if name.startswith("blend:"):
+        from vp.signals.registry import ids
+
+        parts = name.removeprefix("blend:").split("+")
+        return bool(parts) and all(p in ids() for p in parts)
+    if name.startswith("committee:"):
+        from vp.signals.committee import presets
+
+        return name.removeprefix("committee:") in presets()
+    return name in forecaster_names()
+
+
 def make_forecaster(name: str, domain: str, **options: Any) -> Forecaster:
     """Build a forecaster by name for a domain; ``llm`` options pass through."""
+    if name.startswith("blend:"):
+        from vp.signals.blend import Blend
+
+        return Blend(tuple(name.removeprefix("blend:").split("+")))
+    if name.startswith("committee:"):
+        from vp.signals.committee import Committee
+
+        return Committee.preset(name.removeprefix("committee:"), **options)
     if name.startswith("signal:"):
         from vp.signals.base import SignalForecaster
         from vp.signals.registry import load
@@ -53,6 +76,7 @@ def make_forecaster(name: str, domain: str, **options: Any) -> Forecaster:
 __all__ = [
     "FORECASTER_NAMES",
     "forecaster_names",
+    "known",
     "Evidence",
     "Forecast",
     "Forecaster",

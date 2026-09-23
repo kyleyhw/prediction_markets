@@ -29,7 +29,7 @@ from typing import Any
 import numpy as np
 
 from vp.domains.pack import load as load_pack
-from vp.strategy.spec import Spec, spec_hash
+from vp.strategy.spec import Spec, spec_hash, uses_model
 
 #: Packages whose versions can change a number on a card.
 PACKAGES = ("vibe-predict", "numpy", "pyarrow", "pydantic", "anthropic")
@@ -57,7 +57,7 @@ def manifest(
     """What produced a backtest of ``spec`` on ``domain``."""
     belief = spec.belief.model_dump(mode="json")
     model = None
-    if spec.belief.forecaster == "llm" and spec.rule.kind == "edge":
+    if uses_model(spec):
         from vp.forecast.llm import TIERS
 
         model = TIERS[spec.belief.tier]
@@ -198,6 +198,30 @@ def run_card(
         )
     if manifest_.get("rule_kind") == "follow":
         caveats.append("A follow rule forecasts nothing; judge it by its P&L alone.")
+    model = manifest_.get("model")
+    if model:
+        from vp.forecast.llm import TRAINING_CUTOFFS, contaminated
+
+        dates = results.get("settled_dates") or []
+        clean = [i for i, d in enumerate(dates) if not contaminated(model, d)]
+        card["training_cutoff"] = TRAINING_CUTOFFS.get(model)
+        card["uncontaminated_n"] = len(clean)
+        if TRAINING_CUTOFFS.get(model) is None:
+            caveats.append(
+                f"{model}'s training cutoff is not recorded, so none of this run"
+                " counts as skill: the model may have read how these markets ended."
+            )
+        elif clean and len(clean) < len(diffs):
+            later = paired_interval(diffs[clean])
+            card["advantage_after_cutoff"] = (
+                None
+                if later is None
+                else {"mean": later[0], "low": later[1], "high": later[2]}
+            )
+            caveats.append(
+                f"Only the {len(clean)} markets settled after {model}'s training"
+                " cutoff count as skill."
+            )
     if sees_price:
         caveats.append(
             "The belief was shown the market's price, so its skill measures"

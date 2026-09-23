@@ -141,6 +141,9 @@ def main() -> None:
     sbench.add_argument("--window", default=None, help="YYYY-MM..YYYY-MM")
     sbench.add_argument("--max-markets", type=int, default=2000)
     sbench.add_argument("--seed", type=int, default=0)
+    sbench.add_argument(
+        "--blend", action="append", default=[], help="a blend, e.g. elo+platt_market"
+    )
 
     strat = sub.add_parser("strategy", help="a strategy spec (JSON)")
     strat_sub = strat.add_subparsers(dest="strategy_command", required=True)
@@ -453,6 +456,7 @@ def _signals(args: argparse.Namespace) -> None:
         window=window,  # type: ignore[arg-type]
         max_markets=args.max_markets,
         seed=args.seed,
+        blends=args.blend,
     )
     path = args.root / "signals" / "bench" / f"{args.domain}.json"
     path.parent.mkdir(parents=True, exist_ok=True)

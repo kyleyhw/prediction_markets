@@ -22,6 +22,7 @@ from vp.platform.db import tenant_session
 from vp.platform.principal import Principal
 from vp.strategy.agent import ToolBox, ToolError, tool_schema
 from vp.strategy.card import manifest_diff
+from vp.strategy.spec import uses_model
 
 #: What a research message holds against the budget until its cost is known.
 RESEARCH_RESERVE_USD = 0.60
@@ -121,7 +122,7 @@ class PlatformToolBox(ToolBox):
         except strategies.NotFound:
             raise ToolError("no such strategy in this workspace") from None
         spec = head["spec"]
-        if spec.belief.forecaster == "llm" and spec.rule.kind == "edge":
+        if uses_model(spec):
             raise ToolError(
                 "this backtest would spend money on the AI model; the person "
                 "starts it from the strategy page, where its cost is shown first"

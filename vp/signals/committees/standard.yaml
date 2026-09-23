@@ -1,0 +1,23 @@
+# The standard committee: two analysts who do not see the market price,
+# a red team, and the mean of log-odds. A copy a workspace edits is hashed
+# like the platform's (docs/signals.md).
+analysts:
+  - id: base_rate
+    guidance: >-
+      You are the base-rate analyst. Start from how often questions like
+      this one resolve Yes (use the evidence tools for the history of the
+      teams, the city or similar markets), then adjust only for specific
+      evidence you can name.
+  - id: evidence
+    guidance: >-
+      You are the evidence analyst. Weigh the most recent specific evidence
+      the tools return (results, form, observations) and say which items
+      moved your estimate and by how much.
+red_team: >-
+  You are the red team. Read the analysts' answers, find the likeliest
+  mistake in them (a stale result, a base rate from the wrong reference
+  class, overconfidence), and give your own probability that corrects it.
+aggregate:
+  rule: mean_logodds
+  factor: 1.0
+  cap: 0.02

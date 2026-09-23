@@ -147,3 +147,148 @@ def test_the_bench_pairs_each_signal_with_the_market(tmp_path, roots) -> None:
     assert verdict((0.01, 0.002, 0.02)) == "alive"
     assert verdict((-0.01, -0.02, -0.001)) == "anti"
     assert verdict((0.0, -0.01, 0.01)) == "par" and verdict(None) == "too few"
+
+
+# ------------------------------------------------ blends, committees, benchmark
+
+
+def test_a_blend_starts_as_the_market_and_learns_only_from_the_past(roots) -> None:
+    from vp.signals.blend import Blend
+
+    plain, guarded = roots
+    target = next(t for t in plain.targets if t.event_id == "wtarget")
+    few = Blend(("climatology",), min_history=10_000)
+    assert few.forecast(target, Evidence(gates.CUTOFF, plain.root)) is None
+    a = Blend(("climatology",), min_history=50).forecast(
+        target, Evidence(gates.CUTOFF, plain.root)
+    )
+    b = Blend(("climatology",), min_history=50).forecast(
+        target, Evidence(gates.CUTOFF, guarded.root)
+    )
+    assert a is not None and b is not None and a.p_hat == b.p_hat  # later rows ignored
+    assert a.forecaster == "blend:climatology" and "weights" in a.rationale
+    from vp.forecast import known
+
+    assert known("blend:elo+platt_market") and not known("blend:elo+nothing")
+    assert known("committee:standard") and not known("committee:nope")
+
+
+def test_aggregation_rules() -> None:
+    from vp.signals.committee import aggregate
+
+    assert aggregate([0.5, 0.5]) == pytest.approx(0.5)
+    assert aggregate([0.9, 0.9], rule="extremise", factor=2.0, cap=0.001) > 0.98
+    assert aggregate([0.9, 0.9], rule="extremise", factor=2.0) == 0.98  # capped
+    assert aggregate([0.01, 0.6, 0.62, 0.99], rule="trimmed") == pytest.approx(
+        0.61, abs=0.01
+    )
+    assert aggregate([0.999], cap=0.02) == 0.98
+
+
+def test_a_committee_asks_each_role_and_combines_them_by_its_rule(roots) -> None:
+    import json
+    from types import SimpleNamespace
+
+    from vp.signals.committee import Committee
+
+    said = {"base-rate": 0.6, "evidence analyst": 0.7, "red team": 0.5}
+
+    class Roles:
+        def __init__(self) -> None:
+            self.messages = self
+
+        def create(self, **kwargs):
+            text = kwargs["messages"][0]["content"]
+            p = next(v for k, v in said.items() if k in text)
+            body = json.dumps({"probability": p, "rationale": f"role says {p}"})
+            return SimpleNamespace(
+                stop_reason="end_turn",
+                content=[SimpleNamespace(type="text", text=body)],
+                usage=SimpleNamespace(input_tokens=100, output_tokens=10),
+            )
+
+    plain, _ = roots
+    target = next(t for t in plain.targets if t.parsed.get("side") == "Alpha FC")
+    committee = Committee.preset("standard", client=Roles(), model="claude-sonnet-5")
+    answer = committee.forecast(target, Evidence(gates.CUTOFF, plain.root))
+    assert answer is not None and answer.forecaster == "committee:standard"
+    assert set(k for k in answer.meta if k.endswith(".p")) == {
+        "base_rate.p",
+        "evidence.p",
+        "red_team.p",
+    }
+    import math
+
+    mean = sum(math.log(p / (1 - p)) for p in said.values()) / 3
+    assert answer.p_hat == pytest.approx(1 / (1 + math.exp(-mean)))
+    assert answer.cost_usd > 0 and len(committee.calls) == 3
+
+
+def test_a_model_without_a_recorded_cutoff_counts_as_contaminated() -> None:
+    from vp.forecast.llm import TRAINING_CUTOFFS, contaminated
+    from vp.strategy.card import run_card
+
+    assert contaminated("claude-opus-5", "2026-09-01")
+    TRAINING_CUTOFFS["test-model"] = "2026-01-31"
+    try:
+        assert contaminated("test-model", "2026-01-15")
+        assert not contaminated("test-model", "2026-02-01")
+        results = {
+            "common": 4,
+            "candidates": 4,
+            "with_price": 4,
+            "settled_dates": ["2026-01-10", "2026-01-20", "2026-02-10", "2026-03-01"],
+            "forecasters": [
+                {"name": "market", "brier": 0.2},
+                {
+                    "name": "llm",
+                    "brier": 0.19,
+                    "log": 0.5,
+                    "skill": 0.05,
+                    "advantage": [0.01, 0.02, 0.05, 0.07],
+                    "calibration": {"reliability": 0, "resolution": 0, "ece": 0},
+                },
+            ],
+        }
+        card = run_card(results, {"model": "test-model", "hash": "h"})
+        assert card["uncontaminated_n"] == 2
+        assert card["advantage_after_cutoff"]["mean"] == pytest.approx(0.025)
+        unknown = run_card(results, {"model": "claude-opus-5", "hash": "h"})
+        assert any("not recorded" in c for c in unknown["caveats"])
+    finally:
+        del TRAINING_CUTOFFS["test-model"]
+
+
+def test_the_benchmark_commits_before_and_scores_after(roots) -> None:
+    from datetime import timedelta
+
+    from vp.signals import benchmark
+
+    plain, _ = roots
+    now = gates.CUTOFF - timedelta(hours=1)
+    markets = [
+        replace(
+            t,
+            outcomes=(
+                replace(t.outcomes[0], implied_probability=0.4),
+                t.outcomes[1],
+            ),
+        )
+        for t in plain.targets
+    ]
+    week = benchmark.freeze(markets, now=now, seed=7, size=5, horizon_days=60)
+    assert (
+        len(week["questions"]) == 5
+        and len({q["domain"] for q in week["questions"]}) == 3
+    )
+    again = benchmark.freeze(markets, now=now, seed=7, size=5, horizon_days=60)
+    assert again["hash"] == week["hash"]  # the seed makes it reproducible
+    forecasts = {q["market_id"]: 0.7 for q in week["questions"]}
+    sealed = benchmark.commit(week["hash"], "signal:elo", forecasts)
+    assert benchmark.verify(sealed["commitment"], sealed["salt"], sealed["payload"])
+    tampered = sealed["payload"].replace("0.7", "0.8")
+    assert not benchmark.verify(sealed["commitment"], sealed["salt"], tampered)
+    labels = {q["market_id"]: 1 for q in week["questions"]}
+    scored = benchmark.score(week, sealed["payload"], labels)
+    assert scored["n"] == 5 and scored["ranked"] is False
+    assert scored["brier"] == pytest.approx(0.09) and scored["skill"] > 0

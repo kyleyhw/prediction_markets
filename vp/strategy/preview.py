@@ -33,7 +33,7 @@ from typing import Any
 from vp.forecast.evidence import settled_at
 from vp.markets.store import read_markets
 from vp.strategy.run import selects
-from vp.strategy.spec import Spec
+from vp.strategy.spec import Spec, uses_model
 
 #: z for a two-sided 5% test plus z for 80% power.
 Z = 1.96 + 0.84
@@ -120,7 +120,7 @@ def preview(
             " spread against zero decides how long it must run."
         )
     b = spec.belief
-    if b.forecaster == "llm" and rule.kind == "edge":
+    if uses_model(spec):
         from vp.forecast.llm import TIERS, estimate_usd
 
         model = TIERS[b.tier]

@@ -142,6 +142,13 @@ class Caps:
     max_per_event: int | None = None
 
 
+def uses_model(spec: Spec) -> bool:
+    """Whether the belief calls a language model (and so costs money): the
+    LLM forecaster or a committee, under an edge rule."""
+    b = spec.belief.forecaster
+    return spec.rule.kind == "edge" and (b == "llm" or b.startswith("committee:"))
+
+
 def canonical(spec: Spec) -> str:
     """The spec's canonical JSON: sorted keys, no spaces."""
     return json.dumps(
@@ -162,11 +169,9 @@ def validate(
     forecasters: Iterable[str] | None = None,
 ) -> list[str]:
     """What is wrong with the spec, as plain sentences; empty when it may run."""
-    if forecasters is None:
-        from vp.forecast import forecaster_names
+    from vp.forecast import known as buildable
 
-        forecasters = forecaster_names()
-    known = set(forecasters)
+    names = set(forecasters) if forecasters is not None else None
     problems: list[str] = []
     sel, belief, rule, sizing = spec.selector, spec.belief, spec.rule, spec.sizing
     chosen = [domains[d] for d in sel.domains if d in domains]
@@ -195,7 +200,9 @@ def validate(
                 problems.append(
                     f"{condition.op} on {condition.field} needs one number."
                 )
-    if belief.forecaster not in known:
+    if not (
+        buildable(belief.forecaster) if names is None else belief.forecaster in names
+    ):
         problems.append(f"There is no forecaster called {belief.forecaster!r}.")
     if belief.forecaster != "llm" and (belief.instructions or belief.sees_price):
         problems.append(

@@ -68,6 +68,25 @@ EXPECTED_INPUT, EXPECTED_OUTPUT, EXPECTED_ROUNDS = 1500, 600, 3
 # for breadth by default, the strongest on demand.
 TIERS: dict[str, str] = {"standard": "claude-sonnet-5", "strong": "claude-opus-5"}
 
+# Each model's training cutoff, the last date its training data may reach
+# (docs/signals.md, contamination). A market settled on or before it may be
+# known to the model, so only later markets count as skill. None is not
+# recorded yet: every result of that model counts as contaminated until the
+# provider's published cutoff is entered here.
+TRAINING_CUTOFFS: dict[str, str | None] = {
+    "claude-opus-5": None,
+    "claude-sonnet-5": None,
+    "claude-haiku-4-5": None,
+}
+
+
+def contaminated(model: str, settled: str) -> bool:
+    """Whether a market settled on ``settled`` (ISO) may be in ``model``'s
+    training data: always, while the model's cutoff is not recorded."""
+    cutoff = TRAINING_CUTOFFS.get(model)
+    return cutoff is None or settled[:10] <= cutoff
+
+
 # USD per million tokens, input and output, for cost accounting.
 PRICES: dict[str, tuple[float, float]] = {
     "claude-opus-5": (5.0, 25.0),

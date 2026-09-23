@@ -24,6 +24,7 @@ dependencies = [
     "pyarrow>=25.0.1",
     "pydantic>=2.12",
     "python-multipart>=0.0.18",
+    "pyyaml>=6.0",
     "requests>=2.32.5",
     "uvicorn>=0.32",
     "websockets>=17.1",

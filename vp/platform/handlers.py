@@ -344,7 +344,9 @@ def strategy_backtest(ctx: JobContext) -> dict[str, Any]:
     packs = strategies.workspace_packs(svc.pool, ctx.principal)
     llm: dict[str, Any] = {}
     paid_by = "platform"
-    uses_model = spec.belief.forecaster == "llm" and spec.rule.kind == "edge"
+    from vp.strategy.spec import uses_model as model_backed
+
+    uses_model = model_backed(spec)
     if uses_model:
         client, paid_by = llmops.client_for(
             svc.pool,
@@ -558,7 +560,9 @@ def _trade(ctx: JobContext, principal: Principal, account_id: UUID) -> dict[str,
             svc.pool, principal, account["strategy_version_id"]
         )
         options = strategy_run.paper_options(spec)
-        if spec.belief.forecaster == "llm" and spec.rule.kind == "edge":
+        from vp.strategy.spec import uses_model as model_backed
+
+        if model_backed(spec):
             if budgets.standing(svc.pool, principal).remaining_usd <= 0:
                 return {"account_id": str(account["id"]), "skipped": "over budget"}
             client, paid_by = llmops.client_for(

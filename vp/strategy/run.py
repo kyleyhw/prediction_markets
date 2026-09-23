@@ -22,7 +22,15 @@ from vp.forecast import Forecaster, make_forecaster
 from vp.forecast.baselines import MarketPrice
 from vp.markets.schema import BinaryMarket
 from vp.markets.store import read_markets
-from vp.strategy.spec import FieldFilter, Selector, Spec, canonical, render, spec_hash
+from vp.strategy.spec import (
+    FieldFilter,
+    Selector,
+    Spec,
+    canonical,
+    render,
+    spec_hash,
+    uses_model,
+)
 
 #: The name a follow rule's belief records under: the market's price, which
 #: it trades on without forecasting.
@@ -124,6 +132,10 @@ def belief(spec: Spec, domain: str, **llm: Any) -> Forecaster:
     b = spec.belief
     if spec.rule.kind == "follow":
         return MarketPrice(name=FOLLOW)
+    if b.forecaster.startswith("committee:"):
+        from vp.forecast.llm import TIERS
+
+        return make_forecaster(b.forecaster, domain, model=TIERS[b.tier], **llm)
     if b.forecaster == "llm":
         from vp.forecast.llm import TIERS
 
@@ -223,9 +235,9 @@ def backtest(
             dataset_version=(dataset_versions or {}).get(domain, "local"),
             packs=dict(packs or {}),
         )
-        uses_model = spec.belief.forecaster == "llm" and spec.rule.kind == "edge"
+        model_backed = uses_model(spec)
         data["card"] = card.run_card(
-            data, manifest, sees_price=spec.belief.sees_price and uses_model
+            data, manifest, sees_price=spec.belief.sees_price and model_backed
         )
         path.write_text(json.dumps(data, indent=1))
         (folder / "manifest.json").write_text(json.dumps(manifest, indent=1))

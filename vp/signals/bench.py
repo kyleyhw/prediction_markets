@@ -51,6 +51,7 @@ def bench(
     max_markets: int | None = 2000,
     seed: int = 0,
     signal_ids: list[str] | None = None,
+    blends: list[str] | None = None,
 ) -> dict[str, Any]:
     """Bench the signals on one domain; returns the JSON the page draws."""
     path = root / "markets" / domain / "resolved.parquet"
@@ -74,6 +75,9 @@ def bench(
     markets.sort(key=lambda m: settled_at(m) or EPOCH)
     chosen = [registry.load(s) for s in (signal_ids or registry.ids())]
     signals = [s for s in chosen if any(s.meta.applies(m) for m in markets)]
+    from vp.signals.blend import Blend
+
+    mixes = [Blend(tuple(b.split("+"))) for b in blends or []]
     base = Evidence(EPOCH, root, markets={domain: resolved})
     rows: dict[str, list[tuple[datetime, float, float, int]]] = defaultdict(list)
     with_price = 0
@@ -91,14 +95,24 @@ def bench(
             p = s.compute(m, ev)
             if p is not None:
                 rows[s.meta.id].append((when, p, q, int(m.resolved_outcome or 0)))
+        for mix in mixes:
+            answer = mix.forecast(m, ev)
+            if answer is not None:
+                rows[mix.name].append(
+                    (when, answer.p_hat, q, int(m.resolved_outcome or 0))
+                )
     out: dict[str, Any] = {}
-    for s in signals:
-        data = rows[s.meta.id]
+    entries = [
+        (s.meta.id, s.meta.title, s.meta.uses_price, registry.module_hash(s))
+        for s in signals
+    ] + [(mix.name, "Blend of " + ", ".join(mix.signal_ids), True, "") for mix in mixes]
+    for key, title, uses_price, digest in entries:
+        data = rows[key]
         entry: dict[str, Any] = {
-            "title": s.meta.title,
+            "title": title,
             "n": len(data),
-            "uses_price": s.meta.uses_price,
-            "module_sha256": registry.module_hash(s),
+            "uses_price": uses_price,
+            "module_sha256": digest,
         }
         if len(data) >= MIN_N:
             p = np.clip(np.array([r[1] for r in data]), 0.01, 0.99)
@@ -133,7 +147,7 @@ def bench(
             )
         else:
             entry["verdict"] = "too few"
-        out[s.meta.id] = entry
+        out[key] = entry
     stat = path.stat()
     return {
         "domain": domain,
@@ -146,6 +160,7 @@ def bench(
         "command": f"vp signals bench --domain {domain} --hours {hours:g}"
         + (f" --window {window[0]}..{window[1]}" if window else "")
         + (f" --max-markets {max_markets}" if max_markets else "")
-        + f" --seed {seed}",
+        + f" --seed {seed}"
+        + "".join(f" --blend {b}" for b in blends or []),
         "signals": out,
     }

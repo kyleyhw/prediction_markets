@@ -254,7 +254,11 @@ def run_backtest(
     )
     (out_dir / "summary.md").write_text(summary(outcome))
     (out_dir / "results.json").write_text(
-        json.dumps(results_json(outcome, forecasts, y, reference), indent=1)
+        json.dumps(
+            results_json(outcome, forecasts, y, reference)
+            | {"settled_dates": [when for _, _, when in scored]},
+            indent=1,
+        )
     )
     if scored:
         plots(outcome, forecasts, y, reference, out_dir)
