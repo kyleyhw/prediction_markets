@@ -481,3 +481,12 @@ the technical half of F1 only, and it was measured from this container,
 is the same probe from the deployed region, together with the reading of
 the venue's terms on automated access, data storage and commercial use;
 both are tasks of this phase and neither is done.
+
+**The stand-in, 2026-09-23.** The whole platform ran under Docker Compose
+for an afternoon with live venue data: the walk-through of the phase's
+"done when" in Chromium, request latency under load, ingestion lag,
+staleness and reconnects, venue requests, job start latency, cost per
+person-day, a restore drill, and the storage of the shared market data.
+The figures, and the twenty faults the measuring found and fixed, are in
+`tests/reports/phase13_platform.md`; the stage-A column of
+[scaling.md](scaling.md) § 11 now holds them.
