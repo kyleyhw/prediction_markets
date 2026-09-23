@@ -16,7 +16,7 @@ scrape_configs:
       - targets: ["web:8000"]
   - job_name: workers
     static_configs:
-      - targets: ["worker-interactive:9101", "worker-paper:9102", "worker-platform:9103"]
+      - targets: ["worker-interactive:9101", "worker-paper:9102", "worker-platform:9103", "worker-data:9105"]
   - job_name: ingest
     static_configs:
       - targets: ["ingest:9104"]

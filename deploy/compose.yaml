@@ -81,7 +81,8 @@ services:
       - "8000:8000"
 
   # Worker pools per kind, sized independently: interactive work never
-  # waits behind a dataset build.
+  # waits behind a dataset build, and the minute scheduler never waits
+  # behind anything long.
   worker-interactive:
     <<: *app
     command: ["worker", "--kinds", "backtest", "leakage", "--concurrency", "2", "--metrics-port", "9101"]
@@ -92,7 +93,11 @@ services:
 
   worker-platform:
     <<: *app
-    command: ["worker", "--kinds", "scheduler", "dataset", "snapshot", "evidence", "partitions", "reconcile", "sweep", "--concurrency", "2", "--metrics-port", "9103"]
+    command: ["worker", "--kinds", "scheduler", "partitions", "reconcile", "sweep", "--concurrency", "2", "--metrics-port", "9103"]
+
+  worker-data:
+    <<: *app
+    command: ["worker", "--kinds", "dataset", "snapshot", "evidence", "--concurrency", "2", "--metrics-port", "9105"]
 
   ingest:
     <<: *app
