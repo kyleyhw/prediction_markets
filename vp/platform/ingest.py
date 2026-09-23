@@ -396,6 +396,11 @@ class Ingest:
                     "update tracked_markets set closed = true where condition_id = %s",
                     (condition,),
                 )
+                # From the venue's stamp on the event to our record of it:
+                # the resolution-to-label objective (under 15 minutes).
+                stamp = _num(e.get("timestamp"))
+                if stamp:
+                    RESOLUTION_DELAY.observe(max(time.time() - stamp / 1000, 0.0))
         return len(events)
 
     # -- the socket --

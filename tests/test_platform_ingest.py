@@ -17,6 +17,7 @@ from vp.domains import CS2
 from vp.markets.store import read_markets
 from vp.platform import ingest
 from vp.platform.ingest import Ingest, MarketState
+from vp.platform.observe import RESOLUTION_DELAY
 from vp.platform.storage import LocalStore
 
 
@@ -152,10 +153,17 @@ def test_the_service_records_markets_quotes_snapshots_and_resolutions(
     local = tmp_path / "snap.parquet"
     assert store.download(key, local)
     assert read_markets(local)[0].outcomes[0].asks[0].price == 0.53
+    before = RESOLUTION_DELAY._sum.get()
     service.state.apply(
-        {"event_type": "market_resolved", "market": "0x6", "winning_asset_id": token}
+        {
+            "event_type": "market_resolved",
+            "market": "0x6",
+            "winning_asset_id": token,
+            "timestamp": str(int((time.time() - 90) * 1000)),
+        }
     )
     assert service.record_resolutions() == 1
+    assert 89 < RESOLUTION_DELAY._sum.get() - before < 120
     row = pg_owner.execute(
         "select status, winner_index, source from resolutions where condition_id = '0x6'"
     ).fetchone()
