@@ -206,6 +206,8 @@ def test_reconciliation_asks_about_markets_past_their_end(
         "select result from jobs where id = %s", (job,)
     ).fetchone()
     assert result["resolved"] == 1
+    # Resolved at midnight, but first tracked just now: not hours late.
+    assert result["max_delay_seconds"] < 60
     assert pg_owner.execute(
         "select winner_index, source from resolutions where condition_id = '0x9'"
     ).fetchone() == (1, "data-api-v2")

@@ -581,12 +581,15 @@ def reconcile(ctx: JobContext) -> dict[str, Any]:
     Asks the Data API v2 about each tracked market whose end date has
     passed and that has no resolution recorded, at most `limit` a run, and
     records what it says. The delay between the venue's resolution time and
-    ours is the resolution-freshness objective's measurement.
+    ours is the resolution-freshness objective's measurement, counted from
+    when we first tracked the market if that was later: the service cannot
+    be late for a market resolved before it was watching (its first run
+    backfills markets settled a month earlier).
     """
     limit = int(ctx.job.payload.get("limit", 300))
     with ctx.pool.connection() as conn:
         due = conn.execute(
-            "select t.condition_id, t.market_id from tracked_markets t "
+            "select t.condition_id, t.market_id, t.first_seen from tracked_markets t "
             "left join resolutions r on r.condition_id = t.condition_id "
             "where t.condition_id is not null and t.end_date < now() "
             "and (r.condition_id is null or r.status <> 'resolved') "
@@ -595,7 +598,7 @@ def reconcile(ctx: JobContext) -> dict[str, Any]:
         ).fetchall()
     found = 0
     delays: list[float] = []
-    for i, (condition, market_id) in enumerate(due):
+    for i, (condition, market_id, first_seen) in enumerate(due):
         if i % 20 == 0:
             ctx.progress(i / max(len(due), 1), f"{i} of {len(due)} markets")
         record = client.fetch_resolution(condition)
@@ -630,7 +633,8 @@ def reconcile(ctx: JobContext) -> dict[str, Any]:
                 resolved = datetime.fromisoformat(
                     record["resolved_at"].replace("Z", "+00:00")
                 )
-                delay = (datetime.now(tz=UTC) - resolved).total_seconds()
+                since = max(resolved, first_seen) if first_seen else resolved
+                delay = (datetime.now(tz=UTC) - since).total_seconds()
                 delays.append(delay)
                 RESOLUTION_DELAY.observe(delay)
     return {
