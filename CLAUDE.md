@@ -291,3 +291,8 @@ uv run pytest -q                 # tests
 uv run ruff check . && uv run ruff format --check . && uv run ty check
 uv run pre-commit run --all-files
 ```
+
+`pre-commit run --all-files` checks only files git already tracks, so a
+new file is skipped until it is staged: run `git add -A` first, or run the
+three CI commands above, before committing. Twice on 2026-09-23 a new
+file with a lint error passed pre-commit locally and failed CI.
