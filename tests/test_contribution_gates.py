@@ -42,7 +42,15 @@ ALLOWED = {
     # This file.
     "tests/test_contribution_gates.py",
 }
-SKIP = {".git", ".venv", "archive", "node_modules", "__pycache__", ".ruff_cache"}
+SKIP = {
+    ".git",
+    ".venv",
+    "archive",
+    "data",
+    "node_modules",
+    "__pycache__",
+    ".ruff_cache",
+}
 TEXT = {
     ".py",
     ".md",

@@ -43,3 +43,37 @@ files). The tests include these contribution gates:
 
 Nothing in a contribution may sign or send an order: live execution is
 built last, by the maintainers, behind an agreed security design.
+
+## Contributions written with an AI assistant
+
+They are welcome on the same terms. The sign-off is yours: you certify the
+change as if you had typed it, so read all of it. What the assistant must
+be told, and what reviewers check first:
+
+- **Run the gates, don't describe them.** The four commands above, and
+  pre-commit after staging new files. A test that fails is a finding, never
+  something to skip, loosen or mark as expected.
+- **High-risk surfaces need a human reason for every line:**
+  - row-level security and the migrations (`vp/platform/migrations/`,
+    `vp/platform/db.py`);
+  - sign-in, sessions and tokens (`vp/platform/auth.py`, `vp/platform/web.py`);
+  - secrets and keys (`vp/platform/llmops.py`, `vp/platform/channels.py`,
+    `vp/platform/webhooks.py`, `vp/platform/delivery.py`);
+  - the ledgers and the audit chain (`vp/paper/ledger.py`,
+    `vp/platform/ledger.py`, `vp/platform/audit.py`);
+  - the MCP server's allow-list (`vp/platform/mcp_server.py`);
+  - anything under `vp/live/`.
+- **Invariants an assistant tends to break:**
+  - a label comes only from settlement evidence, never a price;
+  - every forecaster reads nothing after its cutoff;
+  - the engine never imports `vp/platform`;
+  - no code outside `vp/domains/` names a domain.
+  Tests hold each of these, so a change that needs a test changed is
+  suspect.
+- **Nothing signs or sends an order** (above).
+- **Say so in the pull request** when an assistant wrote a substantial
+  part, and what you checked yourself.
+
+## Reporting a vulnerability
+
+Privately, as `SECURITY.md` says; not in an issue or a pull request.

@@ -78,8 +78,9 @@ def _add_common(parser: argparse.ArgumentParser) -> None:
     )
 
 
-def main() -> None:
-    """Parse arguments and dispatch."""
+def build_parser() -> argparse.ArgumentParser:
+    """Every command and its arguments; the documentation site's CLI
+    reference and its command check read the same parser (docs/site.md)."""
     parser = argparse.ArgumentParser(
         prog="vp",
         description="vibe-predict: LLM forecasting of Polymarket binary contracts.",
@@ -232,6 +233,9 @@ def main() -> None:
     ui.add_argument("--host", default="127.0.0.1")
     ui.add_argument("--port", type=int, default=8765)
 
+    site = sub.add_parser("site", help="build the documentation site (docs/site.md)")
+    site.add_argument("--out", type=Path, default=Path("data/site"))
+
     srv = sub.add_parser("serve", help="run the platform web service (Postgres)")
     srv.add_argument("--host", default="127.0.0.1")
     srv.add_argument("--port", type=int, default=8000)
@@ -301,7 +305,12 @@ def main() -> None:
     adm_sub.add_parser(
         "verify-ledgers", help="verify every paper ledger from its first entry (daily)"
     )
+    return parser
 
+
+def main() -> None:
+    """Parse arguments and dispatch."""
+    parser = build_parser()
     args = parser.parse_args()
     logging.basicConfig(
         level=logging.DEBUG if args.verbose else logging.INFO,
@@ -311,6 +320,10 @@ def main() -> None:
         from vp.ui.server import serve
 
         serve(args.root, args.host, args.port)
+        return
+
+    if args.command == "site":
+        _site(args.out, parser)
         return
 
     if args.command == "serve":
@@ -475,6 +488,39 @@ def main() -> None:
                 max_markets=args.max_markets,
             )
             print(f"{name}: {count} markets written to {path}")
+
+
+def _site(out: Path, parser: argparse.ArgumentParser) -> None:
+    """Build the site from the repository, then fail on anything broken.
+    The platform is imported here, in the composition root, for the two
+    things only it knows: its OpenAPI document and its MCP tools."""
+    import tempfile
+
+    from vp.docsite import collect
+    from vp.docsite.build import build
+    from vp.platform.config import Settings
+    from vp.platform.mcp_server import TOOLS
+    from vp.platform.web import create_app
+    from vp.signals import registry
+
+    root = Path(__file__).resolve().parent.parent
+    with tempfile.TemporaryDirectory() as scratch:
+        # The document needs the routes, not a database: nothing connects.
+        app = create_app(
+            Settings(
+                database_url="postgresql://site.invalid/none",
+                data_root=Path(scratch),
+                public_url="https://site.invalid",
+            )
+        )
+        openapi = app.openapi()
+    pages = collect(root, parser, openapi, TOOLS, registry.manifest())
+    got = build(root, out, pages, parser)
+    print(f"{got['pages']} pages, {got['bytes'] / 1e6:.1f} MB, in {out}")
+    for problem in got["problems"]:
+        print(f"  {problem}")
+    if got["problems"]:
+        raise SystemExit(1)
 
 
 def _strategy(args: argparse.Namespace) -> None:
