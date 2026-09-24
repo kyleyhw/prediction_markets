@@ -21,6 +21,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from vp.domains.base import Domain
+from vp.domains.props import PROP_KINDS
 from vp.markets.polymarket import PolymarketSource
 from vp.markets.schema import BinaryMarket
 from vp.markets.store import write_history, write_markets
@@ -86,8 +87,9 @@ def build_resolved_dataset(
             A small value is the quick retrievability check.
         with_history: Also fetch and store each labelled market's price
             history for its first outcome.
-        history_limit: Fetch histories only for this many markets, those
-            that ended most recently; ``None`` for all.
+        history_limit: Fetch histories only for this many markets: those
+            that ended most recently, the kinds a backtest scores by default
+            before props; ``None`` for all.
         have_history: Keys of markets whose history is already stored. A
             settled market's history no longer changes, so these are skipped.
         on_history: Called with each history file as it is written, so a
@@ -120,6 +122,9 @@ def build_resolved_dataset(
     if with_history:
         wanted = sorted(labelled, key=lambda m: m.end_date or "", reverse=True)
         if history_limit is not None:
+            # The markets a backtest scores by default come first, then props:
+            # a budget of histories spent on props scores nothing by default.
+            wanted.sort(key=lambda m: m.parsed.get("kind") in PROP_KINDS)
             wanted = wanted[:history_limit]
         for market in wanted:
             key = market.market_id or market.condition_id or "unknown"

@@ -111,9 +111,13 @@ def home(root: Path) -> Page:
         "first; it is not advice, and live trading is built last, behind an "
         "agreed security design ([Security](docs/security.md)).\n\n"
         "## Where to go\n\n"
+        "- [Tutorials](docs/tutorials/index.md): a week with the app, for "
+        "someone new to all of it.\n"
         "- [Overview](README.md): what exists today and how to run it.\n"
         "- [Docs](docs/index.md): concepts, the platform, running it.\n"
         "- [Learn](learn/index.md): the app's plain-language pages.\n"
+        "- [Research Lab](docs/lab/index.md): what the platform has measured, "
+        "each number with the command that reproduces it.\n"
         "- [Signals](signals/index.md): the library, each signal's method and "
         "references.\n"
         "- [Reference](reference/index.md): the command line, the web API, the "
@@ -156,6 +160,24 @@ def docs(root: Path) -> list[Page]:
                 _file_page(root, path, slug, "Docs", group="Community", order=2000)
             )
     return pages
+
+
+def folder(root: Path, name: str, section: str) -> list[Page]:
+    """A folder of `docs/` as a section: its index first, then its pages in
+    file-name order (the tutorials' days, the lab's studies)."""
+    pages = []
+    for i, path in enumerate(sorted((root / "docs" / name).glob("*.md"))):
+        slug = name if path.stem == "index" else f"{name}/{path.stem}"
+        pages.append(
+            _file_page(
+                root,
+                f"docs/{name}/{path.name}",
+                slug,
+                section,
+                order=-1 if path.stem == "index" else i,
+            )
+        )
+    return sorted(pages, key=lambda p: p.order)
 
 
 def reports(root: Path) -> list[Page]:

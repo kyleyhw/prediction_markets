@@ -35,7 +35,17 @@ from vp.docsite.pages import Page
 REPO_URL = "https://github.com/kyleyhw/prediction_markets"
 STATIC = Path(__file__).parent / "static"
 FONTS = Path(__file__).resolve().parent.parent / "ui" / "static" / "fonts"
-SECTIONS = ("Home", "Docs", "Learn", "Signals", "Reference", "Reports", "Roadmap")
+SECTIONS = (
+    "Home",
+    "Tutorials",
+    "Docs",
+    "Learn",
+    "Lab",
+    "Signals",
+    "Reference",
+    "Reports",
+    "Roadmap",
+)
 _HREF = re.compile(r'(?:href|src)="([^"]+)"')
 _ID = re.compile(r'\bid="([^"]+)"')
 _TAGS = re.compile(r"<[^>]+>")
@@ -143,6 +153,21 @@ class Site:
                     commands += [(False, c) for c in _commands(t.content)]
                 if t.type == "link_open" and "href" in t.attrs:
                     t.attrs["href"] = self.resolve(page, str(t.attrs["href"]))
+        # A lab command's recorded output is markdown (the studies print
+        # tables): shown rendered, its titles as bold lines, not headings.
+        # Output in plain columns stays preformatted.
+        for i, tok in enumerate(tokens):
+            if (
+                tok.type == "fence"
+                and tok.info.strip() == "text"
+                and i
+                and tokens[i - 1].type == "fence"
+                and tokens[i - 1].info.strip() == "bash lab"
+                and "\n| " in tok.content  # plain columns stay preformatted
+            ):
+                text = re.sub(r"(?m)^#+ (.*)$", r"**\1**", tok.content)
+                tok.type, tok.tag = "html_block", ""
+                tok.content = f'<div class="output">{self.md.render(text)}</div>\n'
         body = self.md.renderer.render(tokens, self.md.options, env)
         # Wide tables and formulas scroll inside themselves, so a keyboard
         # must be able to reach them (axe: scrollable-region-focusable).
@@ -437,7 +462,7 @@ def _names_exist(parser: argparse.ArgumentParser, cmd: str) -> str | None:
 def _check_nav(root: Path, pages: list[Page]) -> list[str]:
     published = {p.source for p in pages}
     return [
-        f"docs/{p.name} is not published"
-        for p in sorted((root / "docs").glob("*.md"))
-        if f"docs/{p.name}" not in published
+        f"{p.relative_to(root)} is not published"
+        for p in sorted((root / "docs").rglob("*.md"))
+        if str(p.relative_to(root)) not in published
     ]

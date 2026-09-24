@@ -159,13 +159,27 @@ Both are development dependencies.
   later; the site sets no cookie and stores nothing but the theme choice
   in the browser.
 
+**Tutorials** (`docs/tutorials/`) are a route of seven short days, from
+watching one market to sharing a strategy. They are written for someone
+new to all of it, and they name the app's pages as the app does.
+
+**The Research Lab** (`docs/lab/`) holds four studies. Each result on a
+page is the output of the command in the `bash lab` block above it, kept
+in the `text` block below. `vp lab update` reruns every command and
+records the outputs; `vp lab check` reruns them and fails on any that
+changed (both are deterministic on the same data). On the site an output
+that is a markdown table is shown rendered. The studies that were not
+already a command are `vp lab longshot`, `vp lab power` and
+`vp lab events` (`vp/lab/studies.py`, which names no domain). The data is
+not in the repository, so the check runs where the data is, not in CI.
+
 Not yet:
 
 - **Versions,** which wait on a first release. Until then there is one
   version, `master`.
-- **The tutorials route** (task 120), to be written with the usability
-  sessions (Phase 14, task 49). The Learn pages stand in for now.
-- **The Research Lab studies** (task 123), which need rebuilt datasets
-  and, for committees, the API key.
+- **The committees study** of the Research Lab, which needs the API key
+  and a forward record.
+- **Watching the tutorials used,** in the usability sessions (Phase 14,
+  task 49), which will find where they fail a newcomer.
 - **Publishing,** which is decided with the deploy (F16). The artifact is
   a folder any static host serves.

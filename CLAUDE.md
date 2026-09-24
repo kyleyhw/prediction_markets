@@ -236,9 +236,15 @@ the nine decisions in § 16; nothing signs until then.
 builds it from `docs/`, the reports and the code's own manifests into
 `data/site`, and fails on a broken link or anchor or a documented command
 the parser rejects; CI keeps it as an artifact. Report in
-`tests/reports/phase23_site.md`. Waiting: the Research Lab studies (datasets,
-the key), tutorials (with usability sessions), versions (a release),
-publishing (the deploy). Everything keyed waits on an API key. Earlier,
+`tests/reports/phase23_site.md`. The same day the Research Lab
+(`docs/lab/`, four studies; `vp lab update` records each command's output
+and `vp lab check` reruns them, where the data is) and the tutorials
+(`docs/tutorials/`, seven days) followed; `vp build-dataset --histories N`
+rebuilds the lab's data in about 30 minutes. The lab found weather bucket
+prices summing to 1.8 at the median, so the published weather price is a
+stale benchmark (see `docs/lab/nwp.md` before trusting any weather edge).
+Waiting: the committees study (the key), versions (a release), publishing
+(the deploy). Everything keyed waits on an API key. Earlier,
 the decisions each phase needed were taken on 2026-09-19 as proposed
 (Fly.io with Amsterdam as the first region, magic-link sign-in, quarter
 Kelly with a 5% cap and a 0.03 minimum edge, fees shown, session keys for

@@ -110,3 +110,74 @@ The two misses:
 - **Publishing** is decided with the deploy (F16). CI keeps each build as
   an artifact.
 - **No visitor counts:** nothing is counted.
+
+## Amendment, 2026-09-24: the Research Lab and the Tutorials
+
+The same day, under the goal to continue with the remaining phases, the
+two parts left pending above were built. The committees study still waits
+on the API key.
+
+**Data.** Rebuilt in the container with `vp build-dataset --histories
+500` for each domain, then again after the history order was fixed
+(below):
+
+| Domain | Labelled markets | Histories | Time |
+| :--- | ---: | ---: | :--- |
+| Premier League | 14,565 | 873 | about 11 min, over both passes |
+| CS2 | 93,787 | 845 | about 10 min, over both passes |
+| weather | 147,281 | 500 | about 6 min |
+
+`vp evidence weather-runs` backfilled the forecasts as issued at every
+station in six minutes, with no rate-limit refusal this time.
+
+**Checks.** `pytest -q`: 360 passed (357 before). `tests/test_lab.py`
+covers:
+
+- the longshot table on a data root with a built-in bias;
+- the markets a claim needs;
+- a page whose output is recorded, then caught when it changes.
+
+`vp lab check`: 5 pages, every command reproduced its recorded output
+exactly on a second run (1 min 38 s for all). axe-core: zero violations
+on 18 more page states (four tutorial pages and five lab pages, in both
+themes), and no horizontal scroll at 375 px.
+
+**What the studies found** (each page has its caveats):
+
+- **No simple baseline beats the market** on recent markets with fees
+  paid:
+  - weather climatology scores −0.107 and loses 72%;
+  - Premier League Elo is level (−0.0065 on 132 markets);
+  - CS2 Elo scores −0.103 and loses 61%.
+- **No favourite-longshot bias in the Premier League** (408 markets,
+  every bin within its interval). There is a hint of one among CS2 long
+  shots: none of 23 contracts under 30¢ won, where about 3.4 wins were
+  priced in.
+- **Weather prices are not a consistent set.** A day's bucket prices
+  summed to 1.805 at the median, where fair prices sum to one (the Premier
+  League's three results: 1.005). Buckets priced around 21¢ won 11.7% of
+  the time.
+- **The forecast models beat the published weather prices a day out,**
+  but only just once the interval is resampled by event: +0.0005 to
+  +0.0189 over 36 events. Rescaling the market's own prices to sum to one
+  does nearly as well (+0.0088), so much of that advantage is over stale
+  prices.
+- **A skill of +0.05 needs about 413 Premier League markets to show,**
+  524 in CS2 and 5,689 in weather.
+
+**Found and fixed on the way:**
+
+| Fault | Fix |
+| :--- | :--- |
+| `--histories` spent the Premier League's budget on its most recent markets, mostly props, which backtests leave out: 12 matches scored | Histories go first to the kinds a backtest scores by default: 132 scored |
+| The bench's interval treats every weather bucket as independent, though a day's buckets settle together | `vp lab events` resamples by event; the forecast signal's interval shrank from +0.0019 to +0.0005 at its lower end |
+| The first weather page asked about three days out, and no market had a price 72 hours before settlement | Two days out, with the reason the forecast signal answers nothing there (the archive's issue-time rule) |
+| A Wilson interval printed "-0.000" | Clamped to [0, 1] |
+| `vp signals bench` prints "written to ...", which differs by run | The lab's volatile-line filter covers it |
+| Study outputs showed as raw table syntax on the site | A lab command's markdown output is rendered; plain columns stay preformatted |
+
+**Tutorials:** a route of seven short days in `docs/tutorials/`, from
+watching one market to sharing a strategy. Each step is checked against
+`docs/interface.md` and the design pages; the Day 4 example is the
+strategy spec's own. They are to be watched in use in the usability
+sessions (task 49).

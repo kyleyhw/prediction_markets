@@ -111,5 +111,8 @@ td[style*="right"], th[style*="right"] { font-variant-numeric: tabular-nums; }
 tr:hover td { background: var(--wash); }
 math { font-size: 1.05em; }
 .math.block { margin: 12px 0; overflow-x: auto; }
+/* A lab command's output, shown under its command. */
+.output { border-left: 2px solid var(--rule); padding: 2px 0 2px 14px; margin: -4px 0 24px; }
+.output p { margin: 8px 0; }
 .meta { margin-top: 48px; padding-top: 12px; border-top: 1px solid var(--rule); color: var(--muted); font-size: 13.5px; }
 .meta a { color: var(--muted); }

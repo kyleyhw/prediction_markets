@@ -1112,7 +1112,7 @@ the same `docs/` sources this repository already keeps, so that the docs a
 developer reads and the docs a user reads are one text. Static, versioned,
 searchable, reproducible.
 
-120. [done 2026-09-24 except versions (no release yet) and the tutorials route (with the usability sessions); Learn stands in] Structure: **Home** (what it is, one honest example, install
+120. [done 2026-09-24 except versions (no release yet); the tutorials are a seven-day route in `docs/tutorials/`] Structure: **Home** (what it is, one honest example, install
      for developers, open the app for everyone); **Docs**, versioned by
      release with client-side search and an "on this page" outline: getting
      started, core concepts (a contract, a price as a forecast, cutoffs,
@@ -1142,7 +1142,7 @@ searchable, reproducible.
      can be built now; the alternatives listed there are trialled later
      behind the same tokens, and no asset, layout or copy of Vibe-Trading's
      wiki is reused.
-123. [pending: needs rebuilt datasets and, for committees, the API key] Research Lab, first studies, each reproducible with one
+123. [done 2026-09-24 for four of five in `docs/lab/` with `vp lab check`; committees wait on the key] Research Lab, first studies, each reproducible with one
      command: "Fee-aware baselines: does anything beat Polymarket in CS2,
      weather and EPL, 2025 to 2026?"; "The favourite-longshot bias on
      Polymarket football"; "How sharp is Polymarket's weather market against

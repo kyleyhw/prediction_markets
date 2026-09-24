@@ -149,7 +149,13 @@ histories fetched: N (empty: N, errors: N)
 ```
 
 Running with `--max-markets 20` is the quick check; `--no-history` runs the
-discovery alone, which takes about two minutes for the largest domain. The
+discovery alone, which takes about two minutes for the largest domain.
+`--histories N` fetches histories for N markets only: the most recently
+settled of the kinds a backtest scores by default, then props, skipping any
+already stored. A few hundred per domain is what the Research Lab uses
+(`docs/lab/`). The first build of the lab's data spent its budget on the
+Premier League's most recent markets, which were mostly props, and scored 12
+matches; preferring the default kinds gave 132. The
 `data/` directory is ignored by git.
 
 Price histories are keyed by CLOB token and requested with `interval=max`.

@@ -38,6 +38,8 @@ never load the platform.
 from __future__ import annotations
 
 import argparse
+import contextlib
+import io
 import json
 import logging
 import sys
@@ -97,6 +99,14 @@ def build_parser() -> argparse.ArgumentParser:
     _add_common(build)
     build.add_argument(
         "--no-history", action="store_true", help="skip the price-history requests"
+    )
+    build.add_argument(
+        "--histories",
+        type=int,
+        default=None,
+        help="fetch histories only for N markets, the most recently settled "
+        "that a backtest scores by default first, then props (stored ones are "
+        "skipped)",
     )
 
     snap = sub.add_parser("snapshot", help="write one snapshot of open markets")
@@ -233,6 +243,32 @@ def build_parser() -> argparse.ArgumentParser:
     ui.add_argument("--host", default="127.0.0.1")
     ui.add_argument("--port", type=int, default=8765)
 
+    lab = sub.add_parser("lab", help="the Research Lab's studies (docs/lab/)")
+    lab_sub = lab.add_subparsers(dest="lab_command", required=True)
+    ls = lab_sub.add_parser(
+        "longshot", help="price at the cutoff against how often it won"
+    )
+    ls.add_argument("--domain", required=True, choices=sorted(DOMAINS))
+    ls.add_argument("--root", type=Path, default=Path("data"))
+    ls.add_argument("--hours", type=float, default=24.0)
+    pw = lab_sub.add_parser("power", help="how many markets a claim of edge needs")
+    pw.add_argument("--domain", required=True, choices=sorted(DOMAINS))
+    pw.add_argument("--forecaster", required=True)
+    pw.add_argument("--root", type=Path, default=Path("data"))
+    pw.add_argument("--hours", type=float, default=24.0)
+    ev = lab_sub.add_parser("events", help="a signal's advantage resampled by event")
+    ev.add_argument("--domain", required=True, choices=sorted(DOMAINS))
+    ev.add_argument("--signal", required=True)
+    ev.add_argument("--root", type=Path, default=Path("data"))
+    ev.add_argument("--hours", type=float, default=24.0)
+    for name, text in (
+        ("check", "rerun every lab page's commands; fail on a changed result"),
+        ("update", "rerun every lab page's commands and record their output"),
+    ):
+        lab_sub.add_parser(name, help=text).add_argument(
+            "pages", nargs="*", type=Path, help="default: docs/lab/*.md"
+        )
+
     site = sub.add_parser("site", help="build the documentation site (docs/site.md)")
     site.add_argument("--out", type=Path, default=Path("data/site"))
 
@@ -320,6 +356,10 @@ def main() -> None:
         from vp.ui.server import serve
 
         serve(args.root, args.host, args.port)
+        return
+
+    if args.command == "lab":
+        _lab(args)
         return
 
     if args.command == "site":
@@ -477,6 +517,10 @@ def main() -> None:
                 args.root,
                 max_markets=args.max_markets,
                 with_history=not args.no_history,
+                history_limit=args.histories,
+                have_history=frozenset(
+                    p.stem for p in (args.root / "histories" / name).glob("*.parquet")
+                ),
             )
             print(report.summary())
         else:
@@ -488,6 +532,48 @@ def main() -> None:
                 max_markets=args.max_markets,
             )
             print(f"{name}: {count} markets written to {path}")
+
+
+def _lab(args: argparse.Namespace) -> None:
+    from vp import lab
+    from vp.lab import studies
+
+    if args.lab_command == "longshot":
+        print(studies.longshot(args.root, args.domain, args.hours), end="")
+        return
+    if args.lab_command == "events":
+        print(studies.by_event(args.root, args.domain, args.signal, args.hours), end="")
+        return
+    if args.lab_command == "power":
+        print(
+            studies.power(args.root, args.domain, args.forecaster, args.hours), end=""
+        )
+        return
+
+    def run(argv: list[str]) -> str:
+        """One `vp` command in this process, its printed output returned."""
+        buffer = io.StringIO()
+        saved = sys.argv
+        sys.argv = ["vp", *argv]
+        try:
+            with contextlib.redirect_stdout(buffer):
+                main()
+        finally:
+            sys.argv = saved
+        return buffer.getvalue()
+
+    root = Path(__file__).resolve().parent.parent
+    pages = args.pages or sorted((root / "docs" / "lab").glob("*.md"))
+    if args.lab_command == "update":
+        for page in pages:
+            print(f"{page}: {lab.update(page, run)} block(s) updated")
+        return
+    problems = [p for page in pages for p in lab.check(page, run)]
+    for problem in problems:
+        print(problem)
+    print(f"{len(pages)} page(s) checked, {len(problems)} not reproduced")
+    if problems:
+        raise SystemExit(1)
 
 
 def _site(out: Path, parser: argparse.ArgumentParser) -> None:

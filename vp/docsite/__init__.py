@@ -30,8 +30,10 @@ def collect(
     ]
     return [
         P.home(root),
+        *P.folder(root, "tutorials", "Tutorials"),
         *P.docs(root),
         *P.learn(root),
+        *P.folder(root, "lab", "Lab"),
         *P.signals(root, signal_manifest),
         P.reference_index(root, reference),
         *reference,

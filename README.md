@@ -252,7 +252,11 @@ print(market["question"], market["resolution"]["state"])
 Everything below is also a static site: `uv run vp site` builds it into
 `data/site` from these same files (open `data/site/index.html`, or serve
 the folder), with search, the references generated from the code, and a
-markdown twin of every page for agents (`llms.txt`).
+markdown twin of every page for agents (`llms.txt`). The
+[Research Lab](docs/lab/index.md) publishes studies whose every number is a
+command's output (`uv run vp lab check` reruns them), and the
+[tutorials](docs/tutorials/index.md) are a week with the app for someone new
+to all of it.
 
 - [Documentation index](docs/index.md)
 - [Architecture](docs/architecture.md): package layout, data flow and design decisions.
