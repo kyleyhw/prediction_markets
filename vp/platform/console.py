@@ -121,6 +121,16 @@ def _admin(conn: Any, args: argparse.Namespace) -> None:
         _archive(conn, _month(args.before))
     elif command == "evals":
         _evals(conn)
+    elif command == "verify-ledgers":
+        from vp.platform.config import load_settings
+        from vp.platform.storage import open_store
+
+        got = ops.verify_ledgers(conn, open_store(load_settings()))
+        print(f"{got['accounts']} ledgers verified from their first entry")
+        for account, seq in got["broken"].items():
+            print(f"  broken: {account} at entry {seq}")
+        if got["broken"]:
+            raise SystemExit(1)
     elif command == "audit":
         broken = audit.verify(conn)
         entries = audit.entries(conn)

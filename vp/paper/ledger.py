@@ -99,10 +99,16 @@ class Ledger:
         return verify_entries(self.entries())
 
 
-def verify_entries(entries: Iterable[dict[str, Any]]) -> int | None:
-    """The sequence number of the first broken entry in a chain, or ``None``."""
-    prev = GENESIS
-    for expected, entry in enumerate(entries):
+def verify_entries(
+    entries: Iterable[dict[str, Any]], start: tuple[int, str] | None = None
+) -> int | None:
+    """The sequence number of the first broken entry in a chain, or ``None``.
+
+    ``start`` is a verified (sequence, hash) to continue from: the entries
+    then begin at the next sequence number.
+    """
+    first, prev = (start[0] + 1, start[1]) if start else (0, GENESIS)
+    for expected, entry in enumerate(entries, first):
         if (
             entry.get("seq") != expected
             or entry.get("prev") != prev

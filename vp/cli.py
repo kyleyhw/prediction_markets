@@ -294,6 +294,9 @@ def main() -> None:
     aa.add_argument("--before", required=True, help="YYYY-MM: archive months before it")
     adm_sub.add_parser("audit", help="verify the audit chain and show its tail")
     adm_sub.add_parser("evals", help="the evals harness over stored answers and runs")
+    adm_sub.add_parser(
+        "verify-ledgers", help="verify every paper ledger from its first entry (daily)"
+    )
 
     args = parser.parse_args()
     logging.basicConfig(

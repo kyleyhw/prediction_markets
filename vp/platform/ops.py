@@ -11,6 +11,7 @@ operator.
 from __future__ import annotations
 
 import getpass
+import itertools
 import socket
 from datetime import UTC, date, datetime
 from decimal import Decimal
@@ -209,3 +210,27 @@ def refresh(
         conn, "data.refresh", {"domain": domain, "kinds": list(kinds)}, operator()
     )
     return ids
+
+
+def verify_ledgers(conn: psycopg.Connection, store: Any = None) -> dict[str, Any]:
+    """Every paper ledger verified from its first entry, archived months
+    included: the daily check behind the per-cycle checkpoints (Phase 21).
+    Returns the count checked and the accounts whose chains break."""
+    from vp.paper.ledger import verify_entries
+    from vp.platform.archive import archived_entries
+
+    broken: dict[str, int] = {}
+    accounts = [a for (a,) in conn.execute("select id from paper_accounts").fetchall()]
+    for account in accounts:
+        live = (
+            e
+            for (e,) in conn.execute(
+                "select entry from ledger_entries where account_id = %s order by seq",
+                (account,),
+            )
+        )
+        older = archived_entries(store, account) if store is not None else iter(())
+        bad = verify_entries(itertools.chain(older, live))
+        if bad is not None:
+            broken[str(account)] = bad
+    return {"accounts": len(accounts), "broken": broken}

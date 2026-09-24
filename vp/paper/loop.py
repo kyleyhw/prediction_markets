@@ -36,7 +36,7 @@ store and a fresh process resumes exactly where the last one stopped.
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -82,10 +82,11 @@ class MarketLookup(Protocol):
     def market(self, identifier: str, *, depth: int = 0) -> BinaryMarket: ...
 
 
-def replay(ledger: Entries, initial_cash: float) -> dict[str, Account]:
-    """Bankrolls and open positions per forecaster from the ledger entries."""
-    accounts: dict[str, Account] = {}
-    for entry in ledger.entries():
+def apply(
+    accounts: dict[str, Account], entries: Iterable[dict[str, Any]], initial_cash: float
+) -> dict[str, Account]:
+    """Replay ``entries`` onto ``accounts`` (in place) and return them."""
+    for entry in entries:
         data = entry["data"]
         name = data.get("forecaster")
         if name is None:
@@ -99,6 +100,37 @@ def replay(ledger: Entries, initial_cash: float) -> dict[str, Account]:
             account.open.pop(data["market_id"], None)
             account.bankroll += data["pnl"]
     return accounts
+
+
+def replay(ledger: Entries, initial_cash: float) -> dict[str, Account]:
+    """Bankrolls and open positions per forecaster from the ledger entries.
+
+    A ledger that keeps a verified checkpoint (the platform's) offers
+    ``resume``: the accounts at the checkpoint and the entries after it, so a
+    year-old chain is not read whole every cycle (Phase 21).
+    """
+    resume = getattr(ledger, "resume", None)
+    if callable(resume):
+        got = resume(initial_cash)
+        if got is not None:
+            accounts, rest = got
+            return apply(accounts, rest, initial_cash)
+    return apply({}, ledger.entries(), initial_cash)
+
+
+def state_of(accounts: dict[str, Account]) -> dict[str, Any]:
+    """Accounts as JSON, for a checkpoint."""
+    return {
+        name: {"bankroll": a.bankroll, "open": a.open, "said": a.said}
+        for name, a in accounts.items()
+    }
+
+
+def accounts_from(state: dict[str, Any]) -> dict[str, Account]:
+    return {
+        name: Account(float(a["bankroll"]), dict(a["open"]), dict(a.get("said") or {}))
+        for name, a in state.items()
+    }
 
 
 def touch(market: BinaryMarket) -> tuple[float, float, float, float] | None:

@@ -50,6 +50,10 @@ def _as_stored(value: Any) -> Any:
     return value
 
 
+# Verified entries after the checkpoint before it moves on (Phase 21).
+CHECKPOINT_EVERY = 200
+
+
 class PgLedger:
     """An account's ledger, read and written as `principal`."""
 
@@ -190,9 +194,89 @@ class PgLedger:
             ).fetchone()
         return row[0] if row else None
 
+    def _checkpoint(self) -> tuple[int, str, dict[str, Any]] | None:
+        with self.pool.connection() as conn, tenant_session(conn, self.principal):
+            row = conn.execute(
+                "select seq, hash, state from ledger_checkpoints where account_id = %s",
+                (self.account_id,),
+            ).fetchone()
+        return (int(row[0]), row[1], row[2]) if row else None
+
+    def _after(self, seq: int) -> list[dict[str, Any]] | None:
+        """The entries after ``seq``, or None when they are not all in the
+        database (the checkpoint is older than the archived months)."""
+        with self.pool.connection() as conn, tenant_session(conn, self.principal):
+            rows = conn.execute(
+                "select entry from ledger_entries where account_id = %s and seq > %s "
+                "order by seq",
+                (self.account_id, seq),
+            ).fetchall()
+        out = [r[0] for r in rows]
+        return None if out and out[0]["seq"] != seq + 1 else out
+
+    def resume(self, initial_cash: float) -> tuple[dict[str, Any], list] | None:
+        """The accounts at the verified checkpoint and the entries after it,
+        for `vp.paper.loop.replay`; None without a usable checkpoint."""
+        from vp.paper.loop import accounts_from
+
+        cp = self._checkpoint()
+        if cp is None:
+            return None
+        rest = self._after(cp[0])
+        return None if rest is None else (accounts_from(cp[2]), rest)
+
     def verify(self) -> int | None:
-        """The sequence number of the first broken entry, or None."""
+        """The sequence number of the first broken entry, or None.
+
+        From the verified checkpoint when there is one; the whole chain
+        otherwise, and then a checkpoint is written. The checkpoint moves on
+        once ``CHECKPOINT_EVERY`` verified entries follow it. Only this
+        method writes checkpoints, so one never covers an unverified entry.
+        """
+        from vp.paper.loop import accounts_from, apply
+
+        cp = self._checkpoint()
+        rest = self._after(cp[0]) if cp else None
+        if cp is None or rest is None:
+            entries = list(self.entries())
+            broken = verify_entries(entries)
+            if broken is None and entries:
+                self._save(entries[-1], apply({}, entries, self._cash()))
+            return broken
+        broken = verify_entries(rest, start=(cp[0], cp[1]))
+        if broken is None and len(rest) >= CHECKPOINT_EVERY:
+            self._save(rest[-1], apply(accounts_from(cp[2]), rest, self._cash()))
+        return broken
+
+    def verify_all(self) -> int | None:
+        """The whole chain from its first entry, ignoring the checkpoint (the
+        daily check that old entries were not changed)."""
         return verify_entries(self.entries())
+
+    def _cash(self) -> float:
+        with self.pool.connection() as conn, tenant_session(conn, self.principal):
+            row = conn.execute(
+                "select initial_cash from paper_accounts where id = %s",
+                (self.account_id,),
+            ).fetchone()
+        return float(row[0]) if row else 1000.0
+
+    def _save(self, entry: dict[str, Any], accounts: dict[str, Any]) -> None:
+        from vp.paper.loop import state_of
+
+        with self.pool.connection() as conn, tenant_session(conn, self.principal):
+            conn.execute(
+                "insert into ledger_checkpoints (account_id, seq, hash, state) "
+                "values (%s, %s, %s, %s) on conflict (account_id) do update set "
+                "seq = excluded.seq, hash = excluded.hash, state = excluded.state, "
+                "at = now() where ledger_checkpoints.seq < excluded.seq",
+                (
+                    self.account_id,
+                    entry["seq"],
+                    entry["hash"],
+                    Jsonb(state_of(accounts)),
+                ),
+            )
 
     def export_jsonl(self) -> str:
         """The chain as the file ledger writes it, one entry per line."""

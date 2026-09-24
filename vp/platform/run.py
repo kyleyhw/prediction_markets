@@ -12,12 +12,14 @@ from __future__ import annotations
 import logging
 import os
 import signal
+import socket
 import tempfile
 import threading
 
 import uvicorn
 from fastapi import FastAPI
 from psycopg_pool import ConnectionPool
+from uvicorn.supervisors import Multiprocess
 
 from vp.platform.config import METRICS_DIR, ConfigError, Settings, load_settings
 from vp.platform.db import connect, migrate
@@ -53,7 +55,7 @@ def serve(host: str, port: int, workers: int = 1) -> None:
             f"(public URL {settings.public_url}, "
             f"database {settings.redacted_database_url})"
         )
-        uvicorn.run(
+        config = uvicorn.Config(
             "vp.platform.run:web_app",
             factory=True,
             host=host,
@@ -61,6 +63,14 @@ def serve(host: str, port: int, workers: int = 1) -> None:
             workers=workers,
             proxy_headers=True,
         )
+        # The workers get the listening socket rebuilt with protocol 0, so
+        # asyncio does not set TCP_NODELAY on the connections they accept,
+        # and every request after the first on a kept-alive connection waited
+        # about 40 ms for a delayed ACK (measured 2026-09-24, Phase 21).
+        # Accepted sockets inherit the option from the listener on Linux.
+        sock = config.bind_socket()
+        sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+        Multiprocess(config, sockets=[sock]).run()
         return
     app = create_app(settings)
     # uvicorn configures its loggers when the config is built, so the filter

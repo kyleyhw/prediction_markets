@@ -199,3 +199,46 @@ def test_a_batch_chains_as_single_appends_do_and_lands_whole(
         raise RuntimeError("halfway")
     ledger.append("cycle", {"domain": "weather"})
     assert len(list(ledger.entries())) == 53 and ledger.verify() is None
+
+
+def test_a_checkpoint_verifies_and_replays_only_what_follows(
+    app_pool, two_workspaces, pg_owner
+) -> None:
+    """Phase 21: a year's chain cost a cycle 1.1 s read whole; a verified
+    checkpoint gives the same accounts from the entries after it."""
+    from vp.paper.loop import apply, replay
+    from vp.platform import ledger as pl
+
+    ada = two_workspaces["a"]
+    account = open_account(app_pool, ada, "Checkpointed")
+    ledger = PgLedger(app_pool, ada, account)
+    with ledger.batch():
+        for i in range(pl.CHECKPOINT_EVERY + 50):
+            ledger.append(
+                "order" if i % 2 == 0 else "settlement",
+                {"forecaster": "elo", "market_id": f"m{i // 2}", "pnl": 1.0},
+            )
+    assert ledger.resume(1000.0) is None  # no checkpoint before a verification
+    assert ledger.verify() is None
+    (seq,) = pg_owner.execute(
+        "select seq from ledger_checkpoints where account_id = %s", (account,)
+    ).fetchone()
+    assert seq == pl.CHECKPOINT_EVERY + 49
+    ledger.append("order", {"forecaster": "elo", "market_id": "late"})
+    got = ledger.resume(1000.0)
+    assert got is not None and [e["seq"] for e in got[1]] == [seq + 1]
+    full = apply({}, ledger.entries(), 1000.0)
+    fast = replay(ledger, 1000.0)
+    assert {k: (a.bankroll, set(a.open)) for k, a in fast.items()} == {
+        k: (a.bankroll, set(a.open)) for k, a in full.items()
+    }
+    # A change after the checkpoint is caught by every cycle; a change before
+    # it only by the daily check of the whole chain.
+    with pg_owner.transaction():
+        pg_owner.execute(
+            "update ledger_entries set entry = jsonb_set(entry, '{data,pnl}', '9') "
+            "where account_id = %s and seq in (3, %s)",
+            (account, seq + 1),
+        )
+    assert ledger.verify() == seq + 1
+    assert ledger.verify_all() == 3
