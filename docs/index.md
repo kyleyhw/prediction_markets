@@ -62,9 +62,11 @@ Polymarket, scored by backtest and paper trading before any live execution. The
   contamination and the weekly benchmark with sealed forecasts (Phase 16).
 - [Browser dashboard](ui.md): the Phase 12 page the interface grew from,
   and `vp ui`, the developer's local view over a data root.
-- [Security design](security.md): the proposed design for live execution
-  and its implemented safety layer; agreement is required before any
-  order-signing code.
+- [Security design](security.md): version 2, proposed for hosted live
+  execution (session keys, the execution service, the mandate a person
+  signs, the order gate, jurisdiction), on the safety layer built in
+  Phase 11; agreement is required before any order-signing code.
+- [Venues](venues.md): the Polymarket US assessment, a proposed decision.
 - [Provenance](provenance.md): what was adapted from Vibe-Trading, how it was
   changed, and why.
 

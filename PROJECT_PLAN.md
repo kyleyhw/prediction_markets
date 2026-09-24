@@ -1053,7 +1053,7 @@ safety layer of Phase 11 (`vp/live/`) is the base. Live execution is
 available only to strategies that passed the promotion protocol and only in
 jurisdictions the venue serves.
 
-112. [pending] Security design version 2.
+112. [proposed 2026-09-24 in `docs/security.md` version 2, waiting for the owner's agreement; nothing signs until then] Security design version 2.
      - Key model, with a recommendation to decide: (A) the venue's session
        keys, a delegated signer the user authorises on the venue, scoped to
        trading, unable to withdraw, expiring in 180 days, revocable by the
@@ -1100,7 +1100,7 @@ jurisdictions the venue serves.
      paper divergence (fills, slippage, fees), the audit ledger.
 117. [pending] External security review before live execution is offered
      beyond the canary workspace.
-118. [pending] Polymarket US assessment: a separately regulated venue with
+118. [proposed 2026-09-24 in `docs/venues.md`: no live execution and no data there now, revisit on demand and terms; waiting for agreement] Polymarket US assessment: a separately regulated venue with
      its own API and fee coefficients; whether and how to add it as a second
      venue for users it serves; a decision, not code.
 119. [pending] Phase 22 report.
@@ -1224,7 +1224,11 @@ called done.
   records the terms review in the Phase 13 report; a written legal opinion
   is obtained before public sign-up (Phase 14, task 48) and again before
   live execution (Phase 22, task 117). Amsterdam is the first candidate,
-  not a certainty.
+  not a certainty. (2026-09-24, security design version 2, § 11: the venue
+  makes the Netherlands close-only on its front end though its API still
+  answers there, so the execution service that places orders is not put
+  in Amsterdam; its region is chosen with legal advice. The rest of the
+  platform places no orders.)
 - **F2 (Phase 13). One operator is one point of failure.** The platform
   halt, budget changes and abuse responses all rest on one person until the
   operator role is granted to a second; a written hand-over procedure and a
@@ -1239,6 +1243,10 @@ called done.
   credentials and attributes volume through a builder code; Phase 22's
   design decides whether users bring a wallet or the platform helps create
   one. Nothing in Phase 13 precludes either.
+  (2026-09-24: authorising a session key requires a builder API key, so
+  version 2 of the security design proposes the platform becomes a
+  builder, attaches its code to every order, charges no builder fee and
+  creates no wallets: people bring their own Deposit Wallet.)
 - **F5 (gating, Phase 13). Paper trading charges no fees today; it will
   use the backtest's fee model, one implementation.** `vp/paper/loop.py`
   orders at the touch with no fee term, and the backtest default is zero,

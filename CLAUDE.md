@@ -219,9 +219,17 @@ found and fixed:
 
 `vp admin unit-costs` gives cost per person-day (about $0.004 without
 models). Report in `tests/reports/phase21_scale.md`; the rows that need a
-real host wait on the deploy (F16). What is left: Phase 22 (hosted live
-execution, gated on the security design's version 2) and 23 (the site);
-everything keyed waits on an API key. Earlier,
+real host wait on the deploy (F16).
+**Phase 22's design is proposed, not agreed** (2026-09-24):
+`docs/security.md` version 2 (session keys held by a separate execution
+service, mandates the person signs with their wallet, the order gate,
+three halts plus the venue's 10-second heartbeat, jurisdiction including
+the venue's front-end-only restrictions, so the execution service is not
+hosted in Amsterdam) and `docs/venues.md` (Polymarket US: no, for now).
+Authorising a session key needs a builder API key, so the platform
+becomes a builder (F4). Tasks 113 to 117 wait on the owner's agreement to
+the nine decisions in § 16; nothing signs until then. What is left besides:
+Phase 23 (the site); everything keyed waits on an API key. Earlier,
 the decisions each phase needed were taken on 2026-09-19 as proposed
 (Fly.io with Amsterdam as the first region, magic-link sign-in, quarter
 Kelly with a 5% cap and a 0.03 minimum edge, fees shown, session keys for

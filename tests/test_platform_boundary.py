@@ -17,14 +17,12 @@ PLATFORM = PACKAGE / "platform"
 COMPOSITION_ROOT = PACKAGE / "cli.py"
 
 
-def _imports_platform(tree: ast.AST) -> bool:
+def _imports_platform(tree: ast.AST, package: str = "vp.platform") -> bool:
     for node in ast.walk(tree):
-        if isinstance(node, ast.ImportFrom) and (node.module or "").startswith(
-            "vp.platform"
-        ):
+        if isinstance(node, ast.ImportFrom) and (node.module or "").startswith(package):
             return True
         if isinstance(node, ast.Import) and any(
-            a.name.startswith("vp.platform") for a in node.names
+            a.name.startswith(package) for a in node.names
         ):
             return True
     return False
@@ -48,3 +46,18 @@ def test_the_composition_root_imports_it_only_lazily() -> None:
     assert not any(
         _imports_platform(ast.Module(body=[n], type_ignores=[])) for n in top_level
     )
+
+
+def test_nothing_outside_the_live_package_imports_it() -> None:
+    """Paper and live cannot cross (docs/security.md § 10): no paper,
+    backtest or platform path can reach the live safety layer, and so none
+    can reach a signer when one exists. The execution service will be the
+    one named exception."""
+    live = PACKAGE / "live"
+    offenders = [
+        str(path.relative_to(PACKAGE.parent))
+        for path in sorted(PACKAGE.rglob("*.py"))
+        if not path.is_relative_to(live)
+        and _imports_platform(ast.parse(path.read_text()), "vp.live")
+    ]
+    assert offenders == [], f"only the live package imports itself: {offenders}"
