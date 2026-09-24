@@ -13,7 +13,8 @@ const ACTIVE = new Set(['queued', 'running']);
 function jobLine(j) {
   const fraction = j.progress?.fraction ?? (j.state === 'succeeded' ? 1 : 0);
   const pct = Math.round(100 * fraction);
-  const message = j.progress?.message ? ` · ${esc(j.progress.message)}` : '';
+  // A finished job's last progress message is stale ("0 of 2000 markets").
+  const message = ACTIVE.has(j.state) && j.progress?.message ? ` · ${esc(j.progress.message)}` : '';
   const cancel = ACTIVE.has(j.state) ? `<button class="btn quiet" type="button" data-cancel="${esc(j.id)}">${t('jobs.cancel')}</button>` : '';
   const error = j.state === 'dead' || j.state === 'failed' ? `<p class="small neg" style="margin:4px 0 0">${esc((j.error || '').split('\n')[0])}</p>` : '';
   return `<li class="job"><div class="row" style="margin:0;justify-content:space-between">

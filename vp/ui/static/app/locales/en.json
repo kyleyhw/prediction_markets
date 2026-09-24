@@ -234,6 +234,7 @@
     },
     "nothing_scored": "None of the {title} markets in this run had a price {hours} hours before it settled, so nothing could be scored. A run over markets with price histories fills this in.",
     "small_sample": "Only {n} markets: too few to tell skill from luck. Telling a small edge from luck takes about {enough}.",
+    "fee_market": "each market's own",
     "no_fees": "This run assumed no fees. The venue charges a fee on these markets, so real results would be lower.",
     "turned": {
       "one": "Would have turned {start} into {end} over 1 bet.",
@@ -288,7 +289,8 @@
         "other": "Covers {n} settled markets. Estimated cost {cost}; {left} of your {limit} this month is left."
       },
       "queued": "Queued. Its progress is below.",
-      "none_yet": "No backtests yet. Run one above; it appears here when it finishes."
+      "none_yet": "No backtests yet. Run one above; it appears here when it finishes.",
+      "no_data": " (no data yet)"
     }
   },
   "learn": {

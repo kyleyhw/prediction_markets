@@ -421,3 +421,36 @@ predicted. The measurements add the web's CPU at the model's peak.
   The edge proxy at the deploy is the place for it: a check in Postgres
   would add about half again to a request's database cost.
 - **The platform's model spend per person-day** needs the key (task 60).
+
+## Amendment, 2026-09-24: the Whole Platform on the Stand-In, Again
+
+After Phases 21 to 23, the full platform was run again under Docker Compose
+on the Phase 13 stand-in's own volumes. This is still the simulation of
+the cloud host (F16): the same image for every process, Postgres 16 and
+MinIO for the managed services, and now the documentation site served
+from a static folder (`site`, behind the `docs` profile).
+
+| Check | Result |
+| :--- | :--- |
+| Image build | 59 s; code-only rebuilds a few seconds |
+| Setup on the Phase 13 data | migrations 0014 to 0030 applied in one pass to real data; `/readyz` ready |
+| Services | 11 running: web (4 processes), five worker pools, ingest, the daily `verify-ledgers`, Postgres, MinIO, the site |
+| The market feed | 8,895 markets, 17,700 tokens on 45 sockets; 99% of quotes under 5.5 s old (objective 60 s) |
+| The daily ledger check | 18 ledgers from their first entry; the 15 chains known broken since Phase 13, all already paused, so no new pause |
+| A new person in Chromium | signed in with the consent tick in 1.3 s; a weather backtest of 2,000 markets queued from the page ran in the interactive pool in 8 to 14 s; the account's export downloaded (10 KB); Risk, Signals and Settings opened |
+| Restore drill on the stand-in (890 MB) | dump 13.6 s (86 MB), restore 9.2 s, migrations and every ledger 9.0 s, audit chain verified in 1.6 s: a checked copy in about 33 s |
+| The site | every page served, `llms.txt` included |
+
+Found and fixed by this run:
+
+| Fault | Fix |
+| :--- | :--- |
+| A backtest started from the page paid no fees and said so ("This run assumed no fees"), though paper trading and strategy backtests charge each market's own fee (F5) | Page backtests charge each market's own fee by default; the run's sizing line says "each market's own" |
+| The backtest form opened on a domain with no dataset, so a newcomer's first sight was "this domain's data has not arrived yet" | Domains with data come first; the others say "(no data yet)" |
+| A finished job still showed its first progress message ("Done · 0 of 2000 markets") | Finished jobs show no progress message |
+
+Not reached in this run: the stand-in's store held only the weather
+dataset, since its Phase 13 builds of the other domains never finished.
+The data worker picked them up again (the reaper retried their expired
+leases) and builds them in the background. As the runbook says, they take
+hours.

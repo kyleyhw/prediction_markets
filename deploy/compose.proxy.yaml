@@ -40,6 +40,10 @@ services:
   worker-capture: *proxy
   ingest: *proxy
   verify-ledgers: *proxy
+  site:
+    network_mode: host
+    ports: !reset []
+    command: ["python", "-m", "http.server", "8080", "--bind", "127.0.0.1", "--directory", "/site"]
   prometheus:
     network_mode: host
     ports: !reset []

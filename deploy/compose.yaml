@@ -86,6 +86,19 @@ services:
     <<: *app
     entrypoint: ["sh", "-c", "while true; do vp admin verify-ledgers; sleep 86400; done"]
 
+  # The documentation site, published as a static folder (docs/site.md):
+  # `vp site` builds `data/site` from the repository, and any static host
+  # serves it. Here a plain file server stands in for that host.
+  site:
+    image: ${VP_SITE_IMAGE:-python:3.14-slim}
+    profiles: ["docs"]
+    restart: unless-stopped
+    command: ["python", "-m", "http.server", "8080", "--directory", "/site"]
+    volumes:
+      - ../data/site:/site:ro
+    ports:
+      - "8080:8080"
+
   web:
     <<: *app
     # One process serves about 35 requests a second of the dashboard's mix;

@@ -459,6 +459,9 @@ def backtest(ctx: JobContext) -> dict[str, Any]:
         seed=int(p.get("seed", 0)),
         fee_rate=float(p.get("fee_rate", 0.0)),
         min_edge=float(p.get("min_edge", 0.0)),
+        # Each market's own taker fee, as paper trading and strategy
+        # backtests pay (F5); found missing on the stand-in, 2026-09-24.
+        market_fees=bool(p.get("market_fees", True)),
     )
     ctx.progress(0.0, "getting the data")
     svc.refresh([domain])

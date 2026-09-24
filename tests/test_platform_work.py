@@ -150,6 +150,8 @@ def test_a_backtest_from_the_page_is_estimated_run_and_its_files_kept_private(
     assert job["state"] == "succeeded", job["error"]
     runs = client.get("/api/backtests").json()
     assert len(runs) == 1 and runs[0]["results"]["config"]["domain"] == "epl"
+    # A backtest from the page pays each market's own fee, as paper does (F5).
+    assert runs[0]["results"]["config"]["market_fees"] is True
     run_id = job["result"]["run_id"]
     assert client.get(f"/api/runs/{run_id}/summary.md").status_code == 200
     assert client.get(f"/api/runs/{run_id}/..%2Fsecret.md").status_code == 404

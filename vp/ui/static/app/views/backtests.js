@@ -19,7 +19,7 @@ const ENOUGH = 350;
 function cautions(res) {
   const c = [];
   if (res.common < ENOUGH) c.push(t('bt.small_sample', { n: res.common, enough: ENOUGH }));
-  if (!res.config.fee_rate) c.push(t('bt.no_fees'));
+  if (!res.config.fee_rate && !res.config.market_fees) c.push(t('bt.no_fees'));
   return c.length ? `<div class="aside caution">${c.map((x) => `<p>${x}</p>`).join('')}</div>` : '';
 }
 
@@ -61,7 +61,7 @@ function full(res, other) {
     hours: raw(term('hours', tp('bt.hours', { n: c.hours_before_close }))), kinds: c.kinds.length ? c.kinds.join(', ') : tp('bt.all_kinds'),
     candidates: fmt.int(res.candidates), priced: fmt.int(res.with_price), scored: fmt.int(res.common), seconds: res.seconds })}<br>
     ${t('bt.sizing', { kelly: raw(term('kelly', String(c.kelly_multiplier))), cap: fmt.pct(c.max_fraction), edge: raw(term('minedge', String(c.min_edge))),
-    spread: raw(term('spread', String(c.half_spread))), fee: raw(term('fee', String(c.fee_rate))), start: fmt.money(c.initial_cash, 0) })}</p>`;
+    spread: raw(term('spread', String(c.half_spread))), fee: raw(term('fee', c.market_fees ? tp('bt.fee_market') : String(c.fee_rate))), start: fmt.money(c.initial_cash, 0) })}</p>`;
   h += `<h2>${t('bt.scores_title')}</h2>` + table(
     [t('col.strategy'), term('n', 'n'), term('brier', 'Brier ↓'), term('log', 'Log ↓'), term('skill', 'Skill ↑'), term('reliability', 'Reliability ↓'), term('resolution', 'Resolution ↑'), term('ece', 'ECE ↓'), term('cost', tp('col.cost'))],
     res.forecasters.map((f) => [strategyName(f.name), esc(fmt.int(f.n)), esc(fmt.num(f.brier, 4)), esc(fmt.num(f.log, 4)), signed(f.skill, esc(fmt.signed(f.skill, 4))),
@@ -104,7 +104,9 @@ const OFFERED = ['market', 'constant', 'elo', 'climatology'];
 async function form(o) {
   const caps = await api('capabilities');
   const names = OFFERED.concat(caps?.llm ? ['llm'] : []);
-  const domains = orderedDomains(o.domains);
+  // Domains with a dataset first, so the form never opens on one that cannot run.
+  const hasData = (d) => (Object.keys(d.resolved || {}).length ? 1 : 0);
+  const domains = orderedDomains(o.domains).sort(([, a], [, b]) => hasData(b) - hasData(a));
   after(() => {
     const f = document.getElementById('bt-form'), status = document.getElementById('bt-estimate');
     const body = () => {
@@ -146,7 +148,7 @@ async function form(o) {
   return `<section class="card" style="margin-bottom:18px"><h2 style="margin-top:0">${t('bt.form.title')}</h2>
     <form id="bt-form"><div class="row">
       <label for="bt-domain" class="small muted">${t('bt.form.domain')}</label>
-      <select id="bt-domain" name="domain">${domains.map(([name, d]) => `<option value="${esc(name)}">${esc(d.title)}</option>`).join('')}</select></div>
+      <select id="bt-domain" name="domain">${domains.map(([name, d]) => `<option value="${esc(name)}">${esc(d.title)}${hasData(d) ? '' : tp('bt.form.no_data')}</option>`).join('')}</select></div>
       <fieldset><legend class="small">${t('bt.form.strategies')}</legend><div class="row" style="margin:0">${names.map((n) =>
         `<label class="check"><input type="checkbox" name="forecasters" value="${n}"${['market', 'constant'].includes(n) ? ' checked' : ''}> <span>${esc(label(n))}</span></label>`).join('')}</div></fieldset>
       ${detailed() ? `<div class="row"><label for="bt-hours" class="small muted">${t('bt.form.hours')}</label>
