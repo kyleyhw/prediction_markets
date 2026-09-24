@@ -84,8 +84,9 @@ Test reports live in [tests/reports/](../tests/reports/), one per phase:
 [Phase 17 evidence](../tests/reports/phase17_evidence.md),
 [Phase 18 collaboration](../tests/reports/phase18_collaboration.md),
 [Phase 19 shadow forecaster](../tests/reports/phase19_shadow.md),
-[Phase 20 portfolio](../tests/reports/phase20_portfolio.md) and
-[Phase 21 scale](../tests/reports/phase21_scale.md). Phase 12 is
+[Phase 20 portfolio](../tests/reports/phase20_portfolio.md),
+[Phase 21 scale](../tests/reports/phase21_scale.md) and
+[Phase 23 site](../tests/reports/phase23_site.md). Phase 12 is
 continuous (documentation, hooks and the `vp ui` page in [ui.md](ui.md))
 and has no report of its own.
 The original project's documentation is preserved under

@@ -65,6 +65,9 @@ The original `prediction_markets` project is archived unchanged under
   leakage), `live/` (safety layer only), `ui/` (read-only dashboard),
   `cli.py` (`vp build-dataset`, `vp snapshot`, `vp backtest`, `vp paper`,
   `vp ui`).
+- `vp/docsite/`: the documentation site's generator (`vp site`); it
+  imports nothing from the platform, and `vp/cli.py` passes in the
+  OpenAPI document and the MCP tools.
 - `tests/`: offline tests only; `tests/reports/` has a report per phase with
   runtimes. `data/` is git-ignored.
 
@@ -228,8 +231,14 @@ the venue's front-end-only restrictions, so the execution service is not
 hosted in Amsterdam) and `docs/venues.md` (Polymarket US: no, for now).
 Authorising a session key needs a builder API key, so the platform
 becomes a builder (F4). Tasks 113 to 117 wait on the owner's agreement to
-the nine decisions in § 16; nothing signs until then. What is left besides:
-Phase 23 (the site); everything keyed waits on an API key. Earlier,
+the nine decisions in § 16; nothing signs until then.
+**Phase 23's site was built the same day**: `vp site` (`vp/docsite/`)
+builds it from `docs/`, the reports and the code's own manifests into
+`data/site`, and fails on a broken link or anchor or a documented command
+the parser rejects; CI keeps it as an artifact. Report in
+`tests/reports/phase23_site.md`. Waiting: the Research Lab studies (datasets,
+the key), tutorials (with usability sessions), versions (a release),
+publishing (the deploy). Everything keyed waits on an API key. Earlier,
 the decisions each phase needed were taken on 2026-09-19 as proposed
 (Fly.io with Amsterdam as the first region, magic-link sign-in, quarter
 Kelly with a 5% cap and a 0.03 minimum edge, fees shown, session keys for

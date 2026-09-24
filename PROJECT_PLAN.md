@@ -1112,7 +1112,7 @@ the same `docs/` sources this repository already keeps, so that the docs a
 developer reads and the docs a user reads are one text. Static, versioned,
 searchable, reproducible.
 
-120. [pending] Structure: **Home** (what it is, one honest example, install
+120. [done 2026-09-24 except versions (no release yet) and the tutorials route (with the usability sessions); Learn stands in] Structure: **Home** (what it is, one honest example, install
      for developers, open the app for everyone); **Docs**, versioned by
      release with client-side search and an "on this page" outline: getting
      started, core concepts (a contract, a price as a forecast, cutoffs,
@@ -1128,13 +1128,13 @@ searchable, reproducible.
      studies whose every number is one command away, with a caveats section
      as long as the findings; **Learn**, the in-app pages, published here
      too; **Changelog** and the phase reports.
-121. [pending] Build: generated from `docs/` markdown and the registry and
+121. [done 2026-09-24, `vp site`, `vp/docsite/`, a CI job; no visitor counter] Build: generated from `docs/` markdown and the registry and
      OpenAPI manifests by a small, dependency-light generator run in CI; no
      build step for the content author; math rendered; every page carries
      its source path and last-verified date; `llms.txt` and per-page
      markdown endpoints so agents read it as easily as people; an anonymous
      first-party visit counter at most.
-122. [pending] Visual style: the default is the "paper" style recorded in
+122. [done 2026-09-24, the paper style; zero axe violations on 26 page states] Visual style: the default is the "paper" style recorded in
      `docs/site.md` (the app's Instrument Sans and JetBrains Mono, a warm
      off-white and a near-black theme, one teal accent, hairline rules
      instead of boxes, a 68-character measure, charts drawn inline in the
@@ -1142,26 +1142,26 @@ searchable, reproducible.
      can be built now; the alternatives listed there are trialled later
      behind the same tokens, and no asset, layout or copy of Vibe-Trading's
      wiki is reused.
-123. [pending] Research Lab, first studies, each reproducible with one
+123. [pending: needs rebuilt datasets and, for committees, the API key] Research Lab, first studies, each reproducible with one
      command: "Fee-aware baselines: does anything beat Polymarket in CS2,
      weather and EPL, 2025 to 2026?"; "The favourite-longshot bias on
      Polymarket football"; "How sharp is Polymarket's weather market against
      numerical weather prediction?"; "Committees against single elicitation:
      the forward record"; "How many settled markets does a claim of edge
      need?"
-124. [pending] Docs kept in step: each phase's design page and report are
+124. [done 2026-09-24: every page and report published, one glossary, the build fails on a documented command the parser rejects] Docs kept in step: each phase's design page and report are
      pages; the glossary in the app and the site are one file; a CI check
      fails on a page whose commands no longer run.
-125. [pending] Contribution pages: the signal checklist, the domain kit,
+125. [done 2026-09-24: `SECURITY.md`, the AI-assisted contributions guide in `CONTRIBUTING.md`] Contribution pages: the signal checklist, the domain kit,
      the DCO decision, the security policy, the agent-contributor guide for
      AI-assisted contributions (safe checks, high-risk surfaces).
-126. [pending] Community channels decided (a forum or a chat server, with
+126. [proposed 2026-09-24: GitHub Discussions, the impostor warning in `SECURITY.md`; the roadmap page mirrors the plan] Community channels decided (a forum or a chat server, with
      the impostor warning the security policy needs), and a public roadmap
      that mirrors this plan's status tags.
-127. [pending] The name gate of `docs/vibe_trading.md` § 9 in CI.
-128. [pending] Test reports continue per phase with runtimes and live
+127. [done 2026-09-24: `tests/test_contribution_gates.py` runs in CI] The name gate of `docs/vibe_trading.md` § 9 in CI.
+128. [continuous] Test reports continue per phase with runtimes and live
      measurements; pre-commit hooks pass on every commit.
-129. [pending] Phase 23 report: pages, search quality, reproduction checks
+129. [done 2026-09-24, `tests/reports/phase23_site.md`] Phase 23 report: pages, search quality, reproduction checks
      passing, visitor counts if counted.
 
 ## Deferred

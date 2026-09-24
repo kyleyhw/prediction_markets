@@ -249,6 +249,11 @@ print(market["question"], market["resolution"]["state"])
 
 ## Documentation
 
+Everything below is also a static site: `uv run vp site` builds it into
+`data/site` from these same files (open `data/site/index.html`, or serve
+the folder), with search, the references generated from the code, and a
+markdown twin of every page for agents (`llms.txt`).
+
 - [Documentation index](docs/index.md)
 - [Architecture](docs/architecture.md): package layout, data flow and design decisions.
 - [Data layer](docs/data_layer.md): market record, domain adapters, dataset and snapshots.

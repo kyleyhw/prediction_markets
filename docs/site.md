@@ -119,3 +119,53 @@ Search quality on a fixed query set; the reproduction check passing on
 every Research Lab page; page weight under 200 KB before fonts; contrast and
 keyboard audits in both themes; visitor counts if counted. Reported in
 `tests/reports/phase23_site.md`.
+
+## 7. As Built (2026-09-24)
+
+`vp site [--out data/site]` builds the site; CI builds it on every push and
+keeps it as an artifact (`site` job). The generator is `vp/docsite/`: about
+1,000 lines of Python and 220 of CSS and script, with markdown-it for the
+markdown and latex2mathml for the math.
+Both are development dependencies.
+
+- **Sources:**
+  - every `docs/*.md` (grouped by `DOC_GROUPS` in `vp/docsite/pages.py`,
+    with any page missing from it under "More");
+  - the README (as Home's opening and as the Overview);
+  - `CONTRIBUTING.md`, `SECURITY.md`, the phase reports;
+  - generated pages: the CLI reference from the parser `vp` runs
+    (`build_parser`), the web API from the service's OpenAPI document,
+    the MCP tools from the server's source, one page per signal from the
+    registry's manifest, the app's glossary and Learn topics from
+    `en.json`, and the roadmap from the plan's status tags.
+- **Links:** a link to another source becomes a relative link to its page.
+  A link to code becomes a link to the file on GitHub.
+- **Pages:** every page is a directory with `index.html` and `index.md`
+  (the markdown twin); `llms.txt` lists the twins. Every page names its
+  source and the date of the source's last commit.
+- **Math** is MathML, which browsers draw natively: no script, no font.
+  A dollar sign followed by a digit is money, not math.
+- **Search** runs in the page over `search.json`, one entry per section.
+  The title counts most, then the section's heading, then word frequency,
+  with a light stem. A result opens at the section that matched. The index
+  loads on first use, so it does not count against page weight.
+- **The build fails** on:
+  - a broken link or anchor;
+  - a `docs/` page not published;
+  - a `vp` command in a code block that no longer parses;
+  - a command named in the text whose command names or flags no longer
+    exist.
+- **No visitor counter.** Counting is left out rather than made anonymous
+  later; the site sets no cookie and stores nothing but the theme choice
+  in the browser.
+
+Not yet:
+
+- **Versions,** which wait on a first release. Until then there is one
+  version, `master`.
+- **The tutorials route** (task 120), to be written with the usability
+  sessions (Phase 14, task 49). The Learn pages stand in for now.
+- **The Research Lab studies** (task 123), which need rebuilt datasets
+  and, for committees, the API key.
+- **Publishing,** which is decided with the deploy (F16). The artifact is
+  a folder any static host serves.
