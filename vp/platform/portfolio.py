@@ -29,6 +29,7 @@ from vp.platform.teams import NotAllowed, record
 from vp.portfolio import exposure, health
 from vp.portfolio.exposure import Position
 from vp.strategy.card import paired_interval
+from vp.strategy.run import FOLLOW
 
 # The mandate (criterion 6) and the forward and health criteria (3, 5).
 MAX_WORST_SHARE, MAX_EVENT_SHARE = 0.20, 0.10
@@ -86,6 +87,8 @@ def positions(
     bankroll = 0.0
     for a in accounts:
         books = replay(PgLedger(pool, principal, a["id"], store=store), a["cash"])
+        if not books:
+            bankroll += a["cash"]  # nothing traded yet: the starting cash
         for book in books.values():
             bankroll += book.bankroll
             held += [(a, o) for o in book.open.values()]
@@ -306,29 +309,35 @@ def evaluate(
     ev_run = {"run_id": str(run[0])} if run else {}
     crit = []
     scored, needed = (card or {}).get("scored", 0), (card or {}).get("needed_n")
+    adv = (card or {}).get("advantage") or {}
+    p_pos = (card or {}).get("p_positive")
+    ok2 = p_pos >= P_POSITIVE if p_pos is not None else bool(adv) and adv["low"] > 0
+    follow = bool(card) and card.get("forecaster") in (None, FOLLOW)
+    if not card:
+        why1 = why2 = "no backtest yet"
+    elif needed is None:
+        why1 = why2 = (
+            "a follow rule makes no forecast, so it claims no skill to test"
+            if follow or not card.get("advantage")
+            else "the run shows no difference from the market to test"
+        )
+    else:
+        why1 = f"scored {scored}, needed {needed}"
+        why2 = (
+            f"P(advantage > 0) = {p_pos:.3f}, needed {P_POSITIVE}"
+            if p_pos is not None
+            else "judged from the interval (an older run)"
+        )
     crit.append(
         _criterion(
             1,
             "enough_markets",
             bool(card) and needed is not None and scored >= needed,
-            f"scored {scored}, needed {needed}" if card else "no backtest yet",
+            why1,
             ev_run,
         )
     )
-    adv = (card or {}).get("advantage") or {}
-    p_pos = (card or {}).get("p_positive")
-    ok2 = p_pos >= P_POSITIVE if p_pos is not None else bool(adv) and adv["low"] > 0
-    crit.append(
-        _criterion(
-            2,
-            "backtest_skill",
-            bool(card) and ok2,
-            f"P(advantage > 0) = {p_pos:.3f}"
-            if p_pos is not None
-            else "from the interval",
-            ev_run,
-        )
-    )
+    crit.append(_criterion(2, "backtest_skill", bool(card) and ok2, why2, ev_run))
     if target == "live":
         iv = paired_interval(np.array(d)) if len(d) >= 2 else None
         ok3 = iv is not None and (iv[1] > 0 or (len(d) >= FORWARD_MIN and iv[0] > 0))
@@ -374,7 +383,7 @@ def evaluate(
         )
         held, bankroll = positions(pool, principal, root, version, store)
         rep = exposure.report(held, bankroll or None)
-        worst = -rep.get("worst_case", 0.0)
+        worst = max(-rep.get("worst_case", 0.0), 0.0) + 0.0  # never "-0.00"
         top = max((g["stake"] for g in rep.get("by_event", [])), default=0.0)
         ok6 = bankroll > 0 and worst <= MAX_WORST_SHARE * bankroll
         ok6 = ok6 and top <= MAX_EVENT_SHARE * bankroll
@@ -383,7 +392,9 @@ def evaluate(
                 6,
                 "mandate",
                 ok6,
-                f"worst case {worst:.2f} of {bankroll:.2f}; largest event {top:.2f}",
+                f"worst case {worst:.2f} of {bankroll:.2f}; largest event {top:.2f}"
+                if accounts
+                else "no paper account yet",
                 {"positions": len(held)},
             )
         )

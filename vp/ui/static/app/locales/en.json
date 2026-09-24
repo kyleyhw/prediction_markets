@@ -213,7 +213,8 @@
     "describe": "Describe a strategy",
     "samples_title": "Sample strategies",
     "research": "Ask the research assistant",
-    "shadow": "Learn from your own record"
+    "shadow": "Learn from your own record",
+    "risk": "Risk across your strategies"
   },
   "bt": {
     "title": "Backtests",
@@ -1049,7 +1050,12 @@
       "brief_confirmed": "switched a brief on",
       "brief_stopped": "switched a brief off",
       "webhook_added": "added a webhook",
-      "webhook_removed": "removed a webhook"
+      "webhook_removed": "removed a webhook",
+      "health_watch": "saw a strategy's health drop to watch",
+      "health_decayed": "had a strategy paused as decayed",
+      "health_healthy": "saw a strategy recover",
+      "resumed": "resumed a paused strategy",
+      "promoted": "approved a strategy's promotion"
     },
     "name_it": "This workspace is shared but still called Personal, like everyone's own. Give it a name below so its members can tell it apart."
   },
@@ -1346,5 +1352,88 @@
     "proof_sig": "Signature",
     "proof_check": "Check",
     "proof_failed": "That signature was not made by this address or the wallet behind it."
+  },
+  "risk": {
+    "title": "Risk",
+    "lede_simple": "What your open paper positions could lose, taken together.",
+    "lede_detailed": "The open paper positions of every strategy as one portfolio: exclusive events exactly, other dependence by a documented simple model, 20,000 joint draws.",
+    "none": "Nothing open",
+    "none_text": "When your strategies hold paper positions, their risk together appears here.",
+    "week": "The most you could lose this week is {worst} of play money; in 19 weeks out of 20 you would lose less than {q}.",
+    "week_none": "Nothing you hold settles this week.",
+    "meter": "The worst case this week is {pct} of your paper balance.",
+    "all": "Across all {n} open positions, the worst case is a loss of {worst}. If every favourite won, you would make {fav}.",
+    "numbers": "The numbers",
+    "numbers_caption": "Risk of the open positions, and of those settling this week",
+    "measure": "Measure",
+    "all_col": "All open",
+    "week_col": "This week",
+    "m": {
+      "positions": "Positions",
+      "stake": "Staked",
+      "expected": "Expected at market prices",
+      "worst": "Worst case",
+      "loss95": "Loss not exceeded 19 times in 20",
+      "loss99": "Loss not exceeded 99 times in 100",
+      "shortfall": "Average loss in the worst 1 in 20",
+      "favourites": "If every favourite wins"
+    },
+    "where": "Where the stake is",
+    "group": "Group",
+    "share": "Share",
+    "by_domain": "By domain",
+    "by_event": "By event (largest ten)",
+    "by_date": "By resolution date",
+    "by_strategy": "By strategy",
+    "model": "Markets of one event that are not exclusive are correlated at {rho}; markets of one domain settling on one day share a factor of {day}; {n} draws. Probabilities are the markets' prices, not your strategies' beliefs.",
+    "play": "Paper trading uses play money."
+  },
+  "health": {
+    "title": "Health",
+    "none": "Checked after each settlement; nothing has settled yet.",
+    "states": {
+      "too_early": "Too early",
+      "healthy": "Healthy",
+      "watch": "Watch",
+      "decayed": "Decayed"
+    },
+    "line": {
+      "too_early": "{n} settled so far; health is judged from 20.",
+      "healthy": "After {n} settled, it is doing about as well as it did, or better.",
+      "watch": "After {n} settled, it may have stopped beating the market. Nothing has changed yet.",
+      "decayed": "After {n} settled, it has stopped beating the market beyond chance."
+    },
+    "paused": "This strategy was paused in paper: it opens no new positions, and the ones open still settle. Resume it once you have looked at why.",
+    "resume": "Resume",
+    "cusum": "Decline so far {s}, paused at {h}.",
+    "transitions": "Changes of health",
+    "col_settled": "Settled",
+    "col_from": "From",
+    "col_to": "To",
+    "col_cusum": "Decline"
+  },
+  "promotion": {
+    "title": "Readiness",
+    "note": "Before a strategy moves on, it must meet numbered criteria. For paper this is advice; for live it is required, and a person approves. The AI model can never approve.",
+    "check_paper": "Check for paper",
+    "check_live": "Check for live",
+    "targets": {
+      "paper": "paper",
+      "live": "live"
+    },
+    "result": "Checked for {target}, {when}",
+    "met": "Met",
+    "not_met": "Not met",
+    "criteria": {
+      "enough_markets": "Enough markets tested for the edge it claims",
+      "backtest_skill": "Beat the market in the backtest (95% sure)",
+      "forward_skill": "Beat the market in paper",
+      "no_leakage": "Passed the leakage check",
+      "healthy": "Healthy for four weeks",
+      "mandate": "Worst case within 20% of its balance, no event over 10%"
+    },
+    "approve": "Approve",
+    "approved": "Approved {when}",
+    "not_yet": "Not every criterion is met, so it cannot be approved."
   }
 }

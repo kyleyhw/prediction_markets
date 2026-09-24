@@ -91,7 +91,8 @@ export default async function strategies() {
       : `<p class="muted">${t('strategies.mine_none')}</p>`;
     h += `<div class="row"><a class="btn primary" href="#describe/new">${t('strategies.describe')}</a>
       <a class="btn" href="#research">${t('strategies.research')}</a>
-      <a class="btn" href="#shadow">${t('strategies.shadow')}</a></div>`;
+      <a class="btn" href="#shadow">${t('strategies.shadow')}</a>
+      <a class="btn" href="#risk">${t('strategies.risk')}</a></div>`;
     h += `<h2>${t('strategies.samples_title')}</h2>`;
     const o = await api('overview');
     const exportLink = detailed() ? `<a class="btn quiet" href="/api/paper/export" download>${t('work.export_ledger')}</a>` : '';

@@ -91,6 +91,56 @@ async function shareHtml(id, retired) {
   return h;
 }
 
+// Health (task 101) and promotion (task 102): whether the strategy still
+// beats the market in paper, and the numbered criteria for moving on, which
+// a person approves; paper is advisory, live is binding (Phase 22).
+async function healthHtml(id) {
+  const hh = (await api(`strategies/${id}/health`))?.health;
+  let h = `<h2>${t('health.title')}</h2>`;
+  if (!hh) return h + `<p class="muted">${t('health.none')}</p>`;
+  h += `<p><span class="pill${hh.state === 'healthy' ? ' ok' : hh.state === 'decayed' ? ' bad' : ''}">${t('health.states.' + hh.state)}</span>
+    ${t('health.line.' + hh.state, { n: hh.settled })}</p>`;
+  if (hh.paused) {
+    h += `<div class="aside caution"><p>${t('health.paused')}</p><button class="btn" type="button" id="resume">${t('health.resume')}</button></div>`;
+    after(() => document.getElementById('resume').addEventListener('click', async () => { await send('POST', `strategies/${id}/health/resume`); await render(false); }));
+  }
+  if (detailed()) {
+    h += `<p class="small muted">${t('health.cusum', { s: fmt.num(hh.cusum, 2), h: fmt.num(hh.threshold, 0) })}</p>`;
+    if (hh.transitions.length) {
+      h += table([t('health.col_settled'), t('health.col_from'), t('health.col_to'), t('health.col_cusum')],
+        hh.transitions.map((x) => [esc(x.settled), t('health.states.' + x.from), t('health.states.' + x.to), esc(fmt.num(x.cusum, 2))]),
+        { caption: t('health.transitions'), numFrom: 3 });
+    }
+  }
+  return h;
+}
+
+async function promotionHtml(id) {
+  const list = (await api(`strategies/${id}/promotion`))?.evaluations || [];
+  let h = `<h2>${t('promotion.title')}</h2><p class="muted measure">${t('promotion.note')}</p>
+    <div class="row"><button class="btn" type="button" data-promote="paper">${t('promotion.check_paper')}</button>
+    <button class="btn" type="button" data-promote="live">${t('promotion.check_live')}</button></div><p id="promo-status" class="small" role="status"></p>`;
+  const last = list[0];
+  if (last) {
+    h += `<div class="card"><h3 style="margin-top:0">${t('promotion.result', { target: tp('promotion.targets.' + last.target), when: fmt.dateTime(last.evaluated_at) })}</h3>
+      <ul class="notes">${last.criteria.map((c) => `<li><span class="pill${c.passed ? ' ok' : ' bad'}">${t(c.passed ? 'promotion.met' : 'promotion.not_met')}</span>
+        ${t('promotion.criteria.' + c.name)}${detailed() ? ` <span class="small muted">(${esc(c.detail)})</span>` : ''}</li>`).join('')}</ul>
+      ${last.approved_at ? `<p><span class="pill ok">${t('promotion.approved', { when: fmt.dateTime(last.approved_at) })}</span></p>`
+        : last.passed ? `<button class="btn primary" type="button" data-approve="${esc(last.id)}">${t('promotion.approve')}</button>` : `<p class="small muted">${t('promotion.not_yet')}</p>`}</div>`;
+  }
+  after(() => {
+    const status = document.getElementById('promo-status');
+    document.querySelectorAll('[data-promote]').forEach((b) => b.addEventListener('click', async () => {
+      b.disabled = true;
+      try { await send('POST', `strategies/${id}/promotion`, { target: b.dataset.promote }); await render(false); } catch (e) { status.textContent = e.message; b.disabled = false; }
+    }));
+    document.querySelector('[data-approve]')?.addEventListener('click', async (e) => {
+      try { await send('POST', `promotions/${e.currentTarget.dataset.approve}/approve`); await render(false); } catch (err) { status.textContent = err.message; }
+    });
+  });
+  return h;
+}
+
 export default async function strategy([id]) {
   const s = await api(`strategies/${id}`);
   if (!s) return head(t('strategy.missing')) + empty(t('strategy.missing'), t('strategy.missing_text'), [['#strategies', t('describe.back')]]);
@@ -119,6 +169,8 @@ export default async function strategy([id]) {
       s.versions.slice().reverse().map((x) => [esc(x.version), esc(fmt.dateTime(x.created_at)),
         x.changes.length ? esc(x.changes.map(([p, a, b]) => `${p}: ${JSON.stringify(a)} → ${JSON.stringify(b)}`).join('; ')) : '–']), { numFrom: 9 });
   }
+  if (session.hosted && s.accounts.length) h += await healthHtml(id);
+  if (session.hosted) h += await promotionHtml(id);
   if (session.hosted) h += await shareHtml(id, retired);
   h += commentsPanel('strategy', id);
   after(() => document.querySelectorAll('[data-act]').forEach((b) => b.addEventListener('click', async () => {

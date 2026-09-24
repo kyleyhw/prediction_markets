@@ -18,6 +18,10 @@ import numpy as np
 from vp.strategy.card import paired_interval
 
 K, H = 0.25, 18.0
+# A strategy whose advantage barely varies (a constant forecast against
+# near-certain prices) would divide by almost nothing; measured on the
+# stand-in, the CUSUM reached 1.2e10. The floor is one Brier point in 100.
+SD_FLOOR = 0.01
 MIN_SETTLED, WINDOW, HOLD = 20, 25, 2
 
 
@@ -45,7 +49,7 @@ def evaluate(
         if t >= 2:
             mean = c / (t + 1)
             var = (c2 - (t + 1) * mean * mean) / t
-            z = x / (var**0.5) if var > 0 else 0.0
+            z = x / max(var**0.5 if var > 0 else 0.0, SD_FLOOR)
         else:
             z = 0.0
         s = max(0.0, s - z - K)

@@ -9,7 +9,8 @@ import { after, detailed, empty, esc, fmt, head, t, table, tp } from '../ui.js';
 const ROLES = ['owner', 'editor', 'viewer'];
 const ACTIONS = ['joined', 'left', 'removed', 'invited', 'invitation_revoked', 'role_changed', 'renamed', 'confirmed', 'paper_started', 'retired',
   'shared', 'share_updated', 'unshared', 'forked', 'commented', 'comment_hidden', 'leaderboard_joined', 'leaderboard_left',
-  'channel_added', 'channel_removed', 'sender_paired', 'brief_proposed', 'brief_confirmed', 'brief_stopped', 'webhook_added', 'webhook_removed'];
+  'channel_added', 'channel_removed', 'sender_paired', 'brief_proposed', 'brief_confirmed', 'brief_stopped', 'webhook_added', 'webhook_removed',
+  'health_watch', 'health_decayed', 'health_healthy', 'resumed', 'promoted'];
 
 const roleSelect = (m) => `<label for="role-${esc(m.user_id)}" class="sr-only">${t('team.role_of', { email: m.email })}</label>
   <select id="role-${esc(m.user_id)}" data-role="${esc(m.user_id)}">${ROLES.map((r) => `<option value="${r}"${r === m.role ? ' selected' : ''}>${t('team.roles.' + r)}</option>`).join('')}</select>`;

@@ -77,6 +77,23 @@ def test_keys_built_from_fixed_lists_exist() -> None:
         + [f"shadow.origin.{k}" for k in ("enumerated", "model")]
         + [f"shadow.parts.{k}" for k in ("sizing", "timing", "selection")]
         + [
+            f"health.{g}.{k}"
+            for g in ("states", "line")
+            for k in ("too_early", "healthy", "watch", "decayed")
+        ]
+        + [
+            f"promotion.criteria.{k}"
+            for k in (
+                "enough_markets",
+                "backtest_skill",
+                "forward_skill",
+                "no_leakage",
+                "healthy",
+                "mandate",
+            )
+        ]
+        + [f"promotion.targets.{k}" for k in ("paper", "live")]
+        + [
             f"jobs.kind.{k}"
             for k in (
                 "backtest",

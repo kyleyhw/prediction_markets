@@ -80,6 +80,9 @@ def test_health_is_too_early_then_healthy_and_detects_decay() -> None:
     assert got["state"] == "decayed"
     assert [t["to"] for t in got["transitions"]][-1] == "decayed"
     assert got["transitions"][-1]["settled"] > 100
+    # An advantage that never varies is judged, not divided by zero.
+    flat = health.evaluate([-0.25] * 200)
+    assert flat["state"] == "decayed" and flat["cusum"] < 1e5
 
 
 def test_a_conjunction_is_checked_against_its_legs() -> None:
