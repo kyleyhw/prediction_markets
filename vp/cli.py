@@ -287,6 +287,10 @@ def main() -> None:
     adm_sub.add_parser("costs", help="model spend this month").add_argument(
         "--month", default=None, help="YYYY-MM"
     )
+    au = adm_sub.add_parser("unit-costs", help="cost per person-day by component")
+    au.add_argument("--days", type=int, default=7)
+    au.add_argument("--cpu-hour", type=float, default=None, help="$ per vCPU-hour")
+    au.add_argument("--db-gb-month", type=float, default=None, help="$ per GB-month")
     ar = adm_sub.add_parser("refresh", help="refresh a domain's data now")
     ar.add_argument("domain", choices=sorted(DOMAINS))
     ar.add_argument("--what", nargs="+", default=["dataset", "snapshot"])

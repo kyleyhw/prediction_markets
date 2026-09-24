@@ -11,7 +11,6 @@ operator.
 from __future__ import annotations
 
 import getpass
-import itertools
 import socket
 from datetime import UTC, date, datetime
 from decimal import Decimal
@@ -187,6 +186,67 @@ def costs(conn: psycopg.Connection, month: date | None = None) -> list[tuple[Any
     ).fetchall()
 
 
+#: Prices until the host's invoice replaces them (flag F16): dollars per
+#: vCPU-hour of process time, per GB-month of database storage. They are
+#: the operator's to set (`vp admin unit-costs --cpu-hour ... --db-gb-month`).
+PRICES = {"cpu_hour": 0.03, "db_gb_month": 0.25}
+
+
+def unit_costs(
+    conn: psycopg.Connection, days: int = 7, prices: dict[str, float] = PRICES
+) -> dict[str, Any]:
+    """Cost per person-day by component over the last ``days`` (task 108):
+    job time by kind (shared when the job has no workspace), model spend
+    paid by the platform, and database storage. People are those with a
+    session alive in the window. Web processes are a fixed cost the host
+    bills by the replica and are left to the invoice."""
+    (people,) = conn.execute(
+        "select count(distinct user_id) from sessions "
+        "where expires_at > now() - make_interval(days => %s)",
+        (days,),
+    ).fetchone() or (0,)
+    person_days = max(people, 1) * days
+    rows = []
+    for kind, shared, runs, seconds in conn.execute(
+        "select kind, workspace_id is null, count(*), "
+        "coalesce(sum(extract(epoch from finished_at - started_at)), 0) from jobs "
+        "where started_at is not null "
+        "and finished_at > now() - make_interval(days => %s) "
+        "group by 1, 2 order by 4 desc",
+        (days,),
+    ):
+        usd = float(seconds) / 3600 * prices["cpu_hour"]
+        rows.append((("shared " if shared else "") + f"jobs: {kind}", runs, usd))
+    for paid_by, usd in conn.execute(
+        "select coalesce(paid_by, 'platform'), sum(usd) from spend "
+        "where kind = 'charge' and at > now() - make_interval(days => %s) group by 1",
+        (days,),
+    ):
+        if paid_by == "platform":
+            rows.append(("model spend (platform)", None, float(usd)))
+    (size,) = conn.execute(
+        "select pg_database_size(current_database())"
+    ).fetchone() or (0,)
+    rows.append(
+        ("database storage", None, size / 1e9 * prices["db_gb_month"] * days / 30)
+    )
+    return {
+        "days": days,
+        "people": people,
+        "prices": prices,
+        "components": [
+            {
+                "component": c,
+                "runs": n,
+                "usd": round(u, 4),
+                "per_person_day": u / person_days,
+            }
+            for c, n, u in rows
+        ],
+        "per_person_day": sum(u for *_, u in rows) / person_days,
+    }
+
+
 def refresh(
     conn: psycopg.Connection, domain: str, kinds: tuple[str, ...]
 ) -> list[UUID]:
@@ -220,30 +280,43 @@ def verify_ledgers(conn: psycopg.Connection, store: Any = None) -> dict[str, Any
     the run is recorded in the audit chain (docs/runbook.md, "Ledger chain
     broken")."""
     from vp.paper.ledger import verify_entries
-    from vp.platform.archive import archived_entries
+    from vp.platform.archive import archived_chains
 
     broken: dict[str, int] = {}
+    heads: dict[str, tuple[int, str]] = {}  # verified so far, month by month
+    for account, entries in archived_chains(store) if store is not None else ():
+        if account in broken:
+            continue
+        bad = verify_entries(entries, heads.get(account))
+        if bad is None:
+            heads[account] = (entries[-1]["seq"], entries[-1]["hash"])
+        else:
+            broken[account] = bad
     accounts = conn.execute("select id, workspace_id from paper_accounts").fetchall()
     for account, workspace in accounts:
-        live = (
-            e
-            for (e,) in conn.execute(
-                "select entry from ledger_entries where account_id = %s order by seq",
-                (account,),
-            )
-        )
-        older = archived_entries(store, account) if store is not None else iter(())
-        bad = verify_entries(itertools.chain(older, live))
-        if bad is not None:
-            broken[str(account)] = bad
-            paused = conn.execute(
-                "select 1 from halts where workspace_id = %s and cleared_at is null",
-                (workspace,),
-            ).fetchone()
-            if paused is None:
-                halt(
-                    conn, f"ledger chain of {account} broken at entry {bad}", workspace
+        if str(account) not in broken:
+            live = (
+                e
+                for (e,) in conn.execute(
+                    "select entry from ledger_entries where account_id = %s "
+                    "order by seq",
+                    (account,),
                 )
+            )
+            bad = verify_entries(live, heads.get(str(account)))
+            if bad is None:
+                continue
+            broken[str(account)] = bad
+        paused = conn.execute(
+            "select 1 from halts where workspace_id = %s and cleared_at is null",
+            (workspace,),
+        ).fetchone()
+        if paused is None:
+            halt(
+                conn,
+                f"ledger chain of {account} broken at entry {broken[str(account)]}",
+                workspace,
+            )
     result = {"accounts": len(accounts), "broken": broken}
     audit.append(conn, "ledgers.verify", result, operator())
     return result

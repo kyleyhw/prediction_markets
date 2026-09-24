@@ -15,6 +15,7 @@ from the web or a worker.
 from __future__ import annotations
 
 import io
+import itertools
 import json
 from collections.abc import Iterator
 from datetime import date
@@ -93,12 +94,31 @@ def archive_month(
 
 def archived_entries(store: ObjectStore, account_id: UUID) -> Iterator[dict[str, Any]]:
     """An account's archived ledger entries, oldest month first, in chain order."""
-    for key in store.keys("archive/ledger_entries/"):
+    for key in sorted(store.keys("archive/ledger_entries/")):
         data = store.get_bytes(key)
         if data is None:
             continue
         for (entry,) in _rows_for(data, str(account_id)):
             yield json.loads(entry)
+
+
+def archived_chains(store: ObjectStore) -> Iterator[tuple[str, list[dict[str, Any]]]]:
+    """(account, its entries in chain order) for every account in each
+    archived month, oldest month first. Each file is read once however many
+    accounts it holds; reading it once per account made the daily check
+    O(accounts × months) (Phase 21)."""
+    for key in sorted(store.keys("archive/ledger_entries/")):
+        data = store.get_bytes(key)
+        if data is None:
+            continue
+        table = pq.read_table(io.BytesIO(data), columns=["account_id", "seq", "entry"])
+        con = duckdb.connect()
+        con.register("archived", table)
+        rows = con.execute(
+            "select account_id, entry from archived order by account_id, seq"
+        ).fetchall()
+        for account, group in itertools.groupby(rows, key=lambda r: r[0]):
+            yield account, [json.loads(entry) for _, entry in group]
 
 
 def _rows_for(data: bytes, account_id: str) -> list[tuple[str]]:

@@ -114,6 +114,21 @@ def _admin(conn: Any, args: argparse.Namespace) -> None:
             print(f"{ws}  {name:>12} {where:>8} {model or '-':>20} ${usd:,.4f}")
             total += usd
         print(f"total ${total:,.4f}")
+    elif command == "unit-costs":
+        prices = dict(ops.PRICES)
+        if args.cpu_hour is not None:
+            prices["cpu_hour"] = args.cpu_hour
+        if args.db_gb_month is not None:
+            prices["db_gb_month"] = args.db_gb_month
+        got = ops.unit_costs(conn, args.days, prices)
+        print(f"{got['people']} people over {got['days']} days, prices {prices}")
+        for c in got["components"]:
+            runs = "" if c["runs"] is None else f"{c['runs']:>7} runs"
+            print(
+                f"  {c['component']:<32}{runs:>13} ${c['usd']:>10,.4f}"
+                f"  ${c['per_person_day']:.5f} a person-day"
+            )
+        print(f"total ${got['per_person_day']:.5f} a person-day, before web replicas")
     elif command == "refresh":
         ids = ops.refresh(conn, args.domain, tuple(args.what))
         print(f"queued {len(ids)} job(s): {', '.join(map(str, ids))}")

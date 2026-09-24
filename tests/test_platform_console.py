@@ -28,6 +28,13 @@ pytestmark = needs_db
         {"command": "admin", "admin_command": "halts"},
         {"command": "admin", "admin_command": "costs", "month": None},
         {"command": "admin", "admin_command": "audit"},
+        {
+            "command": "admin",
+            "admin_command": "unit-costs",
+            "days": 7,
+            "cpu_hour": 0.05,
+            "db_gb_month": None,
+        },
     ],
 )
 def test_each_listing_prints(

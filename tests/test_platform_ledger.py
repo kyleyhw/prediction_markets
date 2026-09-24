@@ -173,6 +173,10 @@ def test_an_archived_month_leaves_postgres_and_the_chain_still_verifies(
     assert [e["seq"] for e in PgLedger(app_pool, ada, account).entries()] == [2]
     assert [e["seq"] for e in ledger.entries()] == [0, 1, 2]
     assert ledger.verify() is None
+    # The daily check reads each archived month once and continues the chain.
+    from vp.platform import ops
+
+    assert str(account) not in ops.verify_ledgers(pg_owner, store)["broken"]
     # Deleting the workspace rewrites the month without its rows.
     from vp.platform.archive import archived_entries, purge_workspace
 

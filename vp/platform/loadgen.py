@@ -82,11 +82,13 @@ def seed(
     people: int,
     entries: int = ENTRIES_PER_DAY,
     progress: Callable[[str], None] | None = None,
+    when: datetime | None = None,
 ) -> dict[str, Any]:
     """Create ``people`` people, each owning a workspace and a paper account
-    with ``entries`` ledger entries; returns counts and timings."""
+    with ``entries`` ledger entries written ``when`` (now by default; an
+    earlier month's partition must exist); returns counts and timings."""
     rng = random.Random(tag)
-    at = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    at = (when or datetime.now(tz=UTC)).isoformat(timespec="seconds")
     t0 = time.perf_counter()
     rows = []
     for i in range(people):
