@@ -242,3 +242,15 @@ def test_a_checkpoint_verifies_and_replays_only_what_follows(
         )
     assert ledger.verify() == seq + 1
     assert ledger.verify_all() == 3
+    # The daily check finds it, pauses the workspace once, and records itself.
+    from vp.platform import ops
+
+    for _ in range(2):
+        found = ops.verify_ledgers(pg_owner)
+        assert found["broken"][str(account)] == 3
+    (halts,) = pg_owner.execute(
+        "select count(*) from halts where workspace_id = %s and cleared_at is null",
+        (ada.workspace,),
+    ).fetchone()
+    assert halts == 1
+    ops.resume(pg_owner, ada.workspace)

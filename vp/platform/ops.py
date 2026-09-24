@@ -215,13 +215,16 @@ def refresh(
 def verify_ledgers(conn: psycopg.Connection, store: Any = None) -> dict[str, Any]:
     """Every paper ledger verified from its first entry, archived months
     included: the daily check behind the per-cycle checkpoints (Phase 21).
-    Returns the count checked and the accounts whose chains break."""
+    Returns the count checked and the accounts whose chains break. A
+    workspace holding a broken chain is paused unless it already is, and
+    the run is recorded in the audit chain (docs/runbook.md, "Ledger chain
+    broken")."""
     from vp.paper.ledger import verify_entries
     from vp.platform.archive import archived_entries
 
     broken: dict[str, int] = {}
-    accounts = [a for (a,) in conn.execute("select id from paper_accounts").fetchall()]
-    for account in accounts:
+    accounts = conn.execute("select id, workspace_id from paper_accounts").fetchall()
+    for account, workspace in accounts:
         live = (
             e
             for (e,) in conn.execute(
@@ -233,4 +236,14 @@ def verify_ledgers(conn: psycopg.Connection, store: Any = None) -> dict[str, Any
         bad = verify_entries(itertools.chain(older, live))
         if bad is not None:
             broken[str(account)] = bad
-    return {"accounts": len(accounts), "broken": broken}
+            paused = conn.execute(
+                "select 1 from halts where workspace_id = %s and cleared_at is null",
+                (workspace,),
+            ).fetchone()
+            if paused is None:
+                halt(
+                    conn, f"ledger chain of {account} broken at entry {bad}", workspace
+                )
+    result = {"accounts": len(accounts), "broken": broken}
+    audit.append(conn, "ledgers.verify", result, operator())
+    return result

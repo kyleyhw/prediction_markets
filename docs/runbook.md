@@ -107,3 +107,52 @@ monthly limit, so this is many workspaces at once, or one on its own key
 (which does not count against the platform). `vp admin costs` shows the
 month by workspace, forecaster, domain and model. If it is not expected,
 halt the platform, then lower budgets with `vp admin budget`.
+
+## Ledger chain broken
+
+Found by the daily whole-chain check (`vp admin verify-ledgers`, the
+`verify-ledgers` service in Compose), not by an alert. A trading cycle
+checks only the entries after its account's last verified checkpoint, so a
+change to an entry before the checkpoint is caught here, within a day. The
+check pauses the workspace (`vp admin halts` shows the reason, naming the
+account and the first bad entry) and records its run in the audit chain.
+
+- Export the account (`/api/paper/export` as the person, or the rows as the
+  owner) and keep it before touching anything.
+- Compare the entry with the archived months and the backups: the backup
+  from before the change holds the entry as written.
+- Nothing rewrites a ledger. If the entry was changed by a fault of ours,
+  say so to the person, restore the account from the backup, and resume the
+  workspace (`vp admin resume --workspace <id>`). If it cannot be restored,
+  the account stays closed and a new one is opened; the old chain is kept
+  as evidence.
+
+## Restoring the database
+
+The drill (Phase 21 report) restored a dump of the 10,000-person stand-in
+into a fresh database and checked it. The order, with the times measured:
+
+1. Halt the platform (`vp admin halt --reason "restore"`) so no job writes
+   during the restore.
+2. Restore the managed database's point-in-time copy, or on the stand-in
+   `pg_restore --jobs 4 -d vp <dump>` into an empty database.
+3. `vp db migrate` (applies nothing on a current dump; says so).
+4. `vp admin verify-ledgers` and `vp admin audit`: every chain from its
+   first entry, and the audit chain.
+5. Point the services at it, `vp admin resume`, and watch `QueueBacklog`
+   drain.
+
+Object storage is versioned and is not restored with the database; runs
+whose files are newer than the restored rows are orphans, which is
+harmless.
+
+## Abuse
+
+The limits in place, each exercised in the Phase 21 report: five sign-in links
+per email address in fifteen minutes, twenty sign-in requests an hour per
+network address, 120 requests a minute per
+API token, six account exports an hour, each workspace's monthly model
+budget, and the operator's pause of one workspace. A workspace that floods
+the queue is paused (`vp admin pause <workspace> --reason "..."`); its
+queued jobs wait and its running ones finish. Its person is told why by
+email before it is resumed or closed.

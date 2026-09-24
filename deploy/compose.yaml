@@ -78,6 +78,14 @@ services:
       minio:
         condition: service_healthy
 
+  # Every paper ledger verified from its first entry, daily, as the owner:
+  # a trading cycle checks only what follows its verified checkpoint
+  # (tests/reports/phase21_scale.md). A broken chain is printed and the
+  # run exits 1; docs/runbook.md says what to do.
+  verify-ledgers:
+    <<: *app
+    entrypoint: ["sh", "-c", "while true; do vp admin verify-ledgers; sleep 86400; done"]
+
   web:
     <<: *app
     # One process serves about 35 requests a second of the dashboard's mix;

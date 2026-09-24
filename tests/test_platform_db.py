@@ -117,6 +117,25 @@ def test_migrations_are_recorded_and_applying_twice_is_a_no_op(
     assert names == sorted(names)
 
 
+def test_every_column_a_person_is_found_by_is_indexed(
+    owner: psycopg.Connection,
+) -> None:
+    """Deleting and exporting a person filter every table on these columns;
+    without an index each deletion scans the table (Phase 21)."""
+    missing = owner.execute(
+        "select c.relname || '.' || a.attname from pg_class c "
+        "join pg_namespace n on n.oid = c.relnamespace "
+        "join pg_attribute a on a.attrelid = c.oid and not a.attisdropped "
+        "where n.nspname = 'public' and c.relkind in ('r', 'p') "
+        "and not c.relispartition "
+        "and a.attname in ('workspace_id', 'user_id', 'created_by') "
+        "and c.relname not in ('audit_entries', 'workspaces', 'users') "
+        "and not exists (select 1 from pg_index i "
+        "where i.indrelid = c.oid and i.indkey[0] = a.attnum)"
+    ).fetchall()
+    assert missing == []
+
+
 def test_an_edited_migration_is_refused(owner: psycopg.Connection, tmp_path) -> None:
     """The database and the repository must not disagree about the schema."""
     dir_ = tmp_path / "migrations"

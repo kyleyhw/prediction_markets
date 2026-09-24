@@ -132,7 +132,9 @@ function deletion() {
       location.href = '/sign-in';
     } catch (err) { status.textContent = err.message; }
   }));
-  return `<h2>${t('settings.delete_title')}</h2><p class="muted measure">${t('settings.delete_text')}</p>
+  return `<h2>${t('settings.export_title')}</h2><p class="muted measure">${t('settings.export_text')}</p>
+    <p><a class="btn" href="/api/account/export" download>${t('settings.export_button')}</a></p>
+    <h2>${t('settings.delete_title')}</h2><p class="muted measure">${t('settings.delete_text')}</p>
     <form id="delete-form" class="row"><label for="delete-words" class="sr-only">${t('settings.delete_label')}</label>
       <input type="text" id="delete-words" autocomplete="off" placeholder="${tp('settings.delete_label')}" style="min-width:18em">
       <button class="btn" type="submit">${t('settings.delete_button')}</button></form>

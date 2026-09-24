@@ -58,6 +58,7 @@ import threading
 import time
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated, Any, Literal
 from urllib.parse import urlsplit
@@ -753,6 +754,42 @@ def create_app(
             raise HTTPException(409, "the terms have changed; reload to read them")
         with pool.connection() as conn, tenant_session(conn, principal):
             conn.execute("select vp_accept_terms(%s)", (legal.TERMS_VERSION,))
+
+    @app.get("/api/account/export")
+    def export_account(principal: BrowserSession) -> Response:
+        """Everything held on the signed-in person, as one JSON file: every
+        table's rows (vp_export_account), archived ledger months, and the
+        workspace's stored files by name. Six an hour."""
+        from vp.platform.archive import archived_entries
+
+        with pool.connection() as conn:
+            (allowed,) = conn.execute(
+                "select vp_rate_limit(%s, 6, 3600)", (f"export:{principal.subject}",)
+            ).fetchone() or (False,)
+        if not allowed:
+            raise HTTPException(
+                429, "six exports an hour at most", headers={"Retry-After": "3600"}
+            )
+        with pool.connection() as conn, tenant_session(conn, principal):
+            (tables,) = conn.execute("select vp_export_account()").fetchone() or ({},)
+        archived = {
+            a["id"]: list(archived_entries(shared.store, UUID(a["id"])))
+            for a in tables.get("paper_accounts", [])
+        }
+        prefix = f"workspaces/{principal.workspace}/"
+        body = {
+            "exported_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+            "tables": tables,
+            "archived_ledger_entries": {k: v for k, v in archived.items() if v},
+            "files": [k[len(prefix) :] for k in store.keys(prefix)],
+        }
+        return Response(
+            json.dumps(body, default=str),
+            media_type="application/json",
+            headers={
+                "Content-Disposition": 'attachment; filename="vibe-predict-export.json"'
+            },
+        )
 
     @app.delete("/api/account", response_model=None)
     def delete_account(

@@ -231,7 +231,7 @@ def test_the_paper_view_is_kept_per_ledger_head_and_never_stale(
     assert client.get("/api/overview").json()["paper"]["entries"] == before + 1
 
 
-def test_deleting_an_account_removes_everything_of_it_and_nothing_else(
+def test_an_account_exports_whole_and_deletes_without_touching_others(
     world, app_pool, pg_owner
 ) -> None:
     client = world["client"]
@@ -251,8 +251,19 @@ def test_deleting_an_account_removes_everything_of_it_and_nothing_else(
     me = client.get("/auth/me").json()
     workspace, email = me["workspace"]["id"], me["email"]
     assert world["store"].keys(f"workspaces/{workspace}/")
-    _as(client, bob).post("/api/backtests", json=body, headers=ORIGIN)
-    _as(client, ada)
+    bobs = _as(client, bob).post("/api/backtests", json=body, headers=ORIGIN)
+    bob_workspace = client.get("/auth/me").json()["workspace"]["id"]
+    # The export holds everything of Ada's and no secret of ours or Bob's.
+    got = _as(client, ada).get("/api/account/export")
+    assert got.status_code == 200 and "attachment" in got.headers["content-disposition"]
+    tables = got.json()["tables"]
+    assert tables["users"][0]["email"] == email
+    assert tables["user_settings"][0]["settings"]["theme"] == "dark"
+    assert len(tables["runs"]) == 1 and tables["api_tokens"][0]["name"] == "laptop"
+    assert "token_hash" not in tables["api_tokens"][0]
+    assert all("session_hash" not in s for s in tables["sessions"])
+    assert {m["workspace_id"] for m in tables["memberships"]} == {workspace}
+    assert got.json()["files"] and bob_workspace not in got.text
     wrong = client.request(
         "DELETE", "/api/account", json={"confirm": "yes"}, headers=ORIGIN
     )
@@ -282,3 +293,5 @@ def test_deleting_an_account_removes_everything_of_it_and_nothing_else(
     assert logged == 1
     # Bob's work is untouched.
     assert len(_as(client, bob).get("/api/jobs").json()) == 1
+    # Left queued, the next run's worker would claim it before its own.
+    client.post(f"/api/jobs/{bobs.json()['job_id']}/cancel", headers=ORIGIN)
