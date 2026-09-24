@@ -126,6 +126,7 @@ from __future__ import annotations
 import json
 import logging
 import math
+import re
 from collections.abc import Iterator
 from datetime import datetime, timezone
 from typing import Any, Literal
@@ -145,6 +146,11 @@ _CLOB_HISTORY_URL = "https://clob.polymarket.com/prices-history"
 _GAMMA_EVENTS_KEYSET_URL = "https://gamma-api.polymarket.com/events/keyset"
 _DATA_HISTORY_URL = "https://data-api.polymarket.com/v2/prices-history"
 _DATA_RESOLUTIONS_URL = "https://data-api.polymarket.com/v2/resolutions"
+_DATA_ACTIVITY_URL = "https://data-api.polymarket.com/v2/activity"
+_DATA_POSITIONS_URL = "https://data-api.polymarket.com/v2/positions"
+_DATA_LEADERBOARD_URL = "https://data-api.polymarket.com/v1/leaderboard"
+_PNL_URL = "https://user-pnl-api.polymarket.com/user-pnl"
+_GAMMA_PROFILE_URL = "https://gamma-api.polymarket.com/public-profile"
 
 # Separate throttle buckets: the catalogue and the book are different hosts and
 # must not share a rate budget.
@@ -1006,3 +1012,120 @@ def fetch_resolution(condition_id: str) -> dict[str, Any] | None:
             else None
         ),
     }
+
+
+# ---------------------------------------------------------------- accounts
+# A public address's record (docs/shadow.md). Everything here is public on
+# the venue and read without credentials; nothing here can trade.
+
+ADDRESS = re.compile(r"^0x[0-9a-fA-F]{40}$")
+
+
+def _address(address: str) -> str:
+    if not ADDRESS.match(address.strip()):
+        raise ValueError(f"not an address: {address!r}")
+    return address.strip().lower()
+
+
+def _paged(
+    url: str, params: dict[str, Any], limit: int, max_items: int
+) -> Iterator[dict[str, Any]]:
+    """Rows of a Data API v2 listing, following its cursor."""
+    cursor: str | None = None
+    seen = 0
+    while seen < max_items:
+        page = dict(params, limit=min(limit, max_items - seen))
+        if cursor:
+            page["cursor"] = cursor
+        payload = _get_json(url, host_key=_DATA_HOST_KEY, params=page)
+        rows = payload.get("data") if isinstance(payload, dict) else None
+        if not isinstance(rows, list):
+            raise ValueError("unexpected listing payload shape")
+        for row in rows:
+            if isinstance(row, dict):
+                if seen >= max_items:
+                    return
+                seen += 1
+                yield row
+        more = payload.get("pagination") or {}
+        cursor = more.get("next_cursor")
+        if not more.get("has_more") or not cursor or not rows:
+            return
+
+
+def fetch_activity(
+    address: str, *, max_items: int = 50_000
+) -> Iterator[dict[str, Any]]:
+    """An address's activity, newest first: trades, redemptions, merges,
+    splits, conversions and rewards (Data API v2, verified 2026-09-24)."""
+    return _paged(_DATA_ACTIVITY_URL, {"user": _address(address)}, 500, max_items)
+
+
+def fetch_positions(address: str, *, max_items: int = 5_000) -> list[dict[str, Any]]:
+    """An address's current positions (Data API v2)."""
+    return list(
+        _paged(_DATA_POSITIONS_URL, {"user": _address(address)}, 500, max_items)
+    )
+
+
+def fetch_user_pnl(address: str) -> list[dict[str, float]]:
+    """The venue's daily cumulative P&L series for an address, as
+    ``{"t": epoch seconds, "p": USD}``."""
+    payload = _get_json(
+        _PNL_URL,
+        host_key=_DATA_HOST_KEY,
+        params={"user_address": _address(address), "interval": "all", "fidelity": "1d"},
+    )
+    if not isinstance(payload, list):
+        raise ValueError("unexpected P&L payload shape")
+    return [
+        {"t": float(p["t"]), "p": float(p["p"])}
+        for p in payload
+        if isinstance(p, dict)
+        and _to_float(p.get("t"))
+        and _to_float(p.get("p")) is not None
+    ]
+
+
+def fetch_profile(address: str) -> dict[str, Any] | None:
+    """The venue's public profile of an address, whose ``proxyWallet`` is
+    the address that trades for it; ``None`` if it has none."""
+    try:
+        payload = _get_json(
+            _GAMMA_PROFILE_URL,
+            host_key=_GAMMA_HOST_KEY,
+            params={"address": _address(address)},
+        )
+    except requests.HTTPError as exc:
+        if exc.response is not None and exc.response.status_code == 404:
+            return None
+        raise
+    return payload if isinstance(payload, dict) else None
+
+
+def fetch_leaderboard(
+    category: str = "OVERALL", *, period: str = "ALL", limit: int = 50
+) -> list[dict[str, Any]]:
+    """The venue's public leaderboard by profit: rank, address, volume, P&L."""
+    payload = _get_json(
+        _DATA_LEADERBOARD_URL,
+        host_key=_DATA_HOST_KEY,
+        params={
+            "category": category.upper(),
+            "timePeriod": period.upper(),
+            "orderBy": "PNL",
+            "limit": limit,
+        },
+    )
+    if not isinstance(payload, list):
+        raise ValueError("unexpected leaderboard payload shape")
+    return [
+        {
+            "rank": int(row.get("rank") or 0),
+            "address": str(row.get("proxyWallet") or "").lower(),
+            "volume": _to_float(row.get("vol")) or 0.0,
+            "pnl": _to_float(row.get("pnl")) or 0.0,
+        }
+        for row in payload
+        if isinstance(row, dict)
+    ]

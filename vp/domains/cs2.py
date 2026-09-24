@@ -72,6 +72,7 @@ def parse(question: str, event_title: str | None) -> dict[str, str] | None:
 
 
 CS2 = Domain(
+    leaderboard="ESPORTS",
     name="cs2",
     title="Counter-Strike 2",
     summary="Esports: who wins Counter-Strike matches and tournaments.",

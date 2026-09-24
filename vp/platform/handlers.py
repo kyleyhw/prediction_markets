@@ -876,9 +876,10 @@ def share_refresh(ctx: JobContext) -> dict[str, Any]:
 def handlers(extra: dict[str, Handler] | None = None) -> dict[str, Handler]:
     """Every kind this module handles, plus any given (the ingest's and the
     evidence collectors', which live with their services)."""
-    from vp.platform import briefs, delivery, leaderboards, signals
+    from vp.platform import briefs, delivery, leaderboards, shadow, signals
 
     table: dict[str, Handler] = {
+        "shadow_import": shadow.run,
         "deliver": delivery.deliver,
         "leaderboard": leaderboards.run,
         "brief": briefs.run,

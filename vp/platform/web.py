@@ -1334,10 +1334,11 @@ def create_app(
 
     # ---------------------------------------------------------------- page
 
-    from vp.platform import web_collab
+    from vp.platform import web_collab, web_shadow
 
     web_collab.register(app, pool, settings, mailer)
     web_collab.register_delivery(app, pool, settings)
+    web_shadow.register(app, pool)
     app.mount("/mcp", mcp_app)
 
     app.mount("/fonts", StaticFiles(directory=STATIC / "fonts"), name="fonts")

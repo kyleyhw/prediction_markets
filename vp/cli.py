@@ -40,6 +40,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import sys
 from importlib.metadata import version
 from pathlib import Path
 
@@ -180,6 +181,15 @@ def main() -> None:
     ens = evid_sub.add_parser("ensemble", help="the ensemble for open markets")
     ens.add_argument("--root", type=Path, default=Path("data"))
     ens.add_argument("--domain", default=None, help="default: every such domain")
+
+    shadow = sub.add_parser(
+        "shadow", help="a public address's record as a report card (docs/shadow.md)"
+    )
+    shadow.add_argument("address")
+    shadow.add_argument("--root", type=Path, default=Path("data"))
+    shadow.add_argument("--max-activity", type=int, default=50_000)
+    shadow.add_argument("--max-histories", type=int, default=300)
+    shadow.add_argument("--out", type=Path, default=None, help="write the card here")
 
     strat = sub.add_parser("strategy", help="a strategy spec (JSON)")
     strat_sub = strat.add_subparsers(dest="strategy_command", required=True)
@@ -373,6 +383,25 @@ def main() -> None:
         return
     if args.command == "strategy":
         _strategy(args)
+        return
+    if args.command == "shadow":
+        from vp.shadow.card import from_venue
+
+        card = from_venue(
+            args.address,
+            args.root,
+            cap=args.max_activity,
+            max_histories=args.max_histories,
+            progress=lambda f, m: print(f"{f:4.0%} {m}", file=sys.stderr),
+        )
+        text = json.dumps(card, indent=1)
+        if args.out:
+            args.out.write_text(text)
+        print(
+            text
+            if not args.out
+            else json.dumps(card["diagnostics"]["overall"], indent=1)
+        )
         return
     if args.command == "evidence":
         import os

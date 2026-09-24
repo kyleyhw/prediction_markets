@@ -79,6 +79,7 @@ def parse(question: str, event_title: str | None) -> dict[str, str] | None:
 
 
 EPL = Domain(
+    leaderboard="SPORTS",
     name="epl",
     title="Premier League",
     summary="English football: match results and the title race.",

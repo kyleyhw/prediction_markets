@@ -18,17 +18,18 @@ import markets from './views/markets.js';
 import notifications from './views/notifications.js';
 import research from './views/research.js';
 import settings from './views/settings.js';
+import shadow from './views/shadow.js';
 import signals from './views/signals.js';
 import start from './views/start.js';
 import strategies from './views/strategies.js';
 import strategy from './views/strategy.js';
 import team from './views/team.js';
 
-const ROUTES = { home, markets, market, strategies, strategy, describe, research, backtests, signals, leaderboards, team, notifications, delivery, learn, settings, start };
+const ROUTES = { home, markets, market, strategies, strategy, describe, research, shadow, backtests, signals, leaderboards, team, notifications, delivery, learn, settings, start };
 // Teams, boards and notices exist only on the hosted service.
 const NAV_LOCAL = ['home', 'markets', 'strategies', 'backtests', 'signals', 'learn', 'settings'];
 const NAV_HOSTED = ['home', 'markets', 'strategies', 'backtests', 'signals', 'leaderboards', 'team', 'notifications', 'learn', 'settings'];
-const SECTION = { market: 'markets', start: 'home', strategy: 'strategies', describe: 'strategies', research: 'strategies', delivery: 'settings' };
+const SECTION = { market: 'markets', start: 'home', strategy: 'strategies', describe: 'strategies', research: 'strategies', shadow: 'strategies', delivery: 'settings' };
 
 // The count of unread notices beside their link, refreshed on each page.
 async function unread() {

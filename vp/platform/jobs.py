@@ -51,6 +51,7 @@ logger = logging.getLogger(__name__)
 #: Kinds a person may start from the page or the API, in their workspace.
 WORKSPACE_KINDS = frozenset(
     {
+        "shadow_import",
         "backtest",
         "compile",
         "research",

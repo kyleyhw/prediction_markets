@@ -25,6 +25,7 @@ ALLOWED = {
     "PROJECT_PLAN.md",
     "README.md",
     "docs/provenance.md",
+    "docs/shadow.md",
     "docs/vibe_trading.md",
     # Developer design notes that cite a borrowed idea.
     "CLAUDE.md",

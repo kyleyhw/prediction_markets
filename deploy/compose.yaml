@@ -111,7 +111,7 @@ services:
 
   worker-data:
     <<: *app
-    command: ["worker", "--kinds", "dataset", "signal_bench", "--concurrency", "2", "--metrics-port", "9105"]
+    command: ["worker", "--kinds", "dataset", "signal_bench", "shadow_import", "--concurrency", "2", "--metrics-port", "9105"]
 
   ingest:
     <<: *app

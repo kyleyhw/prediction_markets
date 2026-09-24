@@ -46,6 +46,9 @@ class Domain:
     # zone, when results come from there (docs/evidence.md).
     openfootball: str = ""
     zone: str = "UTC"
+    # The venue's public leaderboard category its markets fall under, for
+    # peer context on a shadow report card (docs/shadow.md).
+    leaderboard: str = "OVERALL"
 
     @property
     def observes(self) -> bool:
