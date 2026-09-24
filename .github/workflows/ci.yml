@@ -9,6 +9,29 @@ on:
   pull_request:
 
 jobs:
+  # Contributions carry a Developer Certificate of Origin sign-off on every
+  # commit (CONTRIBUTING.md, plan task 90).
+  dco:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Every commit is signed off
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          missing=0
+          for c in $(git rev-list --no-merges "$BASE..$HEAD"); do
+            if ! git log -1 --format=%B "$c" | grep -q '^Signed-off-by: '; then
+              echo "::error::commit $c has no Signed-off-by line (git commit -s)"
+              missing=1
+            fi
+          done
+          exit $missing
+
   test:
     runs-on: ubuntu-latest
     services:
