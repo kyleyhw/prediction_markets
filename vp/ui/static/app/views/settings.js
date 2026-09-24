@@ -160,6 +160,10 @@ export default async function settings() {
       ${accounts.map((a) => radio('follow', a.forecaster, p.follow, esc(strategyLabel(a.forecaster)), esc(strategySentence(a.forecaster)))).join('')}</div></fieldset>`;
   }
   h += '</form>';
+  if (session.hosted) {
+    h += `<h2>${t('settings.reach')}</h2><p class="muted measure">${t('settings.reach_note')}</p>
+      <div class="row"><a class="btn" href="#team">${t('nav.team')}</a><a class="btn" href="#notifications">${t('nav.notifications')}</a><a class="btn" href="#delivery">${t('nav.delivery')}</a></div>`;
+  }
   if (session.hosted) h += await spending();
   if (session.hosted) h += await memory();
   h += `<h2>${t('settings.start')}</h2><p class="muted">${t('settings.start_note')}</p><button class="btn" type="button" id="restart">${t('settings.start_again')}</button>`;
@@ -168,7 +172,7 @@ export default async function settings() {
     if (session.hosted) h += await ownKey();
     if (session.hosted) h += refreshData(o.domains);
     h += `<h2>${t('settings.export')}</h2><p class="muted measure">${t('settings.export_note')}</p><button class="btn" type="button" id="export">${t('settings.export_button')}</button>`;
-    h += `<h2>${t('settings.later')}</h2><ul class="notes measure">${['play_money', 'notifications', 'model'].map((k) => `<li>${t('settings.later_' + k)}</li>`).join('')}</ul>`;
+    h += `<h2>${t('settings.later')}</h2><ul class="notes measure">${['play_money', 'model'].map((k) => `<li>${t('settings.later_' + k)}</li>`).join('')}</ul>`;
   }
   if (session.hosted) {
     h += `<h2>${t('settings.account')}</h2><dl class="kv"><dt>${t('settings.email')}</dt><dd>${esc(session.me.email)}</dd>

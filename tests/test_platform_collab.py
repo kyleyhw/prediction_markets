@@ -164,6 +164,16 @@ def test_a_strategy_is_shared_viewed_forked_and_unshared(
     )
     assert made.status_code == 200
     slug = made.json()["slug"]
+    # Entering the leaderboards shows on the strategy's share answer.
+    assert client.get(f"/api/strategies/{sid}/share").json()["leaderboard"] is None
+    entered = client.put(
+        f"/api/strategies/{sid}/leaderboard",
+        json={"display_name": "Ada's picks"},
+        headers=ORIGIN,
+    )
+    assert entered.status_code == 204
+    got = client.get(f"/api/strategies/{sid}/share").json()
+    assert got["leaderboard"] == "Ada's picks" and got["public_url"]
     # Anyone may look; nobody needs to sign in; P&L and author stay private.
     client.cookies.clear()
     public = client.get(f"/api/public/shares/{slug}").json()
@@ -306,6 +316,20 @@ def test_notification_preferences_and_quiet_hours(
         "/api/notifications/prefs", json={"kinds": {"gossip": []}}, headers=ORIGIN
     )
     assert bad.status_code == 409
+    zone = {"start": "22:00", "end": "07:00", "tz": "Mars/Olympus"}
+    bad = client.put("/api/notifications/prefs", json={"quiet": zone}, headers=ORIGIN)
+    assert bad.status_code == 409 and "time zone" in bad.json()["detail"]
+    # Secrets need the master key; without one the answer says so.
+    hook = {"url": "https://example.test/h", "events": ["run.finished"]}
+    refused = client.post("/api/webhooks", json=hook, headers=ORIGIN)
+    assert refused.status_code == 503 and "master key" in refused.json()["detail"]
+
+
+def test_a_market_comment_links_to_its_page() -> None:
+    from vp.platform.comments import _link
+
+    assert _link("market", "cs2:1234") == "#market/cs2/1234"
+    assert _link("strategy", "abc") == "#strategy/abc"
 
 
 def test_leaderboards_rank_only_with_enough_settled_positions() -> None:

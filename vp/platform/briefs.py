@@ -91,7 +91,10 @@ def check_variables(template: str, given: dict[str, Any]) -> dict[str, Any]:
 def check_schedule(cron: str, timezone: str) -> None:
     from croniter import croniter
 
-    ZoneInfo(timezone)  # raises on an unknown zone
+    try:
+        ZoneInfo(timezone)
+    except ValueError, KeyError:
+        raise ValueError(f"not a time zone: {timezone}") from None
     if not croniter.is_valid(cron):
         raise ValueError("that is not a five-field schedule")
 

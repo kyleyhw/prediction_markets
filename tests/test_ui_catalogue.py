@@ -71,7 +71,8 @@ def test_keys_built_from_fixed_lists_exist() -> None:
         ]
         + ["nav.learn", "nav.settings", "level.simple", "level.detailed"]
         + [f"settings.theme_{v}" for v in ("system", "light", "dark")]
-        + [f"settings.later_{v}" for v in ("play_money", "notifications", "model")]
+        + [f"settings.later_{v}" for v in ("play_money", "model")]
+        + [f"nav.{n}" for n in ("leaderboards", "team", "notifications", "delivery")]
         + [
             f"jobs.kind.{k}"
             for k in (

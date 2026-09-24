@@ -60,6 +60,18 @@ def opt_out(pool: ConnectionPool, principal: Principal, strategy_id: UUID) -> bo
     return bool(cur.rowcount)
 
 
+def entered(
+    pool: ConnectionPool, principal: Principal, strategy_id: UUID
+) -> str | None:
+    """The name a strategy is entered under, or None."""
+    with pool.connection() as conn, tenant_session(conn, principal):
+        row = conn.execute(
+            "select display_name from leaderboard_optins where strategy_id = %s",
+            (strategy_id,),
+        ).fetchone()
+    return row[0] if row else None
+
+
 def entry(rows: list[tuple[float, float, float]]) -> dict[str, Any]:
     """One strategy on one board, from its (brier, brier_market, pnl) rows."""
     n = len(rows)

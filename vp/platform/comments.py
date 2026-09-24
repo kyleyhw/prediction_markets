@@ -33,7 +33,9 @@ def mentioned(body: str, members: dict[str, UUID]) -> list[UUID]:
 
 
 def _link(kind: str, subject_id: str) -> str:
-    return {"run": "#backtests", "market": f"#market/{subject_id}"}.get(
+    # A market is named "<domain>:<market id>"; its page is #market/<d>/<id>.
+    market = subject_id.replace(":", "/", 1)
+    return {"run": "#backtests", "market": f"#market/{market}"}.get(
         kind, f"#strategy/{subject_id}"
     )
 

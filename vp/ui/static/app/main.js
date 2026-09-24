@@ -8,21 +8,37 @@ import { esc, setLocale, t, tp } from './i18n.js';
 import { loadLocal, loadRemote, prefs, save } from './prefs.js';
 import { after, installGlossary, runHooks } from './ui.js';
 import backtests from './views/backtests.js';
+import delivery from './views/delivery.js';
 import describe from './views/describe.js';
 import home from './views/home.js';
+import leaderboards from './views/leaderboards.js';
 import learn from './views/learn.js';
 import market from './views/market.js';
 import markets from './views/markets.js';
+import notifications from './views/notifications.js';
 import research from './views/research.js';
 import settings from './views/settings.js';
 import signals from './views/signals.js';
 import start from './views/start.js';
 import strategies from './views/strategies.js';
 import strategy from './views/strategy.js';
+import team from './views/team.js';
 
-const ROUTES = { home, markets, market, strategies, strategy, describe, research, backtests, signals, learn, settings, start };
-const NAV = ['home', 'markets', 'strategies', 'backtests', 'signals', 'learn', 'settings'];
-const SECTION = { market: 'markets', start: 'home', strategy: 'strategies', describe: 'strategies', research: 'strategies' };
+const ROUTES = { home, markets, market, strategies, strategy, describe, research, backtests, signals, leaderboards, team, notifications, delivery, learn, settings, start };
+// Teams, boards and notices exist only on the hosted service.
+const NAV_LOCAL = ['home', 'markets', 'strategies', 'backtests', 'signals', 'learn', 'settings'];
+const NAV_HOSTED = ['home', 'markets', 'strategies', 'backtests', 'signals', 'leaderboards', 'team', 'notifications', 'learn', 'settings'];
+const SECTION = { market: 'markets', start: 'home', strategy: 'strategies', describe: 'strategies', research: 'strategies', delivery: 'settings' };
+
+// The count of unread notices beside their link, refreshed on each page.
+async function unread() {
+  const link = document.querySelector('#nav a[href="#notifications"]');
+  if (!link || !session.hosted) return;
+  try {
+    const n = (await api('notifications?limit=1'))?.unread ?? 0;
+    link.innerHTML = n ? `${t('nav.notifications')} <span class="pill">${esc(n)}</span><span class="sr-only">${t('nav.unread_sr')}</span>` : t('nav.notifications');
+  } catch { /* leave the plain link */ }
+}
 
 export function applyTheme() {
   const theme = prefs().theme;
@@ -33,7 +49,8 @@ export function applyTheme() {
 export function shell() {
   document.getElementById('tagline').textContent = tp('app.tagline');
   document.getElementById('skip').textContent = tp('app.skip');
-  document.getElementById('nav').innerHTML = `<ul>${NAV.map((n) => `<li><a href="#${n}">${t('nav.' + n)}</a></li>`).join('')}</ul>`;
+  const nav = session.hosted ? NAV_HOSTED : NAV_LOCAL;
+  document.getElementById('nav').innerHTML = `<ul>${nav.map((n) => `<li><a href="#${n}">${t('nav.' + n)}</a></li>`).join('')}</ul>`;
   const level = prefs().level;
   document.getElementById('level').innerHTML = `<span class="label" id="level-label">${t('level.label')}</span>
     <div class="seg" role="group" aria-labelledby="level-label">${['simple', 'detailed'].map((l) =>
@@ -79,6 +96,7 @@ export async function render(moveFocus = true) {
       <a class="btn primary" href="#home">${t('error.home')}</a>`;
   }
   runHooks();
+  unread();
   // A table wider than the page scrolls; a keyboard can reach it only if it
   // is focusable, and a screen reader names it by its caption (WCAG 2.1.1).
   document.querySelectorAll('#main .wrap').forEach((w) => {

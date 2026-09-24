@@ -187,7 +187,10 @@ def set_prefs(
         raise ValueError(f"unknown notice kinds: {', '.join(sorted(unknown))}")
     quiet = prefs.get("quiet") or {}
     if quiet:
-        ZoneInfo(quiet.get("tz") or "UTC")  # raises on an unknown zone
+        try:
+            ZoneInfo(quiet.get("tz") or "UTC")
+        except ValueError, KeyError:
+            raise ValueError(f"not a time zone: {quiet.get('tz')}") from None
         _clock(quiet["start"]), _clock(quiet["end"])
     clean = {"kinds": {k: routes({"kinds": kinds}, k) for k in kinds}, "quiet": quiet}
     with pool.connection() as conn, tenant_session(conn, principal):

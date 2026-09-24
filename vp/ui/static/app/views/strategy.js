@@ -3,7 +3,8 @@
 // it would have done (backtest run cards), how it is doing in paper, and
 // its versions. Every figure comes from the service's data; none is
 // written by a model.
-import { api, send } from '../api.js';
+import { api, send, session } from '../api.js';
+import { commentsPanel } from '../comments.js';
 import { render } from '../main.js';
 import { jobsPanel } from '../work.js';
 import { after, detailed, empty, esc, fmt, head, signed, t, table, term, tp } from '../ui.js';
@@ -49,6 +50,47 @@ function card(run, titles) {
   return h + '</div>';
 }
 
+// Sharing a public, read-only snapshot (task 82) and entering the
+// leaderboard (task 84): each switch says what a stranger would see.
+async function shareHtml(id, retired) {
+  const info = await api(`strategies/${id}/share`);
+  if (!info) return '';
+  const s = info.share;
+  const box = (name, on) => `<label class="check"><input type="checkbox" name="${name}"${on ? ' checked' : ''}> <span>${t('share.' + name)}</span></label>`;
+  let h = `<h2>${t('share.title')}</h2><p class="muted measure">${t('share.note')}</p>`;
+  if (s) {
+    const url = `${info.public_url}/s/${s.slug}`;
+    h += `<p>${t('share.live', { views: s.views, forks: s.forks })} <a href="${esc(url)}" target="_blank" rel="noopener">${esc(url)}</a></p>`;
+  }
+  h += `<form id="share-form" class="measure"><div class="choices">${box('show_pnl', s?.show_pnl)}${box('show_spec', s?.show_spec)}${box('show_author', s?.show_author)}</div>
+    <div class="row"><button class="btn${s ? '' : ' primary'}" type="submit">${t(s ? 'share.update' : 'share.publish')}</button>
+    ${s ? `<button class="btn quiet" type="button" id="unshare">${t('share.stop')}</button>` : ''}</div></form>`;
+  h += `<h2>${t('share.board_title')}</h2><p class="muted measure">${t('share.board_note')}</p>`;
+  h += info.leaderboard
+    ? `<p>${t('share.entered', { name: info.leaderboard })} <a href="#leaderboards">${t('share.see_boards')}</a></p><button class="btn quiet" type="button" id="leave-board">${t('share.withdraw')}</button>`
+    : retired ? '' : `<form id="board-form" class="row"><label for="board-name">${t('share.board_name')}</label><input type="text" id="board-name" required maxlength="60">
+      <button class="btn" type="submit">${t('share.enter')}</button></form>`;
+  h += `<p id="share-status" class="small" role="status"></p>`;
+  after(() => {
+    const status = document.getElementById('share-status');
+    const act = async (fn) => { try { await fn(); await render(false); } catch (e) { status.textContent = e.message; } };
+    const form = document.getElementById('share-form');
+    form?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const body = Object.fromEntries(['show_pnl', 'show_spec', 'show_author'].map((k) => [k, form.querySelector(`[name=${k}]`).checked]));
+      act(() => send('PUT', `strategies/${id}/share`, body));
+    });
+    document.getElementById('unshare')?.addEventListener('click', () => act(() => send('DELETE', `strategies/${id}/share`)));
+    document.getElementById('leave-board')?.addEventListener('click', () => act(() => send('DELETE', `strategies/${id}/leaderboard`)));
+    document.getElementById('board-form')?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const display_name = document.getElementById('board-name').value;
+      act(() => send('PUT', `strategies/${id}/leaderboard`, { display_name }));
+    });
+  });
+  return h;
+}
+
 export default async function strategy([id]) {
   const s = await api(`strategies/${id}`);
   if (!s) return head(t('strategy.missing')) + empty(t('strategy.missing'), t('strategy.missing_text'), [['#strategies', t('describe.back')]]);
@@ -77,6 +119,8 @@ export default async function strategy([id]) {
       s.versions.slice().reverse().map((x) => [esc(x.version), esc(fmt.dateTime(x.created_at)),
         x.changes.length ? esc(x.changes.map(([p, a, b]) => `${p}: ${JSON.stringify(a)} → ${JSON.stringify(b)}`).join('; ')) : '–']), { numFrom: 9 });
   }
+  if (session.hosted) h += await shareHtml(id, retired);
+  h += commentsPanel('strategy', id);
   after(() => document.querySelectorAll('[data-act]').forEach((b) => b.addEventListener('click', async () => {
     const status = document.getElementById('act-status');
     b.disabled = true;

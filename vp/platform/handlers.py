@@ -749,7 +749,7 @@ def _settle(ctx: JobContext, principal: Principal, account_id: UUID) -> dict[str
                 notify.members(conn),
                 "settlement",
                 f"{counts['settled']} paper positions settled",
-                link="#paper",
+                link="#strategies",
             )
             webhooks.emit(
                 conn,

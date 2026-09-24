@@ -119,7 +119,7 @@ h2.k { margin: 0; line-height: inherit; letter-spacing: normal; }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .btn.quiet { border-color: transparent; background: transparent; color: var(--muted); font-weight: 500; }
 .btn[disabled] { opacity: .55; cursor: not-allowed; }
-input[type=search], input[type=text], input[type=password], select { font: inherit; font-size: 15px; color: var(--ink); background: var(--surface);
+input[type=search], input[type=text], input[type=password], input[type=email], input[type=url], input[type=number], input[type=time], textarea, select { font: inherit; font-size: 15px; color: var(--ink); background: var(--surface);
        border: 1px solid var(--rule); border-radius: 8px; padding: 8px 10px; min-height: 40px; }
 input[type=search] { min-width: min(320px, 100%); }
 label.check { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; }
@@ -207,3 +207,15 @@ details.data .wrap { max-height: 260px; overflow-y: auto; margin-top: 6px; }
 .jobs { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
 .job { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 10px 14px; }
 .job .meter { margin-top: 8px; }
+
+/* Comments, notices and the forms that open under a summary (Phase 18). */
+textarea { width: 100%; max-width: 68ch; resize: vertical; }
+.comments { list-style: none; margin: 0 0 12px; padding: 0; max-width: 72ch; }
+.comments .comments { margin: 8px 0 0 18px; padding-left: 12px; border-left: 2px solid var(--rule); }
+.comment { padding: 10px 0; border-bottom: 1px solid var(--rule); }
+.comment:last-child { border-bottom: 0; }
+.comment-body { margin: 4px 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.notices { list-style: none; padding: 0; max-width: 72ch; }
+.notices li { padding: 10px 12px; border-bottom: 1px solid var(--rule); }
+.notices li.unread { border-left: 3px solid var(--accent); }
+details.card > summary { cursor: pointer; font-weight: 600; min-height: 24px; }

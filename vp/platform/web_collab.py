@@ -26,6 +26,7 @@ from vp.platform import (
     teams,
 )
 from vp.platform.config import Settings
+from vp.platform.llmops import KeysUnavailable
 from vp.platform.mail import Mailer, Message
 from vp.platform.teams import NotAllowed
 from vp.platform.web import (
@@ -107,6 +108,10 @@ def _map(fn: Any) -> Any:
         return fn()
     except NotAllowed as exc:
         raise HTTPException(403, str(exc)) from None
+    except KeysUnavailable:
+        raise HTTPException(
+            503, "secrets cannot be stored: the platform's master key is not set"
+        ) from None
     except LookupError as exc:
         raise HTTPException(404, str(exc)) from None
     except ValueError as exc:
@@ -278,7 +283,11 @@ def register(
 
     @app.get("/api/strategies/{strategy_id}/share")
     def get_share(strategy_id: UUID, principal: Reader) -> dict[str, Any]:
-        return {"share": sharing.mine(pool, principal, strategy_id)}
+        return {
+            "share": sharing.mine(pool, principal, strategy_id),
+            "leaderboard": leaderboards.entered(pool, principal, strategy_id),
+            "public_url": settings.public_url,
+        }
 
     @app.put("/api/strategies/{strategy_id}/share")
     def put_share(
@@ -374,8 +383,8 @@ def register(
     # ------------------------------------------------------- notifications
 
     @app.get("/api/notifications")
-    def get_notifications(principal: Reader) -> dict[str, Any]:
-        return notify.listing(pool, principal)
+    def get_notifications(principal: Reader, limit: int = 50) -> dict[str, Any]:
+        return notify.listing(pool, principal, limit)
 
     @app.post("/api/notifications/read")
     def read_notifications(body: ReadBody, principal: Reader) -> dict[str, int]:

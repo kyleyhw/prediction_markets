@@ -4,6 +4,7 @@
 // formula, the fields the parser read and the identifiers.
 import { api } from '../api.js';
 import { dayTicks, lineChart } from '../charts.js';
+import { commentsPanel } from '../comments.js';
 import { chance, detailed, esc, feePerShare, feeSentence, fmt, head, kindName, strategyLabel, strategyName, t, table, term, tp } from '../ui.js';
 
 export default async function market([domain, id] = []) {
@@ -54,5 +55,6 @@ export default async function market([domain, id] = []) {
       <dt>${t('market.market_id')}</dt><dd class="mono">${esc(m.market_id)}</dd>
       <dt>${t('market.captured')}</dt><dd>${esc(fmt.dateTime(m.fetched_at))}</dd></dl>`;
   }
+  h += commentsPanel('market', `${domain}:${m.market_id}`);
   return h;
 }
