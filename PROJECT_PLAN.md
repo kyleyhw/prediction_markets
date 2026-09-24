@@ -963,26 +963,26 @@ Design: `docs/shadow.md`. Vibe-Trading's Shadow Account needs a broker
 export; on Polymarket every address's positions and activity are public on
 the Data API, so a user can be shown their own record by pasting an address.
 
-92. [pending] Import by public address through the Data API v2 (positions,
+92. [done 2026-09-24, `vp/venues/polymarket.py` account reads, `vp/platform/shadow.py`, migration 0024; consent recorded, optional EIP-191 proof via `vp/shadow/proof.py`] Import by public address through the Data API v2 (positions,
     activity, the cumulative P&L series), with no credentials; consent
     recorded, optional proof of ownership by a signed message, and the
     privacy notice that linking an address to an account is the user's act.
-93. [pending] Diagnostics: implied beliefs from entry prices against
+93. [done 2026-09-24, `vp/shadow/diagnostics.py`; the closing line at the event's scheduled time] Diagnostics: implied beliefs from entry prices against
     outcomes (Brier, log, skill against the closing price, which is the
     closing-line value measure), calibration, favourite-longshot exposure,
     holding periods, over-trading, chasing after price moves, sizing
     consistency, fee drag, by domain and by period.
-94. [pending] Rule extraction: interpretable decision lists over parsed
+94. [done 2026-09-24, `vp/shadow/rules.py`; enumerated in the spec's vocabulary, validated on the held-out 30%; model proposals built, waiting on a key] Rule extraction: interpretable decision lists over parsed
     fields, time to close and price bands that describe when and which side
     the user bet; the LLM proposes candidate rules in words, the engine
     fits and validates them on the record, and only validated rules become
     a spec draft.
-95. [pending] Counterfactual: backtest the rule-version-of-you and compare
+95. [done 2026-09-24, `vp/shadow/counterfactual.py`; sizing, timing and selection add up exactly] Counterfactual: backtest the rule-version-of-you and compare
     the user's trades, their rules and the market-following baseline;
     attribute the gap to selection, timing and sizing.
-96. [pending] Report card in Simple and Detailed, exportable; anonymised
+96. [done 2026-09-24, `vp/shadow/card.py`, `#shadow`; JSON and CSV export, peer percentile from the venue's leaderboard] Report card in Simple and Detailed, exportable; anonymised
     peer context from the public leaderboards with the sample-size caveats.
-97. [pending] Phase 19 report, including whether "positions of consistently
+97. [done 2026-09-24, `tests/reports/phase19_shadow.md`; the skilled-address signal is not worth building yet] Phase 19 report, including whether "positions of consistently
     skilled addresses" is a signal worth adding to the library (Phase 16's
     gates apply; it is a hypothesis, not a plan).
 

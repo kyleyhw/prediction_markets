@@ -33,6 +33,9 @@ Polymarket, scored by backtest and paper trading before any live execution. The
   public shares and forks, comments, leaderboards, notifications, chat
   channels with pairing, scheduled briefs, webhooks and the read-only MCP
   server (Phase 18).
+- [The shadow forecaster](shadow.md): a public address's record as a
+  report card: diagnostics, the rule that describes it, the counterfactual
+  (Phase 19).
 - [Runbook](runbook.md): what each alert means and what to do.
 - [Scaling](scaling.md): tenancy, storage, the job queue, the market-data
   service, LLM cost controls, the capacity model and the growth path for

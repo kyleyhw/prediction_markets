@@ -185,7 +185,13 @@ person confirms, the outbox, signed webhooks, the read-only MCP server at
 No real chat platform or mail provider has been contacted; the adapters
 are tested against their documented signing. Report in
 `tests/reports/phase18_collaboration.md`. Secrets (webhooks, bot tokens)
-need `VP_MASTER_KEY`; without it those calls answer 503. Earlier,
+need `VP_MASTER_KEY`; without it those calls answer 503.
+**Phase 19 followed the same day** (`docs/shadow.md`): `vp/shadow/`
+(record, diagnostics, rules, counterfactual, card, proof), `vp shadow
+<address>`, the `shadow_import` job and `#shadow` page (migration 0024).
+The closing line is read at a market's `end_date` (the event), never its
+closing time, which is after the event. Model-proposed rules wait on a key.
+Report in `tests/reports/phase19_shadow.md`. Earlier,
 the decisions each phase needed were taken on 2026-09-19 as proposed
 (Fly.io with Amsterdam as the first region, magic-link sign-in, quarter
 Kelly with a 5% cap and a 0.03 minimum edge, fees shown, session keys for

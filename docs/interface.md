@@ -304,6 +304,17 @@ the words are under `team`, `notifications`, `leaderboards`, `delivery`,
 `share` and `comments` in the catalogue. Verified in Chromium with zero
 axe-core violations on 18 page states (`tests/reports/phase18_collaboration.md`).
 
+## Your Record (Phase 19)
+
+**Your record** (`#shadow`, from Strategies, hosted only): paste an
+address, agree to link it, and read the report card. Simple gives three
+sentences (the return and the prices taken, whether the market later
+agreed, the costliest habit), the rule found if one held on held-out data
+with "Try it as a strategy", and the caveats. Detailed adds every measure,
+calibration, habits, the groups, the rules tried with their held-out
+numbers, the counterfactual's parts and the peer context. Words under
+`shadow` in the catalogue; design in `docs/shadow.md`.
+
 ## Verified
 
 On 2026-09-23, in Chromium, against a data root built that day from the

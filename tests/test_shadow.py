@@ -30,7 +30,8 @@ def _market(i: int, first_price: float, won_first: bool | None, prefix: str = "c
         market_id=f"{prefix}{i}",
         condition_id=f"{prefix}{i}",
         domain=DOMAIN,
-        closed_time=_close(i % 60).isoformat(),
+        closed_time=(_close(i % 60) + timedelta(hours=5)).isoformat(),
+        end_date=_close(i % 60).isoformat(),
         resolved_outcome=None if won_first is None else int(won_first),
         outcomes=(
             Outcome("Yes", f"{prefix}{i}a", first_price),
@@ -163,10 +164,12 @@ def test_outcomes_come_from_settlement_and_prices_from_the_series(root: Path) ->
     assert counts["scored"] == 59 and counts["in_domains"] == 60
     b = next(b for b in rec.bets if b.condition_id == "c3")
     assert b.won is True and b.close == 0.75 and b.before == pytest.approx(0.65)
-    assert b.favourite and b.hours_before_close == pytest.approx(24, abs=0.01)
+    # Measured from settlement, as the backtest measures it.
+    assert b.favourite and b.hours_before_close == pytest.approx(29, abs=0.01)
 
 
-def test_diagnostics_measure_edge_closing_line_and_habits() -> None:
+def test_diagnostics_measure_edge_closing_line_and_habits(root: Path) -> None:
+    # Outside our datasets there is no event time, so no closing line.
     rec = record.build("0xabc", _activity(), cap=10_000)
     record.attach(
         rec,
@@ -177,6 +180,9 @@ def test_diagnostics_measure_edge_closing_line_and_habits() -> None:
         },
         _history,
     )
+    assert "clv" not in diagnostics.diagnose(rec.bets)["overall"]
+    rec = record.build("0xabc", _activity(), cap=10_000)
+    record.attach(rec, card.load_markets(root, [DOMAIN]), lambda c: None, _history)
     d = diagnostics.diagnose(rec.bets)
     o = d["overall"]
     assert o["scored"] == 60 and o["win_rate"] == pytest.approx(0.7)
@@ -186,7 +192,7 @@ def test_diagnostics_measure_edge_closing_line_and_habits() -> None:
     assert o["skill_vs_close"] < 0
     assert d["habits"]["favourite"]["bets"] == 0 and d["habits"]["chased_share"] == 1.0
     assert [r["band"] for r in d["calibration"]] == [[0.7, 0.8]]
-    assert list(d["by_domain"]) == ["other"]
+    assert list(d["by_domain"]) == [DOMAIN]
 
 
 def test_a_rule_is_found_validated_and_is_a_spec(root: Path) -> None:

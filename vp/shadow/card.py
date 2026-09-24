@@ -8,6 +8,7 @@ reached only through the functions passed in.
 
 from __future__ import annotations
 
+import random
 from collections import Counter
 from collections.abc import Callable, Iterable, Mapping
 from datetime import UTC, datetime
@@ -47,29 +48,56 @@ def negatives(
     since: datetime,
     until: datetime,
     exclude: set[str],
+    history: Callable[[str], record.Series] | None = None,
+    sample: int = 200,
 ) -> tuple[list[rules.Market], float]:
     """The domain's markets closing in the window that the person did not
-    bet and that have a price history, and how many markets each stands for."""
+    bet, priced from their histories, and how many markets each stands for.
+
+    Local histories are used where the dataset has them; when fewer than
+    ``sample`` fall in the window, a seeded sample of the rest is priced
+    through ``history`` (the venue)."""
     window = []
     for m in markets.values():
         closed = record._closed(m)
         if m.domain == domain and closed and since <= closed <= until:
             window.append((m, closed))
     out = []
-    for m, closed in window:
-        if m.condition_id in exclude or not m.market_id:
-            continue
+    candidates = [
+        (m, c) for m, c in window if m.condition_id not in exclude and m.market_id
+    ]
+    local = [
+        (m, c)
+        for m, c in candidates
+        if (root / "histories" / domain / f"{m.market_id}.parquet").exists()
+    ]
+    chosen = list(local)
+    if history is not None and len(local) < sample:
+        rest = sorted(
+            ((m, c) for m, c in candidates if (m, c) not in local),
+            key=lambda mc: str(mc[0].market_id),
+        )
+        random.Random(0).shuffle(rest)
+        chosen += rest[: sample - len(local)]
+    for m, closed in chosen:
         path = root / "histories" / domain / f"{m.market_id}.parquet"
-        if not path.exists():
+        if path.exists():
+            series = [
+                (_epoch(r["timestamp"]), float(r["implied_probability"]))
+                for r in read_history(path)
+                if r.get("implied_probability") is not None
+            ]
+        else:
+            token = m.outcomes[0].clob_token_id
+            try:
+                series = history(token) if history and token else []
+            except Exception:  # noqa: BLE001 - an unpriced market is skipped
+                series = []
+        if not series:
             continue
-        series = [
-            (_epoch(r["timestamp"]), float(r["implied_probability"]))
-            for r in read_history(path)
-            if r.get("implied_probability") is not None
-        ]
         out.append(
             rules.Market(
-                m.market_id,
+                m.market_id or "",
                 m.parsed.get("kind") or "",
                 dict(m.parsed),
                 closed,
@@ -164,6 +192,7 @@ def analyse(
             min(times),
             max(closes + times),
             {b.condition_id for b in mine},
+            history=history,
         )
         found = rules.extract(
             domain,

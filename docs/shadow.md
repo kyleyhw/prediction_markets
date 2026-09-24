@@ -25,7 +25,7 @@ rebuilt here for a venue whose records are public.
 | What is read | Data API v2 `activity` (trades, redemptions, merges, splits, conversions, rewards) and the venue's own daily P&L series from `user-pnl`, which is shown beside the card's figures as the venue's account (it includes fees and open positions); paged by cursor, at most 50,000 activities (100 pages; about 50 s for a very active trader). The raw pages are kept in the object store as the import's evidence. |
 | Unit of analysis | A **bet**: one outcome of one market, with all its buys aggregated (VWAP entry, total stake, first entry time); sells reduce it. A trader with 19,214 fills over 327 markets has about 330 bets, not 19,214 forecasts. |
 | Outcomes | From settlement evidence only: the venue's resolution record (`fetch_resolution`, the CLOB `winner` flags or the oracle's answer) or our own dataset's label. A closed market without one is not scored. Invariant: closed is not resolved. |
-| Closing price | The last price at or before the market's close, from the venue's price history for the bet's token. Histories are fetched for the newest 300 resolved bets at most (about 5 minutes at the venue's pace); the diagnostics say how many had one. |
+| Closing price | The last price at or before the event's scheduled time (the market's `end_date`: kickoff, the match, the day measured), from the venue's price history for the bet's token. Trading often runs on past the event, and a price read at the market's closing time is its result, not a line (measured 2026-09-24: the first live card read skill against the close as −16.6 that way). Markets outside our datasets have no event time here, so they get no closing line. Histories are fetched for the newest 300 resolved bets at most. Hours before close are still measured from settlement, as the backtest measures them, so a rule means the same thing in both. |
 | Domains | A market belongs to a domain when our dataset for that domain holds its condition. Everything else is "other" and still counts in the diagnostics. Rules and counterfactuals need parsed fields, so they cover domain bets only. |
 | Fees | The activity carries no fee. Fee drag is estimated from each market's `feeSchedule` as if every buy paid the taker fee: an upper bound, labelled as one. |
 
@@ -70,7 +70,9 @@ paper trade it as any other.
 The positives are the person's domain bets. The negatives are the markets
 of the same domain and kind in our dataset that closed while the person was
 active and that they did not bet, priced at the rule's time before close
-from their histories. Fitting is a greedy decision list:
+from their histories: the dataset's own where it has them, and otherwise a
+seeded sample of up to 200 markets in the window priced from the venue.
+Fitting is a greedy decision list:
 
 - Pick the rule with the best F1 of recall (the person's bets it covers,
   side included) and precision (the share of markets it selects that the

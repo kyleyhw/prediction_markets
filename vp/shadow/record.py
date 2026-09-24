@@ -50,7 +50,8 @@ class Bet:
     fee_rate: float | None = None
     fee_exponent: float = 1.0
     won: bool | None = None
-    closed_at: datetime | None = None
+    closed_at: datetime | None = None  # settlement, as the backtest measures it
+    line_at: datetime | None = None  # the event's scheduled time: the line closes
     favourite: bool | None = None  # the side priced at or above one half at entry
     close: float | None = None
     before: float | None = None  # price 24 hours before the first buy
@@ -155,14 +156,25 @@ def build(address: str, activity: Iterable[Mapping[str, Any]], cap: int) -> Reco
     )
 
 
+def _time(text: str | None) -> datetime | None:
+    if not text:
+        return None
+    try:
+        return datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
 def _closed(market: BinaryMarket) -> datetime | None:
-    for text in (market.closed_time, market.end_date):
-        if text:
-            try:
-                return datetime.fromisoformat(text.replace("Z", "+00:00"))
-            except ValueError:
-                continue
-    return None
+    """When the result became known, as the backtest reads it (`settled_at`)."""
+    return _time(market.closed_time) or _time(market.end_date)
+
+
+def _line(market: BinaryMarket) -> datetime | None:
+    """When the betting line closes: the event's scheduled time (kickoff, the
+    match, the day measured). Trading often runs on past it, and a price read
+    after the event is its result, not a line (measured 2026-09-24)."""
+    return _time(market.end_date) or _time(market.closed_time)
 
 
 def attach(
@@ -187,7 +199,7 @@ def attach(
         if market is not None:
             bet.domain, bet.parsed = market.domain, dict(market.parsed)
             bet.fee_rate, bet.fee_exponent = market.fee_rate, market.fee_exponent
-            bet.closed_at = _closed(market)
+            bet.closed_at, bet.line_at = _closed(market), _line(market)
             first = market.outcomes[0].clob_token_id == bet.token_id
             if market.resolved_outcome is not None:
                 bet.won = (market.resolved_outcome == 1) == first
@@ -210,8 +222,10 @@ def attach(
             bet.series = history(bet.token_id)
         except Exception:  # noqa: BLE001 - a missing series leaves the bet unpriced
             continue
-        if bet.closed_at is not None:
-            bet.close = bet.price_at(bet.closed_at)
+        # Only where the event's time is known: a settlement time alone would
+        # read the result as the close.
+        if bet.line_at is not None:
+            bet.close = bet.price_at(min(bet.line_at, bet.closed_at or bet.line_at))
         bet.before = bet.price_at(bet.first_at - timedelta(hours=24))
         at_entry = bet.price_at(bet.first_at)
         bet.favourite = (at_entry if at_entry is not None else bet.entry) >= 0.5
