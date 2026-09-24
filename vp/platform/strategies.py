@@ -23,6 +23,7 @@ from psycopg_pool import ConnectionPool
 from vp.domains.pack import parse as parse_pack
 from vp.platform.db import tenant_session
 from vp.platform.principal import Principal
+from vp.platform.teams import record
 from vp.strategy.spec import Caps, Spec, diff, render, spec_hash, validate
 
 #: What a compile holds against the budget until its cost is known.
@@ -225,6 +226,7 @@ def confirm(
                 principal.user_id,
             ),
         ).fetchone()
+        record(conn, "confirmed", "strategy", strategy_id, {"version": version})
     assert row is not None
     return {
         "strategy_id": str(strategy_id),
@@ -416,6 +418,7 @@ def start_paper(
                         now,
                     ),
                 )
+            record(conn, "paper_started", "strategy", strategy_id)
     assert row is not None
     account_id = row[0]
     if opened:
@@ -460,6 +463,7 @@ def retire(pool: ConnectionPool, principal: Principal, strategy_id: UUID) -> Non
             "where id = %s",
             (strategy_id,),
         )
+        record(conn, "retired", "strategy", strategy_id)
 
 
 def version_spec(

@@ -690,7 +690,9 @@ def create_app(
     def me(principal: Reader) -> dict[str, Any]:
         """Who is signed in, and in which workspace."""
         with pool.connection() as conn, tenant_session(conn, principal):
-            user = conn.execute("select email from users").fetchone()
+            user = conn.execute(
+                "select email from users where id = vp_current_user_id()"
+            ).fetchone()
             workspace = conn.execute("select id, name from workspaces").fetchone()
             consent = conn.execute("select * from vp_consent()").fetchone()
         accepted = consent[0] if consent else None
@@ -1296,6 +1298,10 @@ def create_app(
         )
 
     # ---------------------------------------------------------------- page
+
+    from vp.platform import web_collab
+
+    web_collab.register(app, pool, settings, mailer)
 
     app.mount("/fonts", StaticFiles(directory=STATIC / "fonts"), name="fonts")
     app.mount("/app", StaticFiles(directory=STATIC / "app"), name="app")

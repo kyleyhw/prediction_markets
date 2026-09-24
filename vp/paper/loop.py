@@ -247,6 +247,7 @@ def run_cycle(
                 "market_id": market.market_id,
                 "condition_id": market.condition_id,
                 "event_id": market.event_id,
+                "domain": market.domain,
                 "question": market.question,
                 "side": position.side,
                 "price": position.price,
