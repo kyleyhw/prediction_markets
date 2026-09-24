@@ -562,6 +562,13 @@ def _trade(ctx: JobContext, principal: Principal, account_id: UUID) -> dict[str,
     broken = ledger.verify()
     if broken is not None:
         raise RuntimeError(f"ledger chain broken at entry {broken}; refusing to trade")
+    # A decayed strategy opens nothing until a person resumes it; its open
+    # positions still settle (docs/portfolio.md).
+    if account["strategy_version_id"] is not None:
+        from vp.platform import portfolio
+
+        if portfolio.paused(svc.pool, principal, account["strategy_version_id"]):
+            return {"paused": "strategy decayed; resume it from its page"}
     svc.refresh(account["domains"])
     counts: dict[str, Any] = {}
     domains = account["domains"]
@@ -756,6 +763,18 @@ def _settle(ctx: JobContext, principal: Principal, account_id: UUID) -> dict[str
                 "paper.settled",
                 {"account_id": str(account_id), "settled": counts["settled"]},
             )
+    if counts["settled"] and account["strategy_version_id"] is not None:
+        from vp.platform import portfolio
+
+        with svc.pool.connection() as conn, tenant_session(conn, principal):
+            row = conn.execute(
+                "select strategy_id from strategy_versions where id = %s",
+                (account["strategy_version_id"],),
+            ).fetchone()
+        if row is not None:
+            counts["health"] = portfolio.check_health(svc.pool, principal, row[0])[
+                "state"
+            ]
     return {**counts, "venue_requests": lookup.asked}
 
 
@@ -782,8 +801,12 @@ def leakage_check(ctx: JobContext) -> dict[str, Any]:
             leakage.backtest_scores(run_dir, svc.shared.root, domain),
             leakage.forward_scores(PgLedger(svc.pool, ctx.principal, account["id"])),
         )
+    # Passed when no belief's forward Brier is worse than its backtest's
+    # beyond noise (docs/portfolio.md, criterion 4).
+    beliefs = [g for g in rows if g.forecaster != "market"]
     return {
-        "summary": leakage.summary(rows) if rows else "no forecaster settled in both"
+        "summary": leakage.summary(rows) if rows else "no forecaster settled in both",
+        "passed": bool(beliefs) and all(g.gap_low <= 0 for g in beliefs),
     }
 
 

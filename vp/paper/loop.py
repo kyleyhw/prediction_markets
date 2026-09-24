@@ -249,6 +249,10 @@ def run_cycle(
                 "event_id": market.event_id,
                 "domain": market.domain,
                 "question": market.question,
+                # For the exposure model (docs/portfolio.md).
+                "end_date": market.end_date,
+                "neg_risk": market.neg_risk,
+                "resting": resting,
                 "side": position.side,
                 "price": position.price,
                 "shares": shares,

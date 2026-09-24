@@ -124,6 +124,15 @@ def paired_interval(
     )
 
 
+def positive_share(diffs: np.ndarray, seed: int = 0) -> float | None:
+    """The bootstrap probability that the mean difference is positive."""
+    if diffs.size < 2:
+        return None
+    rng = np.random.default_rng(seed)
+    draws = rng.integers(0, diffs.size, size=(DRAWS, diffs.size))
+    return float((diffs[draws].mean(axis=1) > 0).mean())
+
+
 def needed_n(diffs: np.ndarray) -> int | None:
     """Markets needed to tell the observed mean difference from zero
     (5% level, 80% power), or None when there is no difference."""
@@ -179,6 +188,7 @@ def run_card(
             "fees_usd": belief.get("fees_usd", 0.0),
             "cost_usd": belief.get("cost_usd", 0.0),
             "needed_n": needed_n(diffs),
+            "p_positive": positive_share(diffs),
             "sees_price": sees_price,
         }
     )

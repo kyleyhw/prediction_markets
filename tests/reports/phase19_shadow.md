@@ -51,7 +51,7 @@ answer without credentials:
 
 | Address (anonymised) | Activity read | Time | Bets | Scored | In our domains |
 | :--- | ---: | ---: | ---: | ---: | ---: |
-| A, first on the weather leaderboard | 20,000 (cap) | 5 min 43 s | 277 | 245 | 27 |
+| A, first on the weather leaderboard | 20,000 (cap) | 5 min 14 s | 277 | 245 | 27 |
 | B, active across 38 of 40 sampled weather markets | 20,000 (cap) | 5 min 43 s | 5,427 | 4,530 | 3,735 |
 
 Most of the time goes on asking the venue for settlements and price
