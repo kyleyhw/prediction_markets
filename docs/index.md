@@ -29,6 +29,10 @@ Polymarket, scored by backtest and paper trading before any live execution. The
   cutoff, and the point-in-time sources (Phase 17).
 - [Opening a new domain](domains.md): the onboarding kit and the
   candidate domains ranked by what the venue lists (Phase 17).
+- [Collaboration and delivery](collaboration.md): teams and roles,
+  public shares and forks, comments, leaderboards, notifications, chat
+  channels with pairing, scheduled briefs, webhooks and the read-only MCP
+  server (Phase 18).
 - [Runbook](runbook.md): what each alert means and what to do.
 - [Scaling](scaling.md): tenancy, storage, the job queue, the market-data
   service, LLM cost controls, the capacity model and the growth path for

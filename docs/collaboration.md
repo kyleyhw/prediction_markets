@@ -112,15 +112,22 @@ resolved in the brief's timezone then) and ends in a fenced block
 renders without reading the prose. A brief the assistant proposes is
 stored disabled with `proposed_by = 'assistant'`; `POST
 /api/briefs/{id}/confirm` from a browser session enables it and creates its
-schedule. Delivery goes to the brief's channel through the outbox.
+schedule. Delivery goes to the brief's channel through the outbox; the
+brief job queues a delivery round at once, so a brief sent from the page
+arrives in about a tenth of a second on the stand-in rather than at the
+next minute's round (45 s median before this was added).
 
 ## The outbox (tasks 85 to 87, 89)
 
 `outbox` holds every outgoing message: channel, payload, state (`queued`,
 `sent`, `failed`, `dead`), attempts, the next attempt's time and the
 provider's receipt. The `deliver` job sends what is due, backing off 1, 5,
-30 and 120 minutes, then marks it dead and notifies an owner. Quiet hours
-set the first attempt's time rather than dropping the message.
+30 and 120 minutes (a retry window of 156 minutes), then marks it dead and
+notifies the owners, at most once an hour per kind and title (migration
+0023): a receiver down during a burst would otherwise send one notice per
+lost message. The Delivery page counts every failure per channel. Quiet
+hours set the first attempt's time rather than dropping the message.
+Messages or secrets that need the master key answer 503 when it is not set.
 
 ## Notifications (task 87)
 
@@ -131,7 +138,7 @@ notices and a count.
 
 ## MCP (task 88)
 
-`vp/platform/mcp.py` mounts a streamable-HTTP MCP server at `/mcp` with the
+`vp/platform/mcp_server.py` mounts a streamable-HTTP MCP server at `/mcp` with the
 official Python SDK. Every tool resolves the caller's token to a principal
 and reads within that workspace: `search_markets`, `market_detail`,
 `evidence` (a market's evidence at a cutoff), `forecasts`, `run_cards`,
@@ -145,6 +152,26 @@ the rate limit of migration 0007 applies per token. Outgoing webhooks
 (`webhooks`: workspace, URL, event kinds, secret) receive `run.finished`,
 `paper.settled`, `brief.delivered` and `strategy.health` events through
 the outbox. The OpenAPI page at `/docs` describes both.
+
+## The pages
+
+All in `vp/ui/static/app/` and hosted only; under `vp ui` they say so and
+link Home. **Team** (`#team`): the workspaces a person belongs to with a
+switch, members with roles (owners change them in place), invitations,
+renaming (prompted while a shared workspace is still called Personal),
+leaving, and the activity feed. **Notifications** (`#notifications`, with an
+unread count in the navigation): the notices, and a table of kind by route
+(email, each channel) with quiet hours. **Leaderboards**
+(`#leaderboards/<domain>/<window>`): ranked entries with a verdict in
+Simple and skill, advantage with its interval and P&L in Detailed; entries
+still settling are listed apart. **Delivery** (`#delivery`, from Settings):
+channels with sent and failed counts, pairing codes to approve, adding a
+channel with per-kind help, briefs with their watch lists and switches, a
+new-brief form whose schedule is chosen in words (a cron field in
+Detailed), and in Detailed the webhooks and the tool server's address. A
+strategy's page gains sharing switches with the public link, the
+leaderboard entry and a comment thread; a market's page gains a thread
+(subject `<domain>:<market id>`). Comment text is shown as plain text.
 
 ## Contributions (task 90)
 

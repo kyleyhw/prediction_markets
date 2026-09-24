@@ -35,7 +35,11 @@ strategy has to clear, not a result the project is trying to explain away.
   ([docs/signals.md](docs/signals.md)); and an evidence archive read
   strictly up to each forecast's cutoff, with weather forecasts as they
   were issued at the station each market resolves on
-  ([docs/evidence.md](docs/evidence.md)) ([docs/platform.md](docs/platform.md),
+  ([docs/evidence.md](docs/evidence.md)); and teams, public shares,
+  comments, leaderboards ranked by skill, and briefs and notices sent by
+  email, chat or webhook, with a read-only tool server for AI assistants
+  ([docs/collaboration.md](docs/collaboration.md))
+  ([docs/platform.md](docs/platform.md),
   [docs/interface.md](docs/interface.md), measured in
   [the Phase 13 report](tests/reports/phase13_platform.md)). It is not
   deployed anywhere yet. When it is, it is how most people will use this,
@@ -249,6 +253,7 @@ print(market["question"], market["resolution"]["state"])
 - [Product design](docs/product.md): the hosted app for everyone, Phases 13 to 23.
 - [Platform](docs/platform.md): configuration, tenancy, storage, jobs, the
   market-data service, budgets, observability and the local stand-in.
+- [Collaboration and delivery](docs/collaboration.md): teams, shares, comments, leaderboards, channels, briefs, webhooks, the MCP server.
 - [Runbook](docs/runbook.md): what each alert means and what to do.
 - [Scaling](docs/scaling.md): the multi-user architecture and capacity model.
 - [Vibe-Trading review](docs/vibe_trading.md): the reference implementation, its collaborative tools, the capability mapping, non-infringement rules.

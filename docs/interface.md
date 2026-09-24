@@ -125,8 +125,8 @@ Each control saves as it changes and says so in a status line that a
 screen reader announces. Detailed adds API tokens (create, shown once;
 revoke), a download of every record the app holds for the person, and a
 list of what is not here yet and when it arrives: the play-money amount
-(with the person's own paper account), notifications (Phase 18) and the
-model tier (Phase 15). They are listed rather than shown as dead
+(with the person's own paper account) and the model tier (Phase 15).
+Under `vp serve` it links Team, Notifications and Delivery (Phase 18). They are listed rather than shown as dead
 controls, because a switch that does nothing misleads. Under `vp serve`,
 Settings also shows this month's model spending against the budget (a
 sentence in both levels, the breakdown by strategy, domain and model in
@@ -292,6 +292,17 @@ serve`, no server path; `/api/paper` adds per-account fees paid, the time
 of each point on the balance curve, skill so far against the market, and
 the counts of the last 24 hours; snapshot rows add the outcome names and
 fee terms.
+
+## Working Together (Phase 18)
+
+Under `vp serve` the menu adds **Leaderboards**, **Team** and
+**Notifications** (with the unread count beside it); **Delivery** opens
+from Settings. A strategy's page gains sharing, the leaderboard entry and
+comments, and a market's page gains comments. The pages, and why each
+switch says what a stranger would see, are in `docs/collaboration.md`;
+the words are under `team`, `notifications`, `leaderboards`, `delivery`,
+`share` and `comments` in the catalogue. Verified in Chromium with zero
+axe-core violations on 18 page states (`tests/reports/phase18_collaboration.md`).
 
 ## Verified
 

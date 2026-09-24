@@ -919,43 +919,43 @@ Design: `docs/collaboration.md`. Teams, sharing, conversation about results,
 and getting research to people where they already are: the collaborative
 capabilities Vibe-Trading has for one operator, rebuilt for many workspaces.
 
-81. [pending] Teams: invite by email, roles owner, editor and viewer, shared
+81. [done 2026-09-24, `vp/platform/teams.py`, migration 0021; invitations by hashed token, a keep-an-owner trigger, the switcher and activity feed on `#team`] Teams: invite by email, roles owner, editor and viewer, shared
     strategies and paper accounts, an activity feed, every change attributed
     to a principal, leaving and removal.
-82. [pending] Sharing: a public read-only link to a strategy's run card,
+82. [done 2026-09-24, `vp/platform/sharing.py`; snapshot shares at `/s/<slug>` with an SVG card, privacy switches, forks with provenance] Sharing: a public read-only link to a strategy's run card,
     P&L and benchmark entry with privacy controls; fork a shared strategy
     into your workspace as a new spec with provenance; strategy cards.
-83. [pending] Comments and annotations on runs, markets and strategies:
+83. [done 2026-09-24, `vp/platform/comments.py`; threads on strategies and markets, `@` mentions, owners hide] Comments and annotations on runs, markets and strategies:
     threads, mentions, notifications, moderation by workspace owners.
-84. [pending] Leaderboards, opt-in, by skill against the market with
+84. [done 2026-09-24, `vp/platform/leaderboards.py`; hourly job, 50 settled to rank, paired bootstrap interval; no ranked entry yet] Leaderboards, opt-in, by skill against the market with
     intervals and a minimum settled count, never by raw P&L alone; by
     domain and by window.
-85. [pending] Channels: a message bus with an adapter interface; email
+85. [done 2026-09-24, `vp/platform/channels.py`; five adapters with their platforms' signing, pairing on the page, `/ask` and `/reset`; no real platform contacted yet (F16)] Channels: a message bus with an adapter interface; email
     first, then Telegram, Discord and Slack, and a generic webhook; pairing
     codes for unknown direct senders approved by a workspace operator;
     operator roles; a per-chat session map; in-chat commands to reset a
     session and ask read-only questions with the workspace's budget; group
     chats served by the same research session agent.
-86. [pending] Scheduled briefs: playbook templates with declared variables
+86. [done 2026-09-24, `vp/platform/briefs.py`; three templates, confirm on the page only, the `vp-brief` block and the watch list; Send now to email 0.1 s] Scheduled briefs: playbook templates with declared variables
     and timezones ("markets closing today where my strategies disagree with
     the market by more than ten points", "settlements yesterday", "weekly
     P&L and skill"); the agent may propose a schedule and only an explicit
     confirmation on a human surface commits it; each brief ends in a
     machine-readable block a watch list renders; delivery to an opaque
     target through an outbox with retries and receipts.
-87. [pending] Notifications: fills, settlements, strategy health changes,
+87. [done 2026-09-24, `vp/platform/notify.py`, `delivery.py`; routes per kind, quiet hours, the outbox with retries, owners told once an hour (migration 0023)] Notifications: fills, settlements, strategy health changes,
     budget thresholds, halts; per-user preferences and quiet hours.
-88. [pending] MCP server: read-only tools (search markets, market detail,
+88. [done 2026-09-24, `vp/platform/mcp_server.py`; seven read-only tools at `/mcp` behind a read token] MCP server: read-only tools (search markets, market detail,
     evidence at a cutoff, forecasts, run cards, paper status, the signal
     bench) with per-user scoped tokens, over streamable HTTP; no order tool
     exists on this surface, ever.
-89. [pending] Public API tokens, rate limits and outgoing webhooks for
+89. [done 2026-09-24, `vp/platform/webhooks.py`; per-token rate limit, signed webhooks, `/docs`] Public API tokens, rate limits and outgoing webhooks for
     technical users; the OpenAPI page documents them.
-90. [pending] Community contributions: the signal checklist of Phase 16
+90. [done 2026-09-24, `CONTRIBUTING.md`, the `dco` CI job, `tests/test_contribution_gates.py`] Community contributions: the signal checklist of Phase 16
     opened to external contributors; domain pack contributions; the
     Developer Certificate of Origin decision; CI gates (no secrets, no
     market data dumps in docs, the name gate of `docs/vibe_trading.md` § 9).
-91. [pending] Phase 18 report: delivery success rates per channel, brief
+91. [done 2026-09-24, `tests/reports/phase18_collaboration.md`] Phase 18 report: delivery success rates per channel, brief
     latency, sharing and fork counts, moderation load.
 
 ## Phase 19: Shadow forecaster: learn from your own record

@@ -173,7 +173,19 @@ history and resolution shapes fixed, and the domain kit with a boundary
 test (`tests/test_domain_boundary.py`: no code outside `vp/domains/` names
 a domain). Report in `tests/reports/phase17_evidence.md`. Waiting: the
 Open-Meteo paid plan (F9), an LPDB key for Liquipedia, a licensed
-football feed, GDELT (429 here). Earlier,
+football feed, GDELT (429 here).
+**Phase 18 was built on 2026-09-24** under the goal "implement the next
+three phases; simulate cloud hosting locally until we get an API key"
+(Phases 18 to 20, `docs/collaboration.md` first): teams, shares with forks,
+comments, leaderboards, notifications with quiet hours, channels (email,
+Telegram, Slack, Discord, webhook) with pairing on the page, briefs a
+person confirms, the outbox, signed webhooks, the read-only MCP server at
+`/mcp`, `CONTRIBUTING.md` with a DCO check, and the pages (`#team`,
+`#notifications`, `#leaderboards`, `#delivery`; migrations 0021 to 0023).
+No real chat platform or mail provider has been contacted; the adapters
+are tested against their documented signing. Report in
+`tests/reports/phase18_collaboration.md`. Secrets (webhooks, bot tokens)
+need `VP_MASTER_KEY`; without it those calls answer 503. Earlier,
 the decisions each phase needed were taken on 2026-09-19 as proposed
 (Fly.io with Amsterdam as the first region, magic-link sign-in, quarter
 Kelly with a 5% cap and a 0.03 minimum edge, fees shown, session keys for

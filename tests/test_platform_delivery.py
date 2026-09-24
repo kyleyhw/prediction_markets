@@ -214,6 +214,14 @@ def test_the_outbox_retries_backs_off_and_gives_up_telling_the_owners(
         and "could not be delivered" in notices[0]["title"]
     )
     assert client.get("/api/channels").json()[0]["dead"] == 1
+    # Another failure within the hour is counted, not notified again.
+    with owner.transaction():
+        told = owner.execute(
+            "select vp_notify_owners(%s, 'delivery', "
+            "'A message could not be delivered', 'again')",
+            (me.workspace,),
+        ).fetchone()
+    assert told == (0,)
 
 
 def test_a_chat_pairs_on_the_page_then_asks_and_resets(

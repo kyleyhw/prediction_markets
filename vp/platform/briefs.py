@@ -401,4 +401,9 @@ def run(ctx: Any) -> dict[str, Any]:
                 "values (%s, 'brief', %s)",
                 (channel, Jsonb({"text": text, "subject": TEMPLATES[template].title})),
             )
+    if channel is not None:
+        # Send it now rather than at the next minute's delivery round.
+        from vp.platform.jobs import PRIORITY_INTERACTIVE, enqueue_platform
+
+        enqueue_platform(svc.pool, "deliver", priority=PRIORITY_INTERACTIVE)
     return {"rows": len(rows), "delivered_to": str(channel) if channel else None}

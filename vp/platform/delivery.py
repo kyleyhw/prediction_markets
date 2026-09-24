@@ -113,7 +113,8 @@ def deliver(
                         row["workspace_id"],
                         "A message could not be delivered",
                         f"After {row['attempts']} attempts: {error}. "
-                        "Check the channel under Settings.",
+                        "Check the channel on the Delivery page, which counts "
+                        "every failure; you are told at most once an hour.",
                     ),
                 )
     return counts
