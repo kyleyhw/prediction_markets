@@ -63,12 +63,13 @@ from vp.markets.schema import BinaryMarket, utc_now_iso
 from vp.markets.snapshot import collect_snapshot
 from vp.paper import leakage
 from vp.paper.loop import run_cycle, settle
-from vp.platform import budgets, llmops, strategies
+from vp.platform import budgets, llmops, strategies, webhooks
 from vp.platform.config import Settings
 from vp.platform.db import tenant_session
 from vp.platform.jobs import Handler, JobContext, run_scheduler
 from vp.platform.ledger import PgLedger
-from vp.platform.principal import Principal
+from vp.platform.mail import Mailer
+from vp.platform.principal import AuthMethod, Principal
 from vp.platform.sample import ensure_sample_account, sample_principal
 from vp.platform.storage import (
     SHARED,
@@ -96,6 +97,7 @@ class Services:
     shared: SharedRoot
     source: Callable[[], PolymarketSource] = PolymarketSource
     notify: Callable[[str, str], None] | None = None
+    mailer: Mailer | None = None
     work_dir: Path = field(default_factory=lambda: Path(tempfile.gettempdir()))
 
     def refresh(self, domains: Sequence[str]) -> None:
@@ -298,6 +300,17 @@ def research_message(ctx: JobContext) -> dict[str, Any]:
         [("user", {"words": words}), ("assistant", turn.as_json())],
         turn.cost_usd,
     )
+    reply = p.get("reply")
+    if reply:  # a question asked in a chat is answered there (task 85)
+        with svc.pool.connection() as conn, tenant_session(conn, ctx.principal):
+            conn.execute(
+                "insert into outbox (channel_id, kind, payload) "
+                "values (%s, 'reply', %s)",
+                (
+                    reply["channel_id"],
+                    Jsonb({"text": turn.text, "chat": reply["chat"]}),
+                ),
+            )
     charged = budgets.settle_job(
         svc.pool,
         ctx.principal,
@@ -411,6 +424,11 @@ def strategy_backtest(ctx: JobContext) -> dict[str, Any]:
                         manifest["hash"],
                     ),
                 )
+                webhooks.emit(
+                    conn,
+                    "run.finished",
+                    {"run_id": str(run_id), "strategy_id": str(strategy_id)},
+                )
             run_ids.append(str(run_id))
     charged = budgets.settle_job(
         svc.pool,
@@ -492,6 +510,7 @@ def backtest(ctx: JobContext) -> dict[str, Any]:
                 ctx.principal.user_id,
             ),
         )
+        webhooks.emit(conn, "run.finished", {"run_id": str(run_id), "domain": domain})
     charges = _charges(forecasters, domain)
     charged = budgets.settle_job(
         svc.pool, ctx.principal, ctx.job.id, ctx.job.reserved_usd, charges, paid_by
@@ -721,6 +740,22 @@ def _settle(ctx: JobContext, principal: Principal, account_id: UUID) -> dict[str
     ledger = PgLedger(svc.pool, principal, account["id"], store=svc.store)
     lookup = ResolvedFirst(svc.pool, svc.source())
     counts = settle(lookup, ledger, initial_cash=account["cash"])
+    if counts["settled"] and principal.auth_method is AuthMethod.JOB:
+        from vp.platform import notify
+
+        with svc.pool.connection() as conn, tenant_session(conn, principal):
+            notify.notify(
+                conn,
+                notify.members(conn),
+                "settlement",
+                f"{counts['settled']} paper positions settled",
+                link="#paper",
+            )
+            webhooks.emit(
+                conn,
+                "paper.settled",
+                {"account_id": str(account_id), "settled": counts["settled"]},
+            )
     return {**counts, "venue_requests": lookup.asked}
 
 
@@ -831,12 +866,23 @@ def sweep(ctx: JobContext) -> dict[str, Any]:
     )
 
 
+def share_refresh(ctx: JobContext) -> dict[str, Any]:
+    """Refresh the workspace's public share snapshots (daily)."""
+    from vp.platform import sharing
+
+    return {"refreshed": sharing.refresh_all(ctx.services.pool, ctx.job.principal)}
+
+
 def handlers(extra: dict[str, Handler] | None = None) -> dict[str, Handler]:
     """Every kind this module handles, plus any given (the ingest's and the
     evidence collectors', which live with their services)."""
-    from vp.platform import signals
+    from vp.platform import briefs, delivery, leaderboards, signals
 
     table: dict[str, Handler] = {
+        "deliver": delivery.deliver,
+        "leaderboard": leaderboards.run,
+        "brief": briefs.run,
+        "share_refresh": share_refresh,
         "signal_bench": signals.signal_bench,
         "benchmark_freeze": signals.benchmark_freeze,
         "benchmark_score": signals.benchmark_score,

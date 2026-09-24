@@ -101,6 +101,7 @@ def open_pool(settings: Settings, size: int = 4) -> ConnectionPool:
 def build_services(settings: Settings, pool: ConnectionPool):  # noqa: ANN201
     """The handlers' services for this process: storage, the cache, the source."""
     from vp.platform.handlers import Services
+    from vp.platform.mail import OutboxMailer
     from vp.platform.storage import SharedRoot, open_store
 
     store = open_store(settings)
@@ -117,6 +118,7 @@ def build_services(settings: Settings, pool: ConnectionPool):  # noqa: ANN201
         store=store,
         shared=SharedRoot(store, settings.cache),
         notify=notify,
+        mailer=OutboxMailer(settings.outbox_dir),
         work_dir=work,
     )
 

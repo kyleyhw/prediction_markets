@@ -50,7 +50,16 @@ logger = logging.getLogger(__name__)
 
 #: Kinds a person may start from the page or the API, in their workspace.
 WORKSPACE_KINDS = frozenset(
-    {"backtest", "compile", "research", "paper_cycle", "settle", "leakage"}
+    {
+        "backtest",
+        "compile",
+        "research",
+        "paper_cycle",
+        "settle",
+        "leakage",
+        "brief",
+        "share_refresh",
+    }
 )
 #: Kinds the platform runs for everyone.
 PLATFORM_KINDS = frozenset(
@@ -67,6 +76,8 @@ PLATFORM_KINDS = frozenset(
         "signal_bench",
         "benchmark_freeze",
         "benchmark_score",
+        "deliver",
+        "leaderboard",
     }
 )
 #: Interactive work first, scheduled work next, maintenance last.

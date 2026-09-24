@@ -66,6 +66,23 @@ class PlatformToolBox(ToolBox):
                 "strategy whose belief uses no AI model; it runs in the background.",
                 {"strategy_id": uuid},
             ),
+            tool_schema(
+                "propose_brief",
+                "Propose a scheduled brief: template disagreements (variables "
+                "threshold in points, domains), settlements (days) or weekly; a "
+                "five-field cron schedule and an IANA timezone. It is saved "
+                "switched off: the person switches it on under Briefs if they "
+                "want it. Never say it is scheduled.",
+                {
+                    "template": {
+                        "type": "string",
+                        "enum": ["disagreements", "settlements", "weekly"],
+                    },
+                    "variables_json": {"type": "string"},
+                    "cron": {"type": "string"},
+                    "timezone": {"type": "string"},
+                },
+            ),
         ]
 
     def _uuid(self, value: str) -> UUID:
@@ -134,6 +151,30 @@ class PlatformToolBox(ToolBox):
             {"strategy_version_id": str(head["version_id"])},
         )
         return f"queued backtest job {job} for version {head['version']}"
+
+    def tool_propose_brief(
+        self, template: str, variables_json: str, cron: str, timezone: str
+    ) -> str:
+        from vp.platform import briefs
+
+        try:
+            variables = json.loads(variables_json or "{}")
+            brief = briefs.propose(
+                self.pool,
+                self.principal,
+                template,
+                variables,
+                cron,
+                timezone,
+                None,
+                proposed_by="assistant",
+            )
+        except (ValueError, KeyError) as exc:
+            raise ToolError(str(exc)) from None
+        return (
+            f"proposed brief {brief}; it is off until the person switches it on "
+            "under Briefs"
+        )
 
 
 def history(convo: dict[str, Any]) -> tuple[list[tuple[str, str]], int, int]:

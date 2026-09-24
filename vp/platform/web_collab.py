@@ -408,3 +408,232 @@ def register(
         if not _map(lambda: leaderboards.opt_out(pool, principal, strategy_id)):
             raise HTTPException(404, "not entered")
         return Response(status_code=204)
+
+
+class ChannelBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    kind: Literal["email", "webhook", "telegram", "slack", "discord"]
+    name: str = Field(min_length=1, max_length=100)
+    target: str = Field(min_length=1, max_length=500)
+    secret: str | None = Field(default=None, max_length=500)
+
+
+class PairBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    code: str = Field(min_length=8, max_length=8)
+
+
+class BriefBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    template: Literal["disagreements", "settlements", "weekly"]
+    variables: dict[str, Any] = Field(default_factory=dict)
+    cron: str = Field(min_length=9, max_length=100)
+    timezone: str = Field(default="UTC", max_length=64)
+    channel_id: UUID | None = None
+
+
+class HookBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    url: str = Field(min_length=8, max_length=500)
+    events: list[str] = Field(min_length=1, max_length=10)
+
+
+def register_delivery(app: FastAPI, pool: ConnectionPool, settings: Settings) -> None:
+    """Channels, pairing, inbound hooks, briefs and outgoing webhooks."""
+    from fastapi.concurrency import run_in_threadpool
+
+    from vp.platform import (
+        briefs,
+        budgets,
+        channels,
+        jobs,
+        llmops,
+        strategies,
+        webhooks,
+    )
+    from vp.platform.db import tenant_session
+    from vp.platform.principal import AuthMethod, Principal, Role
+    from vp.platform.research import RESEARCH_RESERVE_USD
+
+    @app.get("/api/channels")
+    def get_channels(principal: Reader) -> list[dict[str, Any]]:
+        return channels.listing(pool, principal)
+
+    @app.post("/api/channels", status_code=201)
+    def add_channel(body: ChannelBody, principal: Writer) -> dict[str, Any]:
+        cid = _map(
+            lambda: channels.create(
+                pool,
+                principal,
+                body.kind,
+                body.name,
+                body.target,
+                body.secret,
+                settings.master_key,
+            )
+        )
+        out: dict[str, Any] = {"id": cid}
+        if body.kind in ("telegram", "slack"):
+            out["inbound_url"] = f"{settings.public_url}/hooks/{cid}"
+        if body.kind == "telegram" and body.secret:
+            out["telegram_secret_token"] = channels.telegram_webhook_secret(body.secret)
+        return out
+
+    @app.delete("/api/channels/{channel_id}", status_code=204)
+    def remove_channel(channel_id: UUID, principal: Writer) -> Response:
+        if not _map(lambda: channels.disable(pool, principal, channel_id)):
+            raise HTTPException(404, "no such channel")
+        return Response(status_code=204)
+
+    @app.post("/api/channels/pair")
+    def pair(body: PairBody, principal: BrowserSession) -> dict[str, Any]:
+        """Approve a sender's pairing code: on the page, never in a chat."""
+        return _map(lambda: channels.approve(pool, principal, body.code))
+
+    @app.post("/hooks/{channel_id}")
+    async def inbound(channel_id: UUID, request: Request) -> Response:
+        """A chat platform's callback, verified by the platform's signature."""
+        hook = await run_in_threadpool(
+            channels.find_hook, pool, channel_id, settings.master_key
+        )
+        if hook is None or hook.kind not in ("telegram", "slack") or not hook.secret:
+            raise HTTPException(404, "no such channel")
+        body = await request.body()
+        headers = {k.lower(): v for k, v in request.headers.items()}
+        try:
+            if hook.kind == "telegram":
+                message: Any = channels.TelegramAdapter.inbound(
+                    headers, body, hook.secret
+                )
+            else:
+                message = channels.SlackAdapter.inbound(headers, body, hook.secret)
+        except channels.Unverified:
+            raise HTTPException(401, "signature does not match") from None
+        if isinstance(message, dict):  # Slack's URL check
+            from fastapi.responses import JSONResponse
+
+            return JSONResponse(message)
+        if message is None or hook.created_by is None:
+            return Response(status_code=200)
+        acting = Principal(
+            subject=str(hook.created_by),
+            auth_method=AuthMethod.JOB,
+            workspace=hook.workspace,
+            roles=frozenset({Role.EDITOR}),
+        )
+
+        def ask(convo: UUID | None, question: str) -> UUID:
+            paid = llmops.key_hint(pool, acting) is None
+            if paid and not settings.anthropic_api_key:
+                raise channels.CannotAsk(
+                    "The assistant is not available in this workspace yet: "
+                    "no model key is set."
+                )
+            convo = convo or strategies.open_conversation(pool, acting)
+            reserved = RESEARCH_RESERVE_USD if paid else 0.0
+            try:
+                budgets.reserve(pool, acting, reserved)
+            except budgets.OverBudget as exc:
+                raise channels.CannotAsk(str(exc)) from None
+            jobs.enqueue(
+                pool,
+                acting,
+                "research",
+                {
+                    "conversation_id": str(convo),
+                    "words": question,
+                    "reply": {"channel_id": str(channel_id), "chat": message.chat},
+                },
+                reserved_usd=reserved,
+            )
+            return convo
+
+        def act() -> None:
+            with pool.connection() as conn, tenant_session(conn, acting):
+                reply = channels.handle(conn, channel_id, message, ask)
+                if reply:
+                    from psycopg.types.json import Jsonb
+
+                    conn.execute(
+                        "insert into outbox (channel_id, kind, payload) "
+                        "values (%s, 'reply', %s)",
+                        (channel_id, Jsonb({"text": reply, "chat": message.chat})),
+                    )
+
+        await run_in_threadpool(act)
+        return Response(status_code=200)
+
+    # -------------------------------------------------------------- briefs
+
+    @app.get("/api/briefs")
+    def get_briefs(principal: Reader) -> dict[str, Any]:
+        return {
+            "briefs": briefs.listing(pool, principal),
+            "templates": {
+                name: {
+                    "title": t.title,
+                    "variables": {
+                        v: {"type": var.kind.__name__, "default": var.default}
+                        for v, var in t.variables.items()
+                    },
+                }
+                for name, t in briefs.TEMPLATES.items()
+            },
+        }
+
+    @app.post("/api/briefs", status_code=201)
+    def add_brief(body: BriefBody, principal: Writer) -> dict[str, Any]:
+        bid = _map(
+            lambda: briefs.propose(
+                pool,
+                principal,
+                body.template,
+                body.variables,
+                body.cron,
+                body.timezone,
+                body.channel_id,
+            )
+        )
+        return {"id": bid}
+
+    @app.post("/api/briefs/{brief_id}/confirm", status_code=204)
+    def confirm_brief(brief_id: UUID, principal: BrowserSession) -> Response:
+        """Switching a brief on is a person's act on the page, never a model's."""
+        if not principal.may_write:
+            raise HTTPException(403, "viewers cannot schedule briefs")
+        _map(lambda: briefs.confirm(pool, principal, brief_id))
+        return Response(status_code=204)
+
+    @app.post("/api/briefs/{brief_id}/stop", status_code=204)
+    def stop_brief(brief_id: UUID, principal: Writer) -> Response:
+        if not _map(lambda: briefs.stop(pool, principal, brief_id)):
+            raise HTTPException(404, "no such brief")
+        return Response(status_code=204)
+
+    @app.post("/api/briefs/{brief_id}/run", status_code=202)
+    def run_brief(brief_id: UUID, principal: Writer) -> dict[str, Any]:
+        return {
+            "job_id": jobs.enqueue(
+                pool, principal, "brief", {"brief_id": str(brief_id)}
+            )
+        }
+
+    # ------------------------------------------------------------ webhooks
+
+    @app.get("/api/webhooks")
+    def get_webhooks(principal: Reader) -> dict[str, Any]:
+        return {"hooks": webhooks.listing(pool, principal), "events": webhooks.EVENTS}
+
+    @app.post("/api/webhooks", status_code=201)
+    def add_webhook(body: HookBody, principal: Writer) -> dict[str, str]:
+        return _map(
+            lambda: webhooks.create(
+                pool, principal, body.url, body.events, settings.master_key
+            )
+        )
+
+    @app.delete("/api/webhooks/{hook_id}", status_code=204)
+    def remove_webhook(hook_id: UUID, principal: Writer) -> Response:
+        if not _map(lambda: webhooks.remove(pool, principal, hook_id)):
+            raise HTTPException(404, "no such webhook")
+        return Response(status_code=204)

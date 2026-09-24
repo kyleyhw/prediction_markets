@@ -268,6 +268,10 @@ class SettingsBody(BaseModel):
 # be read as a query parameter instead.
 
 
+#: Requests a minute one API token may make (docs/collaboration.md).
+API_RATE_PER_MINUTE = 120
+
+
 def current_principal(request: Request) -> Principal:
     """The principal behind a request: bearer token, session cookie, or none.
 
@@ -277,11 +281,26 @@ def current_principal(request: Request) -> Principal:
     pool: ConnectionPool = request.app.state.pool
     header = request.headers.get("authorization", "")
     if header[:7].lower() == "bearer ":
+        token = header[7:].strip()
         with pool.connection() as conn:
-            principal = auth.resolve_api_token(conn, header[7:].strip())
+            principal = auth.resolve_api_token(conn, token)
+            # Each token has its own budget of requests a minute (task 89).
+            allowed = (
+                principal is not None
+                and conn.execute(
+                    "select vp_rate_limit(%s, %s, 60)",
+                    (f"api-token:{auth.digest(token)[:32]}", API_RATE_PER_MINUTE),
+                ).fetchone()
+            )
         if principal is None:
             raise HTTPException(
                 401, "invalid or revoked token", headers={"WWW-Authenticate": "Bearer"}
+            )
+        if not allowed or not allowed[0]:
+            raise HTTPException(
+                429,
+                f"more than {API_RATE_PER_MINUTE} requests a minute with this token",
+                headers={"Retry-After": "60"},
             )
         return principal
     cookie = request.cookies.get(auth.SESSION_COOKIE)
@@ -492,6 +511,13 @@ def create_app(
                 logger.exception("vp_data listener lost its connection")
                 stop.wait(5.0)
 
+    from vp.platform import mcp_server
+
+    def mcp_root() -> Path:
+        return shared.root
+
+    _, mcp_app, mcp_starlette = mcp_server.build(pool, mcp_root, settings.public_url)
+
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         pool.open(wait=True, timeout=10)
@@ -500,7 +526,9 @@ def create_app(
                 check_database(conn)
             refresh_shared()
             threading.Thread(target=keep_fresh, daemon=True).start()
-            yield
+            # The MCP server's session manager lives as long as the service.
+            async with mcp_starlette.router.lifespan_context(mcp_starlette):
+                yield
         finally:
             stop.set()
             pool.close()
@@ -520,9 +548,16 @@ def create_app(
         request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
         bearer = request.headers.get("authorization", "")[:7].lower() == "bearer "
+        # A chat platform's callback proves itself by its own signature, and
+        # the MCP server by the caller's bearer token; neither carries or uses
+        # our session cookie (docs/collaboration.md).
+        signed = request.url.path.startswith(("/hooks/", "/mcp"))
+        if request.url.path == "/mcp":  # clients post to the bare path
+            request.scope["path"] = "/mcp/"
         if (
             request.method not in _SAFE_METHODS
             and not bearer
+            and not signed
             and not same_origin(
                 request.headers.get("origin"),
                 request.headers.get("host"),
@@ -1302,6 +1337,8 @@ def create_app(
     from vp.platform import web_collab
 
     web_collab.register(app, pool, settings, mailer)
+    web_collab.register_delivery(app, pool, settings)
+    app.mount("/mcp", mcp_app)
 
     app.mount("/fonts", StaticFiles(directory=STATIC / "fonts"), name="fonts")
     app.mount("/app", StaticFiles(directory=STATIC / "app"), name="app")
