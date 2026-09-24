@@ -36,6 +36,9 @@ Polymarket, scored by backtest and paper trading before any live execution. The
 - [The shadow forecaster](shadow.md): a public address's record as a
   report card: diagnostics, the rule that describes it, the counterfactual
   (Phase 19).
+- [Portfolio, risk and health](portfolio.md): open positions as one
+  portfolio, simultaneous Kelly, strategy health and the promotion
+  protocol (Phase 20).
 - [Runbook](runbook.md): what each alert means and what to do.
 - [Scaling](scaling.md): tenancy, storage, the job queue, the market-data
   service, LLM cost controls, the capacity model and the growth path for

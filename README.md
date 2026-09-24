@@ -40,7 +40,10 @@ strategy has to clear, not a result the project is trying to explain away.
   email, chat or webhook, with a read-only tool server for AI assistants
   ([docs/collaboration.md](docs/collaboration.md)); and a report card
   from a trader's own public record, with the rule that describes them
-  ([docs/shadow.md](docs/shadow.md))
+  ([docs/shadow.md](docs/shadow.md)); and portfolio risk, strategy
+  health that pauses a strategy which stopped beating the market, and
+  numbered criteria a person approves before anything could go live
+  ([docs/portfolio.md](docs/portfolio.md))
   ([docs/platform.md](docs/platform.md),
   [docs/interface.md](docs/interface.md), measured in
   [the Phase 13 report](tests/reports/phase13_platform.md)). It is not
@@ -257,6 +260,7 @@ print(market["question"], market["resolution"]["state"])
   market-data service, budgets, observability and the local stand-in.
 - [Collaboration and delivery](docs/collaboration.md): teams, shares, comments, leaderboards, channels, briefs, webhooks, the MCP server.
 - [Shadow forecaster](docs/shadow.md): learning from your own public record.
+- [Portfolio and health](docs/portfolio.md): risk across strategies, health checks, the promotion protocol.
 - [Runbook](docs/runbook.md): what each alert means and what to do.
 - [Scaling](docs/scaling.md): the multi-user architecture and capacity model.
 - [Vibe-Trading review](docs/vibe_trading.md): the reference implementation, its collaborative tools, the capability mapping, non-infringement rules.

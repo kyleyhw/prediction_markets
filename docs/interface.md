@@ -315,6 +315,17 @@ calibration, habits, the groups, the rules tried with their held-out
 numbers, the counterfactual's parts and the peer context. Words under
 `shadow` in the catalogue; design in `docs/shadow.md`.
 
+## Risk, Health and Readiness (Phase 20)
+
+**Risk** (`#risk`, from Strategies): in Simple, the most that could be
+lost this week and what 19 weeks in 20 stay under, with a meter; in
+Detailed, the whole book, the favourites-win scenario and concentration.
+A strategy's page shows its **health** (a pill and a sentence; paused
+strategies offer Resume) and its **readiness**: the numbered criteria for
+paper or live, each met or not, and Approve only when all are met.
+Words under `risk`, `health` and `promotion`; design in
+`docs/portfolio.md`.
+
 ## Verified
 
 On 2026-09-23, in Chromium, against a data root built that day from the

@@ -991,23 +991,23 @@ Design: `docs/portfolio.md`. Bets on binary contracts are correlated within
 events and settle together; a paper account with thirty positions is a
 portfolio whether or not the user thinks of it as one.
 
-98. [pending] Exposure model: positions grouped by event and condition;
+98. [done 2026-09-24, `vp/portfolio/exposure.py`; exclusive events exact, a documented copula, the exact worst case; the tail's sensitivity measured] Exposure model: positions grouped by event and condition;
     dependence within an event exact (negative-risk buckets, winner against
     maps, season against matches) and between events by a documented simple
     model; worst case at settlement and loss quantiles by Monte Carlo over
     joint outcomes; concentration by event, domain and resolution date.
-99. [pending] Simultaneous Kelly: the fraction vector that maximises
+99. [done 2026-09-24, `vp/portfolio/kelly.py`; on weather events the gain over per-bet Kelly is the event cap's, not the optimisation's] Simultaneous Kelly: the fraction vector that maximises
     expected log growth under the joint model, fractional as before,
     compared with per-bet Kelly in the backtest; per-event exposure caps as
     a constraint.
-100. [pending] Risk x-ray: exposure by domain, event, date and strategy;
+100. [done 2026-09-24, `#risk`, `/api/risk`] Risk x-ray: exposure by domain, event, date and strategy;
      "what if every favourite wins"; stake against resting liquidity; in
      Simple mode, "the most you could lose this week".
-101. [pending] Strategy health: rolling forward skill against the market
+101. [done 2026-09-24, `vp/portfolio/health.py`, migration 0025; H = 18 by simulation; decayed pauses paper, notifies, emits `strategy.health`] Strategy health: rolling forward skill against the market
      with a sequential test; states healthy, watch and decayed with explicit
      thresholds and consecutive-window rules; automatic pause in paper with
      a notification, mandatory in live; a decay report per strategy.
-102. [pending] The promotion protocol: criteria with numbers for moving a
+102. [done 2026-09-24, `vp/platform/portfolio.py`; six criteria with audit rows, a person approves, paper advisory and live binding; no strategy passes] The promotion protocol: criteria with numbers for moving a
      strategy from backtest to paper to live (a minimum settled count from
      the power rule for the edge claimed, bootstrap probability of positive
      skill at or above 0.95, a forward interval that excludes zero or a
@@ -1015,9 +1015,9 @@ portfolio whether or not the user thinks of it as one.
      health healthy for a stated number of weeks, exposure within the
      mandate); evidence rows link to runs; an audit row per criterion; a
      human approves; nothing is promoted by the model.
-103. [pending] Combinatorial positions (the venue's conjunction tokens)
+103. [done 2026-09-24, `vp/portfolio/combos.py`; parlays are ordinary binary markets with a `comboStatus` flag; one assessed, priced at independence] Combinatorial positions (the venue's conjunction tokens)
      assessed for conjunctive strategies and hedges; recorded, not traded.
-104. [pending] Phase 20 report: simultaneous against per-bet Kelly on the
+104. [done 2026-09-24, `tests/reports/phase20_portfolio.md`] Phase 20 report: simultaneous against per-bet Kelly on the
      backtests, health-state transitions on the paper record, the
      promotion criteria applied to every existing strategy.
 
@@ -1252,7 +1252,9 @@ called done.
   task 77 re-runs the Phase 9 baselines fee-aware. Paper orders have paid
   each market's own rate since 2026-09-23 (task 37); `taker_base_fee` is a
   legacy field and the rate is now read from `feeSchedule`.
-- **F6 (Phase 15, then 20). Per-market caps are not portfolio caps.** Until
+- **F6 (Phase 15, then 20). Per-market caps are not portfolio caps.**
+  Resolved 2026-09-24 by Phase 20: exposure by event, the exact worst
+  case and the mandate's per-event cap (`docs/portfolio.md`). Until
   Phase 20 adds per-event exposure and simultaneous Kelly, several positions
   in one event (a winner market and its maps, the buckets of one weather
   day) can together exceed the risk the 5% cap suggests; the preview says

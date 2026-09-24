@@ -191,7 +191,18 @@ need `VP_MASTER_KEY`; without it those calls answer 503.
 <address>`, the `shadow_import` job and `#shadow` page (migration 0024).
 The closing line is read at a market's `end_date` (the event), never its
 closing time, which is after the event. Model-proposed rules wait on a key.
-Report in `tests/reports/phase19_shadow.md`. Earlier,
+Report in `tests/reports/phase19_shadow.md`.
+**Phase 20 completed the goal the same day** (`docs/portfolio.md`):
+`vp/portfolio/` (exposure, simultaneous Kelly, health, combos),
+`vp/platform/portfolio.py` (risk, health after each settlement pausing a
+decayed strategy, the promotion protocol with audit rows and a person's
+approval; migration 0025), `#risk` and health and readiness on the
+strategy page. F6 is resolved. No strategy passes promotion; the health
+threshold H = 18 came from simulation. Report in
+`tests/reports/phase20_portfolio.md`. What is left: Phases 21 (scale
+proof, needs the cloud deploy F16), 22 (hosted live execution, gated on
+the security design's version 2) and 23 (the site); everything keyed
+waits on an API key. Earlier,
 the decisions each phase needed were taken on 2026-09-19 as proposed
 (Fly.io with Amsterdam as the first region, magic-link sign-in, quarter
 Kelly with a 5% cap and a 0.03 minimum edge, fees shown, session keys for
