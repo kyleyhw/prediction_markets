@@ -1025,25 +1025,25 @@ portfolio whether or not the user thinks of it as one.
 Design: `docs/scaling.md` § 11 to 14. The capacity model becomes
 measurements, and the platform becomes something one can operate.
 
-105. [pending] Load tests with synthetic workspaces at the three scales of
+105. [done 2026-09-24 on the local stand-in at 100 and 10,000 people, 1M extrapolated; the first to miss was the job queue; staging waits on the deploy (F16), `tests/reports/phase21_scale.md`] Load tests with synthetic workspaces at the three scales of
      the capacity model against staging, recording every metric of the
      observability section; the first component to miss its objective is
      found and fixed; the numbers published.
-106. [pending] Stage B: web, worker and ingest as separate services; Redis
+106. [done 2026-09-24 as decisions on the measurements: separate services and archived partitions built, Redis and the read replica not needed yet, triggers stated] Stage B: web, worker and ingest as separate services; Redis
      for limits and cache; a read replica; monthly partitions archived to
      object storage with chain hashes; the same handlers.
-107. [pending] Queue and stream decision on measured claim latency and
+107. [done 2026-09-24: the Postgres queue stays (1,822 claims a second at 300,000 queued, migration 0027); no stream] Queue and stream decision on measured claim latency and
      message rate; migration behind the existing interfaces if needed.
-108. [pending] Cost per user-day measured and shown to the operator by
+108. [done 2026-09-24: `vp admin unit-costs`; about $0.004 a person-day without models, the budget unchanged; self-hosting in `docs/platform.md`, the published image waits on the deploy] Cost per user-day measured and shown to the operator by
      component; budget and tier defaults revisited on the numbers. The same
      image published as a single-workspace, self-hostable build for
      developers who bring their own keys and accept the sources' terms
      themselves (F9); it is not the product's path for users.
-109. [pending] Disaster recovery drill, incident runbooks, on-call, status
+109. [done 2026-09-24 on the stand-in: restore to a verified copy in 44 s, runbook entries, abuse controls exercised; on-call and a status page wait on the deploy] Disaster recovery drill, incident runbooks, on-call, status
      page, abuse controls exercised.
-110. [pending] Privacy and compliance: export and delete per workspace
+110. [done 2026-09-24: whole-account export (migration 0029), deletion indexed (0030), retention enforced by the daily sweep; the texts wait on legal review (F18)] Privacy and compliance: export and delete per workspace
      tested; data retention enforced; the terms and notices reviewed.
-111. [pending] Phase 21 report: objectives attained per scale, the growth
+111. [done 2026-09-24, `tests/reports/phase21_scale.md`] Phase 21 report: objectives attained per scale, the growth
      path's trigger metrics with current values.
 
 ## Phase 22: Hosted live execution (gated)
@@ -1196,7 +1196,7 @@ called done.
 | 14 | Fees in Simple mode | yes, in cents, since the venue charges takers on sports and weather (F5) |
 | 15 | Sizing defaults and the override whitelist | fraction 0.25, cap 5% of bankroll, a minimum edge of 0.03 after fees, absolute caps set by the workspace; a prompt may lower any of them and raise none (F6) |
 | 15 | Whether the LLM forecaster ever sees the market price | only as an explicit belief option, labelled on every run card, never by default (F7) |
-| 15 | Default model tiers and the $5 budget | a cheap tier for breadth, the expensive tier on demand; the budget revisited on Phase 21's cost numbers (F8) |
+| 15 | Default model tiers and the $5 budget | a cheap tier for breadth, the expensive tier on demand; the budget revisited on Phase 21's cost numbers (F8): unchanged on 2026-09-24, since the platform costs about $0.004 a person-day without models and the budget sets the bill |
 | 17 | Evidence sources and their licences per domain | evaluated in the design page; nothing scrape-hostile; commercial terms checked for each (F9) |
 | 17 | The order in which new domains open | by data availability and market count, listed in the design page, each with a report before it is shown to users (F10) |
 | 18 | Developer Certificate of Origin for external contributions | yes, once contributions are invited (F11) |
@@ -1342,6 +1342,10 @@ called done.
   a real user touches, since public sign-up (Phase 14) needs a host.
   Phase 21, the scale proof, needs a staging environment and is therefore
   the latest point the deploy can happen; Phase 22 depends on it too.
+  (2026-09-24: under the owner's goal "simulate cloud hosting locally for
+  now", Phase 21 ran on the stand-in; its report lists what still needs
+  the host, and the deploy still comes before Phase 22's code and any real
+  user.)
   **The cost:** the evidence archive of task 33 only accumulates while a
   collector runs continuously, and a development container is ephemeral,
   so without an always-on machine nothing is captured between sessions and

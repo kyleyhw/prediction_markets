@@ -73,7 +73,18 @@ Test reports live in [tests/reports/](../tests/reports/), one per phase:
 [Phase 7](../tests/reports/phase7_data_layer.md),
 [Phase 8](../tests/reports/phase8_forecasters.md),
 [Phase 9](../tests/reports/phase9_backtest.md),
-[Phase 10](../tests/reports/phase10_paper_trading.md) and
-[Phase 11 safety layer](../tests/reports/phase11_safety_layer.md).
+[Phase 10](../tests/reports/phase10_paper_trading.md),
+[Phase 11 safety layer](../tests/reports/phase11_safety_layer.md),
+[Phase 13 platform](../tests/reports/phase13_platform.md),
+[Phase 14 interface](../tests/reports/phase14_friendly.md),
+[Phase 15 strategies](../tests/reports/phase15_strategies.md),
+[Phase 16 signals](../tests/reports/phase16_signals.md),
+[Phase 17 evidence](../tests/reports/phase17_evidence.md),
+[Phase 18 collaboration](../tests/reports/phase18_collaboration.md),
+[Phase 19 shadow forecaster](../tests/reports/phase19_shadow.md),
+[Phase 20 portfolio](../tests/reports/phase20_portfolio.md) and
+[Phase 21 scale](../tests/reports/phase21_scale.md). Phase 12 is
+continuous (documentation, hooks and the `vp ui` page in [ui.md](ui.md))
+and has no report of its own.
 The original project's documentation is preserved under
 [archive/prediction_markets/docs/](../archive/prediction_markets/docs/).

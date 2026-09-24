@@ -163,10 +163,13 @@ talking to the venue.
   cycles, settlements, dataset and evidence refreshes, briefs and reports;
   the scheduler is itself a job that enqueues jobs, so it scales with the
   rest.
-- **Growth.** The table is fine to tens of jobs per second. When claim
-  latency or table bloat says otherwise, the same job model moves to Redis
-  or a workflow engine (Temporal or equivalent) behind the same interface;
-  the handlers do not change.
+- **Growth.** Measured in Phase 21: 1,822 claims a second with 300,000
+  jobs queued, p95 under 5 ms, once each claim read its kind's head from
+  an ordered index (it had sorted the whole queue: 261 a second at 30,000
+  queued). A million people need about 833. When claim p95 passes 50 ms
+  or demand passes 1,000 a second, the same job model moves to Redis or a
+  workflow engine (Temporal or equivalent) behind the same interface; the
+  handlers do not change.
 
 ## 7. LLM Cost and Concurrency
 
@@ -307,6 +310,30 @@ at a thousand people it would write about 40 million ledger rows a day,
 which is why flag F17 proposes one shared sample account. Without it the
 per-person figures are what a person's own strategies select.
 
+### 10,000 people, measured (2026-09-24)
+
+Phase 21 seeded 10,000 people with a day of ledger each (a million
+entries) on the same kind of machine: one 4-core container running the
+database, four web processes and the load generator together
+(`tests/reports/phase21_scale.md`). The million-person column is
+extrapolated from these.
+
+| Quantity | Measured | At a million, extrapolated |
+| :--- | :--- | :--- |
+| Ledger appends | 3,160 a second at p95 2 ms (4 writers) | about 3,500 a second at the peak: one primary's limit, so sharding by workspace (stage C) |
+| Ledger size | 1,430 bytes an entry with indexes | 143 GB a day hot, archived monthly |
+| A cycle's chain check | 0.002 s at any length, from a verified checkpoint | 0.6 cores for hourly cycles |
+| Job claims | 1,822 a second at 300,000 queued | 833 needed |
+| Web, cached views | 844 requests a second at p95 35 ms (16 clients), 741 at p95 296 ms (128); 2.8 ms web and 1.8 ms database CPU a request | about 1,200 cores at the model's peak of 250,000 a second, which is probably high |
+| Deleting one person | 0.015 s | the same: indexed |
+| Daily check of every chain | 20 s for 10,000 ledgers | about 35 minutes, parallel by shard |
+| Restore to a verified copy | 44 s for 1.8 GB | waits on the managed database |
+| Platform cost a person-day, without models | about $0.004 | |
+
+Measuring found seven costs that grew with the platform, not the request,
+and fixed them (the report lists them). The first to miss an objective
+was the job queue, whose claims were O(queue length).
+
 ## 12. Growth Path
 
 | Stage | Users | Shape | Trigger to move on |
@@ -332,8 +359,10 @@ precedes public live execution.
 
 ## 14. What Is Measured Before It Is Believed
 
-Phase 21 runs synthetic workspaces at the three scales of section 11 against
-staging, records every metric in section 10, finds the first component to
-miss its objective, fixes it, and publishes the numbers in
-`tests/reports/phase21_scale.md`. Until that report exists this page is a
-design, and the plan says so wherever it relies on it.
+Phase 21 ran synthetic workspaces at 100 and 10,000 people on the local
+stand-in, found the first component to miss its objective (the job
+queue), fixed it and six other costs that grew with the platform, and
+published the numbers in `tests/reports/phase21_scale.md`. The million-
+person column is extrapolated. What needs a real host (latency from
+outside, sustained CPU, replica lag, the invoice) waits on the deploy
+(F16), and until then those rows of this page remain a design.

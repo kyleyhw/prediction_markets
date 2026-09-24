@@ -498,8 +498,42 @@ than guessed. Both are drafts until a lawyer has read them (flag F18).
   workspace's files from the object store and rewrites every archived
   month without its rows (`purge_workspace`). The operator's audit chain
   records the deletion under the random identifiers only.
-- **Export** was already there: Settings downloads every record held for
-  the person, and the paper ledger as a file that verifies offline.
+- **Export.** Written here in Phase 14 as "already there", it was not:
+  only the paper ledger could be downloaded, though the privacy notice
+  promised every record. Phase 21 found it and added it.
+  `vp_export_account` (migration 0029) mirrors the deletion: the same
+  tables found by the same columns, the person's own rows where a table
+  has a `user_id`, the workspace's where it has only a `workspace_id`.
+  Hashes of secrets, encrypted keys, lease tokens and pairing codes are
+  left out. The file also carries the archived ledger months and the
+  names of the workspace's stored files. Six exports an hour. Every column
+  deletion and export filter on is indexed, and a test keeps a new table
+  from missing one: without them deleting one person scanned every ledger
+  on the platform.
+
+## Self-Hosting, for Developers (task 108, F9)
+
+The product's path for users is the hosted service; people do not run it
+themselves (F9). A developer who wants their own copy runs the same image
+with `deploy/compose.yaml` and brings everything the platform would
+otherwise provide:
+
+- **Their own keys:** `VP_ANTHROPIC_API_KEY` for the model, which the
+  budget then does not charge; `VP_OPEN_METEO_KEY` and any other source's
+  key.
+- **Their own acceptance of every source's terms.** The platform's
+  licences cover the platform, not a copy of it. `docs/evidence.md` lists
+  each source and its terms.
+- **No shared archive.** A copy starts with no evidence history: the
+  archive accumulates only while its collectors run, so a new copy has
+  nothing to backtest point-in-time evidence against until it has run for
+  a while.
+- **One workspace is enough.** Nothing needs changing: the first person to
+  sign in gets a workspace, and sign-in links land in `data/outbox/` when
+  no mail provider is set.
+
+Publishing the image to a registry waits for the deploy (F16); until then
+it is built from the repository as the Compose file's header says.
 
 ## Strategies (Phase 15)
 

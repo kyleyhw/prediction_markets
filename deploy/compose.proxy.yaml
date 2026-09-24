@@ -39,6 +39,7 @@ services:
   worker-data: *proxy
   worker-capture: *proxy
   ingest: *proxy
+  verify-ledgers: *proxy
   prometheus:
     network_mode: host
     ports: !reset []

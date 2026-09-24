@@ -199,10 +199,29 @@ decayed strategy, the promotion protocol with audit rows and a person's
 approval; migration 0025), `#risk` and health and readiness on the
 strategy page. F6 is resolved. No strategy passes promotion; the health
 threshold H = 18 came from simulation. Report in
-`tests/reports/phase20_portfolio.md`. What is left: Phases 21 (scale
-proof, needs the cloud deploy F16), 22 (hosted live execution, gated on
-the security design's version 2) and 23 (the site); everything keyed
-waits on an API key. Earlier,
+`tests/reports/phase20_portfolio.md`.
+**Phase 21 ran on the local stand-in** under the next goal ("implement
+the next three phases; simulate cloud hosting locally"): `vp/platform/
+loadgen.py` seeds 10,000 people (a million ledger entries) in 17 s and
+probes one component each. Seven costs that grew with the platform were
+found and fixed:
+
+- job claims sorted the whole queue (0027);
+- a cycle re-verified the whole chain, fixed by verified checkpoints
+  (0026) plus `vp admin verify-ledgers` daily as a Compose service;
+- the rate limiter scanned a day of windows (0028);
+- a 40 ms keep-alive stall with several web processes (`TCP_NODELAY` in
+  `run.serve`);
+- the promised whole-account export did not exist (0029, Settings);
+- deleting a person scanned every ledger (0030, a test keeps new tables
+  indexed);
+- the daily check read archived months once per account.
+
+`vp admin unit-costs` gives cost per person-day (about $0.004 without
+models). Report in `tests/reports/phase21_scale.md`; the rows that need a
+real host wait on the deploy (F16). What is left: Phase 22 (hosted live
+execution, gated on the security design's version 2) and 23 (the site);
+everything keyed waits on an API key. Earlier,
 the decisions each phase needed were taken on 2026-09-19 as proposed
 (Fly.io with Amsterdam as the first region, magic-link sign-in, quarter
 Kelly with a 5% cap and a 0.03 minimum edge, fees shown, session keys for
