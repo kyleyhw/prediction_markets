@@ -178,50 +178,87 @@ def test_a_model_backtest_needs_a_key_and_fits_the_budget(world) -> None:
     assert client.get("/api/capabilities").json()["llm"] is False
     assert client.post("/api/backtests", json=body, headers=ORIGIN).status_code == 409
     estimate = client.post("/api/backtests/estimate", json=body, headers=ORIGIN).json()
-    assert estimate["estimate_usd"] > 0 and estimate["limit_usd"] == 5.0
+    # Without a model of its own the workspace gets the free demo: $0, and
+    # a small sample, since the demo's day is small.
+    assert estimate["estimate_usd"] == 0 and estimate["limit_usd"] == 5.0
+    assert estimate["markets"] <= 10
+    # On its own Anthropic key it pays the model's price, halved in batches.
+    key = "sk-ant-" + "b" * 40  # pragma: allowlist secret
+    client.put("/api/model", json={"provider": "anthropic", "key": key}, headers=ORIGIN)
+    own = client.post("/api/backtests/estimate", json=body, headers=ORIGIN).json()
+    assert own["estimate_usd"] > 0
     batch = client.post(
         "/api/backtests/estimate", json=body | {"batch": True}, headers=ORIGIN
     )
     assert batch.json()["estimate_usd"] == pytest.approx(
-        estimate["estimate_usd"] / 2, rel=1e-3
+        own["estimate_usd"] / 2, rel=1e-3
     )
+    client.delete("/api/model", headers=ORIGIN)
 
 
-def test_an_own_key_is_stored_encrypted_and_shown_only_as_a_hint(
-    world, pg_owner
-) -> None:
+def test_any_model_connects_and_only_its_hint_comes_back(world) -> None:
+    """docs/models.md: a provider, a model, a key; the key never returns."""
     client = world["client"]
     ada, bob = people(world)
-    key = "sk-ant-" + "k" * 40  # pragma: allowlist secret
-    stored = _as(client, ada).put("/api/keys", json={"key": key}, headers=ORIGIN)
+    _as(client, ada)
+    offered = client.get("/api/model").json()
+    ids = {p["id"] for p in offered["providers"]}
+    assert {"anthropic", "gemini", "groq", "openrouter", "custom"} <= ids
+    assert "command" not in ids
+    key = "sk-or-" + "k" * 40  # pragma: allowlist secret
+    body = {"provider": "openrouter", "model": "some/model:free", "key": key}
+    stored = client.put("/api/model", json=body, headers=ORIGIN)
     assert stored.status_code == 200 and stored.json()["hint"] == "…kkkk"
-    assert client.get("/api/keys").json()["hint"] == "…kkkk"
+    got = client.get("/api/model").json()["own"]
+    assert got == {
+        "provider": "openrouter",
+        "model": "some/model:free",
+        "base_url": None,
+        "hint": "…kkkk",
+    }
+    assert key not in client.get("/api/model").text
     assert client.get("/api/capabilities").json()["llm"] is True
+    for bad in (
+        {"provider": "nope", "model": "m"},
+        {"provider": "groq", "model": "", "key": key},
+        {"provider": "custom", "model": "m", "base_url": "http://example.com/v1"},
+    ):
+        assert client.put("/api/model", json=bad, headers=ORIGIN).status_code == 422
     _as(client, bob)
-    assert client.get("/api/keys").json()["hint"] is None
+    assert client.get("/api/model").json()["own"] is None
     _as(client, ada)
-    assert client.delete("/api/keys", headers=ORIGIN).status_code == 204
-    assert client.get("/api/keys").json()["hint"] is None
+    assert client.delete("/api/model", headers=ORIGIN).status_code == 204
+    assert client.get("/api/model").json()["own"] is None
 
 
-def test_an_own_key_runs_the_model_its_owner_chooses(world) -> None:
-    """docs/models.md: the choice needs a key, names a priced Claude model,
-    and the key's page lists the choices."""
-    client = world["client"]
+def test_the_free_demo_asks_where_you_are_and_says_when_it_cannot_serve(
+    world,
+) -> None:
+    from dataclasses import replace
+
     ada, _ = people(world)
-    _as(client, ada)
-    choose = {"model": "claude-fable-5-1"}
-    assert client.put("/api/keys/model", json=choose, headers=ORIGIN).status_code == 409
-    key = "sk-ant-" + "m" * 40  # pragma: allowlist secret
-    client.put("/api/keys", json={"key": key}, headers=ORIGIN)
-    got = client.get("/api/keys").json()
-    assert "claude-fable-5-1" in got["models"] and got["model"] is None
-    assert not any(m.startswith("gemini") for m in got["models"])
-    assert client.put("/api/keys/model", json=choose, headers=ORIGIN).status_code == 200
-    assert client.get("/api/keys").json()["model"] == "claude-fable-5-1"
-    bad = {"model": "gemini-3.1-flash-lite"}
-    assert client.put("/api/keys/model", json=bad, headers=ORIGIN).status_code == 422
-    assert client.delete("/api/keys", headers=ORIGIN).status_code == 204
+    demo = replace(world["settings"], demo_api_key="g" * 39)  # pragma: allowlist secret
+    app = create_app(demo, mailer=world["mailer"], store=world["store"])
+    body = {"words": "buy the favourite when the price is under 0.4"}
+    with TestClient(app) as client:
+        _as(client, ada)
+        asked = client.post("/api/strategies/compile", json=body, headers=ORIGIN)
+        assert asked.status_code == 428
+        assert asked.json()["detail"]["code"] == "country_needed"
+        settings = client.get("/api/settings").json()
+        client.put("/api/settings", json=settings | {"country": "GB"}, headers=ORIGIN)
+        blocked = client.post("/api/strategies/compile", json=body, headers=ORIGIN)
+        assert blocked.status_code == 451
+        assert "own copy" in blocked.json()["detail"]["message"]
+        status = client.get("/api/capabilities").json()["demo"]
+        assert status["available"] is False and status["reason"] == "region_blocked"
+        client.put("/api/settings", json=settings | {"country": "US"}, headers=ORIGIN)
+        assert client.get("/api/capabilities").json()["demo"]["available"] is True
+        bad = client.put(
+            "/api/settings", json=settings | {"country": "gb"}, headers=ORIGIN
+        )
+        assert bad.status_code == 422
+        client.put("/api/settings", json=settings, headers=ORIGIN)
 
 
 def test_spending_refresh_and_metrics(world) -> None:

@@ -24,14 +24,16 @@ export async function send(method, path, body) {
   if (r.status === 401) { location.href = '/sign-in'; return new Promise(() => {}); }
   if (!r.ok) {
     // The service explains a refusal in `detail`; show that, not a status.
-    let detail = 'HTTP ' + r.status;
+    let detail = 'HTTP ' + r.status, code = null;
     try {
       const body = await r.json();
       if (typeof body.detail === 'string') detail = body.detail;
       else if (Array.isArray(body.detail)) detail = body.detail.map((d) => d.msg).join('; ');
+      else if (body.detail?.message) { detail = body.detail.message; code = body.detail.code; }
     } catch { /* not JSON */ }
     const error = new Error(detail);
     error.status = r.status;
+    error.code = code;
     throw error;
   }
   return r.status === 204 ? null : r.json();

@@ -251,6 +251,9 @@ class SettingsBody(BaseModel):
     interests: list[str] = Field(default_factory=list, max_length=50)
     follow: str | None = Field(default=None, pattern=r"^[a-z0-9_.-]{1,64}$")
     start: Progress = Field(default_factory=Progress)
+    # Where the person says they are (ISO 3166 code): the free demo model
+    # may serve only some countries (docs/models.md).
+    country: str | None = Field(default=None, pattern=r"^[A-Z]{2}$")
 
     @field_validator("interests")
     @classmethod
@@ -434,14 +437,26 @@ class PackBody(BaseModel):
     body: str = Field(min_length=1, max_length=60000)
 
 
-class KeyBody(BaseModel):
+class ModelBody(BaseModel):
+    """A workspace's own model: a provider preset, the model's name, its key
+    and, for a provider without a preset address, the address."""
+
     model_config = ConfigDict(extra="forbid")
-    key: str = Field(min_length=20, max_length=300)
+    provider: str = Field(min_length=1, max_length=40)
+    model: str | None = Field(default=None, max_length=200)
+    key: str | None = Field(default=None, max_length=500)
+    base_url: str | None = Field(default=None, max_length=500)
 
 
-class KeyModelBody(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    model: str | None = Field(default=None, max_length=60)
+#: HTTP status for each reason the demo cannot answer (docs/models.md).
+DEMO_STATUS = {
+    "none": 409,
+    "country_needed": 428,
+    "region_blocked": 451,
+    "used_up": 429,
+}
+#: Markets a backtest on the demo model covers: its day is small.
+DEMO_MARKETS = 10
 
 
 def _eligible_kinds(path: Path) -> dict[str | None, int]:
@@ -649,8 +664,16 @@ def create_app(
                     status=429,
                 )
             token = auth.request_sign_in(conn, address)
+        shown = ""
         if token is not None:
             link = f"{settings.public_url}/auth/verify?token={token}"
+            if settings.show_sign_in_link:
+                # Your own copy (docs/models.md): no mail server, and nobody
+                # else reaches the page, so the link is shown here.
+                shown = (
+                    "<p>This is your own copy, so here is your link: "
+                    f'<a class=btn href="{html.escape(link)}">Sign in</a></p>'
+                )
             mailer.send(
                 Message(
                     to=address,
@@ -668,6 +691,8 @@ def create_app(
             if isinstance(mailer, OutboxMailer) and mailer.directory
             else ""
         )
+        if shown:
+            return _page("Sign in", "<h1>Sign in</h1>" + shown)
         return _page(
             "Check your email",
             "<h1>Check your email</h1><p>If that address can sign in, a link "
@@ -980,12 +1005,13 @@ def create_app(
     @app.get("/api/capabilities")
     def capabilities(principal: Reader) -> dict[str, Any]:
         """What this service can do for this workspace."""
-        own = llmops.key_hint(pool, principal)
+        own = llmops.connection(pool, principal)
+        demo = _demo_status(principal)
         return {
-            "llm": bool(settings.platform_pays or own),
-            "own_keys": bool(settings.master_key),
-            "own_key_hint": own,
-            "demo_model": None if own else settings.platform_model,
+            "llm": own is not None or bool(demo and demo["available"]),
+            "own_models": bool(settings.master_key),
+            "own": own,
+            "demo": demo,
             "jobs": sorted(jobs.WORKSPACE_KINDS),
         }
 
@@ -1013,27 +1039,66 @@ def create_app(
             raise HTTPException(404, "no such job, or it has already finished")
         return {"id": job_id, "cancel_requested": True}
 
+    def _demo_status(principal: Principal) -> dict[str, Any] | None:
+        """The demo model and whether it can answer this person now."""
+        if not settings.has_demo:
+            return None
+        out: dict[str, Any] = {
+            "provider": settings.demo_provider,
+            "model": settings.demo_model,
+            "free": settings.demo_free,
+            "region_rule": settings.demo_region_rule,
+            "available": True,
+            "reason": None,
+            "left": None,
+        }
+        try:
+            out["left"] = llmops.demo_check(pool, principal, settings)
+        except llmops.DemoUnavailable as exc:
+            out |= {"available": False, "reason": exc.code, "message": str(exc)}
+        return out
+
+    def _model_gate(principal: Principal, calls: int = 1) -> bool:
+        """Refuse a model-backed request this workspace cannot run now, with
+        the reason as a code the page explains; True when the demo will
+        answer (the platform pays), False for the workspace's own model."""
+        if llmops.has_own(pool, principal):
+            return False
+        try:
+            llmops.demo_check(pool, principal, settings, calls)
+        except llmops.DemoUnavailable as exc:
+            raise HTTPException(
+                DEMO_STATUS[exc.code], {"code": exc.code, "message": str(exc)}
+            ) from None
+        return True
+
     def _model_for(principal: Principal, requested: str) -> str:
         """The model a job of this workspace will run when ``requested`` is
-        asked for: the own key's choice, or the platform's demo model
-        (docs/models.md)."""
-        if llmops.key_hint(pool, principal) is not None:
-            return llmops.key_model(pool, principal) or requested
+        asked for: its own model, or the demo (docs/models.md)."""
+        own = llmops.connection(pool, principal)
+        if own is not None:
+            return own["model"] or requested
         return settings.platform_model or requested
 
     def _priced(
         principal: Principal, usd: float, priced_for: str, batched: bool = False
     ) -> float:
         """An estimate made at ``priced_for``'s prices, at the model this
-        workspace's job will run; the demo model has no batch API, so a
-        batched estimate loses its discount on it."""
-        from vp.forecast.llm import BATCH_DISCOUNT, rescale
+        workspace's job will run: nothing on the free demo or an unpriced
+        model; only Anthropic has a batch discount."""
+        from vp.forecast.llm import BATCH_DISCOUNT, PRICES, rescale
 
+        own = llmops.connection(pool, principal)
+        if own is None and settings.demo_free:
+            return 0.0
         runs = _model_for(principal, priced_for)
         if runs == priced_for:
             return usd
+        if runs not in PRICES or priced_for not in PRICES:
+            return 0.0
         usd = rescale(usd, priced_for, runs)
-        return usd / BATCH_DISCOUNT if batched and runs.startswith("gemini") else usd
+        provider = own["provider"] if own else settings.demo_provider
+        return usd / BATCH_DISCOUNT if batched and provider != "anthropic" else usd
 
     def _reserve(principal: Principal, usd: float) -> None:
         try:
@@ -1055,15 +1120,16 @@ def create_app(
         markets = sum(n for k, n in kinds.items() if not body.kinds or k in body.kinds)
         if body.max_markets is not None:
             markets = min(markets, body.max_markets)
-        usd = (
-            estimate_usd(
-                markets,
-                _model_for(principal, body.model or DEFAULT_MODEL),
-                batch=body.batch and settings.platform_model is None,
+        usd = 0.0
+        if "llm" in body.forecasters:
+            if not llmops.has_own(pool, principal):
+                markets = min(markets, DEMO_MARKETS)  # the demo's day is small
+            usd = _priced(
+                principal,
+                estimate_usd(markets, body.model or DEFAULT_MODEL, batch=body.batch),
+                body.model or DEFAULT_MODEL,
+                batched=body.batch,
             )
-            if "llm" in body.forecasters
-            else 0.0
-        )
         return {"markets": markets, "estimate_usd": round(usd, 4)}
 
     @app.post("/api/backtests/estimate")
@@ -1078,14 +1144,19 @@ def create_app(
     @app.post("/api/backtests", status_code=202)
     def start_backtest(body: BacktestRequest, principal: Writer) -> dict[str, Any]:
         """Queue a backtest; its progress is at /api/jobs/{id}."""
+        from vp.forecast.llm import EXPECTED_ROUNDS
+
         estimate = _estimate(body, principal)
-        paid_by_platform = llmops.key_hint(pool, principal) is None
+        paid_by_platform = False
+        payload = body.model_dump()
         if "llm" in body.forecasters:
-            if paid_by_platform and not settings.platform_pays:
-                raise HTTPException(409, "no model key is available for this workspace")
+            paid_by_platform = _model_gate(
+                principal, estimate["markets"] * EXPECTED_ROUNDS
+            )
+            if paid_by_platform:
+                payload["max_markets"] = estimate["markets"]
         reserved = estimate["estimate_usd"] if paid_by_platform else 0.0
         _reserve(principal, reserved)
-        payload = body.model_dump()
         try:
             job_id = jobs.enqueue(
                 pool, principal, "backtest", payload, reserved_usd=reserved
@@ -1147,45 +1218,59 @@ def create_app(
             "breakdown": budgets.breakdown(pool, principal),
         }
 
-    @app.get("/api/keys")
-    def get_key(principal: BrowserSession) -> dict[str, Any]:
+    @app.get("/api/model")
+    def get_model(principal: BrowserSession) -> dict[str, Any]:
+        """The workspace's own model (never its key), the providers one can
+        connect here, and the demo's state for this person."""
+        from vp.llm import PROVIDERS
+
+        own_copy = settings.allow_private_model_urls
         return {
-            "hint": llmops.key_hint(pool, principal),
+            "own": llmops.connection(pool, principal),
             "enabled": bool(settings.master_key),
-            "model": llmops.key_model(pool, principal),
-            "models": list(llmops.OWN_MODELS),
-            "demo_model": settings.platform_model,
+            "own_copy": own_copy,
+            "providers": [
+                {
+                    "id": p.id,
+                    "label": p.label,
+                    "needs_key": p.needs_key,
+                    "address": p.base_url is None,
+                    "names_model": p.kind != "anthropic",
+                }
+                for p in PROVIDERS.values()
+                if p.kind != "command" and (own_copy or not p.own_copy_only)
+            ],
+            "demo": _demo_status(principal),
         }
 
-    @app.put("/api/keys")
-    def put_key(body: KeyBody, principal: BrowserSession) -> dict[str, Any]:
-        """Store the workspace's own model key, encrypted; only a hint comes back."""
+    @app.put("/api/model")
+    def put_model(body: ModelBody, principal: BrowserSession) -> dict[str, Any]:
+        """Connect the workspace's own model; the key is stored encrypted and
+        only its last four characters come back."""
         if not principal.may_write:
-            raise HTTPException(403, "your role may not change keys")
+            raise HTTPException(403, "your role may not change the model")
         try:
-            hint = llmops.store_key(pool, principal, body.key, settings.master_key)
+            hint = llmops.store_connection(
+                pool,
+                principal,
+                provider=body.provider,
+                model=body.model,
+                key=body.key,
+                base_url=body.base_url,
+                master_key=settings.master_key,
+                allow_private=settings.allow_private_model_urls,
+            )
         except llmops.KeysUnavailable as exc:
             raise HTTPException(409, str(exc)) from None
         except ValueError as exc:
             raise HTTPException(422, str(exc)) from None
-        return {"hint": hint}
+        return {"hint": hint, "own": llmops.connection(pool, principal)}
 
-    @app.put("/api/keys/model")
-    def put_key_model(body: KeyModelBody, principal: BrowserSession) -> dict[str, Any]:
-        """Choose the model the workspace's own key runs; null: the tier's."""
+    @app.delete("/api/model", status_code=204)
+    def delete_model(principal: BrowserSession) -> Response:
         if not principal.may_write:
-            raise HTTPException(403, "your role may not change keys")
-        try:
-            found = llmops.set_key_model(pool, principal, body.model)
-        except ValueError as exc:
-            raise HTTPException(422, str(exc)) from None
-        if not found:
-            raise HTTPException(409, "add your own model key first")
-        return {"model": body.model}
-
-    @app.delete("/api/keys", status_code=204)
-    def delete_key(principal: BrowserSession) -> Response:
-        llmops.delete_key(pool, principal)
+            raise HTTPException(403, "your role may not change the model")
+        llmops.delete_connection(pool, principal)
         return Response(status_code=204)
 
     # ------------------------------------------------------------ strategies
@@ -1202,9 +1287,7 @@ def create_app(
         turn of the conversation when the job is done."""
         from vp.strategy.compiler import COMPILER_MODEL
 
-        paid_by_platform = llmops.key_hint(pool, principal) is None
-        if paid_by_platform and not settings.platform_pays:
-            raise HTTPException(409, "no model key is available for this workspace")
+        paid_by_platform = _model_gate(principal)
         convo = body.conversation_id or _found(
             lambda: strategies.open_conversation(pool, principal, body.strategy_id)
         )
@@ -1231,9 +1314,7 @@ def create_app(
         from vp.platform.research import RESEARCH_RESERVE_USD
         from vp.strategy.agent import MODEL
 
-        paid_by_platform = llmops.key_hint(pool, principal) is None
-        if paid_by_platform and not settings.platform_pays:
-            raise HTTPException(409, "no model key is available for this workspace")
+        paid_by_platform = _model_gate(principal)
         convo = body.conversation_id or strategies.open_conversation(pool, principal)
         _found(lambda: strategies.conversation(pool, principal, convo))
         reserved = (
@@ -1318,18 +1399,24 @@ def create_app(
     ) -> dict[str, Any]:
         """Backtest the newest version on each of its domains."""
         head = _found(lambda: strategies.latest(pool, principal, strategy_id))
-        from vp.forecast.llm import TIERS
+        from vp.forecast.llm import EXPECTED_ROUNDS, TIERS
+        from vp.strategy.spec import uses_model
 
-        estimate = _preview(head["spec"], head["spec_hash"])["backtest_usd"]
-        paid_by_platform = llmops.key_hint(pool, principal) is None
-        if estimate and paid_by_platform and not settings.platform_pays:
-            raise HTTPException(409, "no model key is available for this workspace")
-        tier = TIERS[head["spec"].belief.tier]
-        reserved = (
-            _priced(principal, estimate, tier, batched=True)
-            if paid_by_platform and estimate
-            else 0.0
-        )
+        spec = head["spec"]
+        preview = _preview(spec, head["spec_hash"])
+        estimate = preview["backtest_usd"]
+        max_markets = body.max_markets
+        paid_by_platform = False
+        if uses_model(spec):
+            if not llmops.has_own(pool, principal):
+                max_markets = min(max_markets or DEMO_MARKETS, DEMO_MARKETS)
+            markets = min(max_markets or preview["backtest_markets"], 10**6)
+            paid_by_platform = _model_gate(
+                principal, markets * spec.belief.samples * EXPECTED_ROUNDS
+            )
+        tier = TIERS[spec.belief.tier]
+        shown = _priced(principal, estimate, tier, batched=True) if estimate else 0.0
+        reserved = shown if paid_by_platform else 0.0
         _reserve(principal, reserved)
         job_id = jobs.enqueue(
             pool,
@@ -1337,11 +1424,11 @@ def create_app(
             "backtest",
             {
                 "strategy_version_id": str(head["version_id"]),
-                "max_markets": body.max_markets,
+                "max_markets": max_markets,
             },
             reserved_usd=reserved,
         )
-        return {"job_id": job_id, "estimate_usd": estimate, "version": head["version"]}
+        return {"job_id": job_id, "estimate_usd": shown, "version": head["version"]}
 
     @app.post("/api/strategies/{strategy_id}/paper", status_code=201)
     def paper_strategy(strategy_id: UUID, principal: Writer) -> dict[str, Any]:

@@ -580,9 +580,13 @@ def _trade(ctx: JobContext, principal: Principal, account_id: UUID) -> dict[str,
         if model_backed(spec):
             if budgets.standing(svc.pool, principal).remaining_usd <= 0:
                 return {"account_id": str(account["id"]), "skipped": "over budget"}
-            client, paid_by = llmops.client_for(svc.pool, principal, svc.settings)
+            try:
+                client, paid_by = llmops.client_for(svc.pool, principal, svc.settings)
+            except llmops.DemoUnavailable as exc:
+                return {"account_id": str(account["id"]), "skipped": exc.code}
             if (
                 paid_by == "platform"
+                and not svc.settings.demo_free
                 and budgets.platform_spent_today(svc.pool)
                 >= svc.settings.platform_daily_usd
             ):

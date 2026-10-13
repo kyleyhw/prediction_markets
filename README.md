@@ -158,14 +158,19 @@ export ANTHROPIC_API_KEY=sk-ant-...
 uv run vp backtest --domain epl --forecasters market llm --max-markets 50
 ```
 
-With a Google key instead, `--model gemini-3.1-flash-lite` runs the
-platform's demo model, at about $0.004 a forecast
+Any other model plugs in the same way: `--model provider:name` picks the
+provider, with its key in `<PROVIDER>_API_KEY`, and a free model on your
+own computer through Ollama needs no key at all
 ([docs/models.md](docs/models.md)):
 
 ```bash
-export GEMINI_API_KEY=...
-uv run vp backtest --domain epl --forecasters market llm --model gemini-3.1-flash-lite --max-markets 50
+export GEMINI_API_KEY=...     # Google's free tier
+uv run vp backtest --domain epl --forecasters market llm --model gemini-3.1-flash-lite --max-markets 20
+uv run vp backtest --domain epl --forecasters market llm --model ollama:qwen2.5:7b --max-markets 20
 ```
+
+To run the whole app on your own computer with the model you choose, see
+[docs/tutorials/run_your_own.md](docs/tutorials/run_your_own.md).
 
 It defaults to `claude-opus-5`, and the USD cost of the run is printed in the
 `Cost USD` column and stored with each forecast. The model is shown the

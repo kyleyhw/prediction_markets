@@ -38,7 +38,7 @@ from pydantic import ValidationError
 from vp.domains import DOMAINS
 from vp.domains.pack import load as load_pack
 from vp.forecast.evidence import Evidence, canonical, settled_at
-from vp.forecast.llm import resolve_model, usage_usd
+from vp.forecast.llm import call_cost, resolve_model
 from vp.markets.store import read_markets
 from vp.strategy import gate
 from vp.strategy.spec import Spec, validate
@@ -371,7 +371,7 @@ def research_turn(
             tools=definitions,
             messages=messages,
         )
-        turn.cost_usd += usage_usd(response.usage, model)
+        turn.cost_usd += call_cost(client, response.usage, model)
         turn.input_tokens += response.usage.input_tokens
         turn.output_tokens += response.usage.output_tokens
         if response.stop_reason == "refusal":

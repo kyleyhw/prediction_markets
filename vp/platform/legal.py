@@ -13,7 +13,7 @@ from __future__ import annotations
 import html
 
 #: Bump when either text changes in substance; people are asked again.
-TERMS_VERSION = "2026-10-13"
+TERMS_VERSION = "2026-10-13.2"
 
 #: The minimum age to use the service.
 MINIMUM_AGE = 18
@@ -79,14 +79,14 @@ TERMS: list[Section] = [
         ],
     ),
     (
-        "Costs",
+        "AI models and costs",
         [
-            "Strategies that use an AI model cost money to run. Without your "
-            "own model key, the service's demo model answers, paid by the "
-            "service within your monthly budget and a daily allowance shared "
-            "by everyone. The service shows the estimated cost before a run "
-            "starts and stops at your budget. If you add your own model key, "
-            "its use is billed to you by its provider.",
+            "Without a model of your own, a free demo model answers, within a "
+            "daily allowance, and only in the countries where its provider's "
+            "free tier may serve people; you say which country you are in, "
+            "and must say it truthfully. If you connect your own model, its "
+            "use is billed to you by its provider under that provider's "
+            "terms.",
         ],
     ),
     (
@@ -120,8 +120,9 @@ PRIVACY: list[Section] = [
             "Your email address, to send sign-in links; your settings; your "
             "sessions and API tokens (stored only as hashes); your workspace's "
             "strategies, backtests, paper trading records and forecasts; its "
-            "model spending; and, if you add one, your model key, encrypted "
-            "and shown only by its last four characters.",
+            "model spending; the country you said you are in; and, if you "
+            "connect one, your own model's provider, name and address, and its "
+            "key, encrypted and shown only by its last four characters.",
             "When you accepted these terms and confirmed your age.",
             "Request logs, without sign-in tokens, and metrics that name no person.",
         ],
@@ -130,8 +131,13 @@ PRIVACY: list[Section] = [
         "What we do not do",
         [
             "We do not sell or share your data, show advertising, or use your "
-            "strategies or prompts to train models. A strategy's prompt is "
-            "sent to the AI model provider only to run it.",
+            "strategies or prompts to train models.",
+            "What you send to an AI model goes to that model's provider. The "
+            "free demo model runs on Google's free tier, on whose terms Google "
+            "may use what you send it, and its answers, to improve its "
+            "products, and people at Google may read them: do not put anything "
+            "private into the demo. Your own model is covered by the terms of "
+            "the provider you chose.",
         ],
     ),
     (
@@ -139,9 +145,8 @@ PRIVACY: list[Section] = [
         [
             "The hosting provider and its region and the email provider that "
             "sends sign-in links, named here when the service is deployed; "
-            "and the AI model providers: Google for the demo model, on its "
-            "paid service, which does not use prompts to improve its "
-            "products, and Anthropic if you add your own key.",
+            "and the AI model providers: Google for the free demo model, and "
+            "whichever provider you connect yourself.",
         ],
     ),
     (

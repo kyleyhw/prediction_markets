@@ -1,12 +1,14 @@
 // Settings: reading level, theme, language and formats, interests, the
-// strategy Home follows, and the guided start; Detailed adds API tokens,
+// strategy Home follows, where you are, your AI model (your own, from any
+// provider, or the free demo), and the guided start; Detailed adds API tokens,
 // an export of every record, and what is not here yet. Each control saves
 // as it changes and says so in a status line a screen reader announces.
 import { api, send, session } from '../api.js';
 import { LOCALES, setLocale } from '../i18n.js';
 import { applyTheme, render, shell } from '../main.js';
 import { prefs, save } from '../prefs.js';
-import { after, detailed, esc, fmt, head, strategyLabel, strategySentence, t, table, tp } from '../ui.js';
+import { countries } from '../countries.js';
+import { after, detailed, esc, fmt, GUIDE_URL, head, strategyLabel, strategySentence, t, table, tp } from '../ui.js';
 
 const radio = (name, value, current, title, text = '') => `<label class="choice"><input type="radio" name="${name}" value="${esc(value)}"${value === current ? ' checked' : ''}>
   <span><span class="t">${title}</span>${text ? `<br><span class="d">${text}</span>` : ''}</span></label>`;
@@ -53,42 +55,71 @@ async function spending() {
   return h;
 }
 
-async function ownKey() {
-  const k = await api('keys');
-  if (!k?.enabled) return '';
+const copyLine = () => `<p class="measure">${t('settings.model_copy')} <a href="${esc(GUIDE_URL)}">${t('settings.model_copy_link')}</a></p>`;
+
+// The model that answers this workspace (docs/models.md): its own, from
+// any provider, or the free demo; in both levels, since a person the demo
+// cannot serve needs the way forward whatever their reading level.
+async function modelSection() {
+  const m = await api('model');
+  if (!m) return '';
+  const label = (id) => m.providers.find((p) => p.id === id)?.label ?? id;
   after(() => {
-    const f = document.getElementById('key-form'), status = document.getElementById('key-status');
-    f?.addEventListener('submit', async (e) => {
+    const f = document.getElementById('model-form'), status = document.getElementById('model-status');
+    if (!f) return;
+    const sync = () => {
+      const p = m.providers.find((x) => x.id === f.provider.value);
+      document.getElementById('model-address-row').hidden = !p?.address;
+      f.base_url.required = Boolean(p?.address);
+      f.model.required = Boolean(p?.names_model);
+      document.getElementById('model-name-tier').hidden = Boolean(p?.names_model);
+      f.key.required = Boolean(p?.needs_key);
+      document.getElementById('model-key-label').textContent = tp(p?.needs_key ? 'settings.model_key' : 'settings.model_key_optional');
+    };
+    f.provider.addEventListener('change', sync);
+    sync();
+    f.addEventListener('submit', async (e) => {
       e.preventDefault();
       try {
-        const r = await send('PUT', 'keys', { key: f.key.value });
-        f.key.value = '';
-        status.textContent = tp('settings.key_saved', { hint: r.hint });
+        await send('PUT', 'model', { provider: f.provider.value, model: f.model.value || null, key: f.key.value || null, base_url: f.base_url.value || null });
+        await render(false);
+        document.getElementById('model-status').textContent = tp('settings.model_saved');
       } catch (err) { status.textContent = err.message; }
     });
-    document.getElementById('key-remove')?.addEventListener('click', async () => {
-      await send('DELETE', 'keys');
-      status.textContent = tp('settings.key_removed');
-    });
-    document.getElementById('key-model')?.addEventListener('change', async (e) => {
-      try {
-        const r = await send('PUT', 'keys/model', { model: e.target.value || null });
-        status.textContent = tp('settings.key_model_saved', { model: r.model || tp('settings.key_model_tier') });
-      } catch (err) { status.textContent = err.message; }
+    document.getElementById('model-remove')?.addEventListener('click', async () => {
+      await send('DELETE', 'model');
+      await render(false);
+      document.getElementById('model-status').textContent = tp('settings.model_removed');
     });
   });
-  const models = k.hint ? `<p class="row"><label for="key-model">${t('settings.key_model')}</label>
-      <select id="key-model"><option value="">${t('settings.key_model_tier')}</option>
-      ${k.models.map((m) => `<option value="${esc(m)}"${m === k.model ? ' selected' : ''}>${esc(m)}</option>`).join('')}</select></p>` : '';
-  return `<h2>${t('settings.key')}</h2><p class="muted measure">${t('settings.key_note')}</p>
-    ${!k.hint && k.demo_model ? `<p class="measure">${t('settings.key_demo', { model: k.demo_model })}</p>` : ''}
-    ${k.hint ? `<p>${t('settings.key_current', { hint: k.hint })}</p>` : ''}
-    <form id="key-form" class="row"><label for="key-input" class="sr-only">${t('settings.key')}</label>
-      <input type="password" id="key-input" name="key" autocomplete="off" required minlength="20" placeholder="sk-ant-…" style="min-width:18em">
-      <button class="btn" type="submit">${t('settings.key_save')}</button>
-      ${k.hint ? `<button class="btn quiet" type="button" id="key-remove">${t('settings.key_remove')}</button>` : ''}</form>
-    ${models}
-    <p class="small" id="key-status" role="status"></p>`;
+  let h = `<h2 id="model">${t('settings.model')}</h2>`;
+  if (m.own) {
+    h += `<p class="measure">${t('settings.model_own', { provider: label(m.own.provider), model: m.own.model ?? tp('settings.model_own_tier'), hint: m.own.hint ? tp('settings.model_own_hint', { hint: m.own.hint }) : '' })}</p>`;
+  } else if (m.demo?.available) {
+    h += `<p class="measure">${t('settings.model_demo', { model: m.demo.model, left: fmt.int(m.demo.left) })}</p>`;
+    if (m.demo.region_rule) h += `<p class="measure small muted">${t('settings.model_demo_free_note')}</p>`;
+  } else if (m.demo) {
+    h += `<p class="measure" role="note">${esc(m.demo.message)}</p>`;
+  } else h += `<p class="measure">${t('settings.model_none')}</p>`;
+  if (!m.enabled) return h + `<p class="muted measure">${t('settings.model_off')}</p>` + copyLine();
+  const current = m.own?.provider ?? 'anthropic';
+  h += `<h3>${t('settings.model_connect')}</h3><p class="muted measure">${t('settings.model_connect_note')}</p>
+    <form id="model-form" class="measure">
+      <p><label for="model-provider">${t('settings.model_provider')}</label><br>
+        <select id="model-provider" name="provider">${m.providers.map((p) => `<option value="${esc(p.id)}"${p.id === current ? ' selected' : ''}>${esc(p.label)}</option>`).join('')}</select></p>
+      <p><label for="model-name">${t('settings.model_name')}</label><br>
+        <input type="text" id="model-name" name="model" maxlength="200" autocomplete="off" value="${esc(m.own?.model ?? '')}" placeholder="${tp('settings.model_name_placeholder')}" style="min-width:18em">
+        <br><span class="small muted" id="model-name-tier">${t('settings.model_name_tier')}</span></p>
+      <p id="model-address-row"><label for="model-address">${t('settings.model_address')}</label><br>
+        <input type="url" id="model-address" name="base_url" maxlength="500" autocomplete="off" value="${esc(m.own?.base_url ?? '')}" placeholder="https://…/v1" style="min-width:18em"></p>
+      <p><label for="model-key" id="model-key-label">${t('settings.model_key')}</label><br>
+        <input type="password" id="model-key" name="key" autocomplete="off" maxlength="500" style="min-width:18em"></p>
+      <p class="row"><button class="btn" type="submit">${t('settings.model_save')}</button>
+        ${m.own ? `<button class="btn quiet" type="button" id="model-remove">${t('settings.model_remove')}</button>` : ''}</p>
+    </form>
+    <p class="small" id="model-status" role="status"></p>
+    ${copyLine()}`;
+  return h;
 }
 
 function refreshData(domains) {
@@ -172,17 +203,22 @@ export default async function settings() {
     h += `<fieldset><legend>${t('settings.follow')}</legend><div class="choices">
       ${accounts.map((a) => radio('follow', a.forecaster, p.follow, esc(strategyLabel(a.forecaster)), esc(strategySentence(a.forecaster)))).join('')}</div></fieldset>`;
   }
+  if (session.hosted) {
+    h += `<fieldset><legend>${t('settings.country')}</legend><p class="small muted">${t('settings.country_note')}</p>
+      <label for="country" class="sr-only">${t('settings.country')}</label><select id="country" name="country"><option value="">${t('settings.country_unset')}</option>
+      ${countries(p.locale).map(([code, name]) => `<option value="${code}"${p.country === code ? ' selected' : ''}>${esc(name)}</option>`).join('')}</select></fieldset>`;
+  }
   h += '</form>';
   if (session.hosted) {
     h += `<h2>${t('settings.reach')}</h2><p class="muted measure">${t('settings.reach_note')}</p>
       <div class="row"><a class="btn" href="#team">${t('nav.team')}</a><a class="btn" href="#notifications">${t('nav.notifications')}</a><a class="btn" href="#delivery">${t('nav.delivery')}</a></div>`;
   }
+  if (session.hosted) h += await modelSection();
   if (session.hosted) h += await spending();
   if (session.hosted) h += await memory();
   h += `<h2>${t('settings.start')}</h2><p class="muted">${t('settings.start_note')}</p><button class="btn" type="button" id="restart">${t('settings.start_again')}</button>`;
   if (detailed()) {
     if (session.hosted) h += `<h2>${t('settings.tokens')}</h2><p class="muted measure">${t('settings.tokens_note')}</p><div id="tokens">${tokens(await api('tokens'))}</div>`;
-    if (session.hosted) h += await ownKey();
     if (session.hosted) h += refreshData(o.domains);
     h += `<h2>${t('settings.export')}</h2><p class="muted measure">${t('settings.export_note')}</p><button class="btn" type="button" id="export">${t('settings.export_button')}</button>`;
     h += `<h2>${t('settings.later')}</h2><ul class="notes measure">${['play_money'].map((k) => `<li>${t('settings.later_' + k)}</li>`).join('')}</ul>`;
@@ -204,6 +240,11 @@ export default async function settings() {
         status.textContent = tp('settings.saved');
       } catch { status.textContent = tp('settings.not_saved'); return; }
       if (el.name === 'theme') applyTheme();
+      if (el.name === 'country') {
+        await render(false);
+        document.getElementById('country')?.focus();
+        document.getElementById('saved').textContent = tp('settings.saved');
+      }
       if (el.name === 'level' || el.name === 'locale') {
         if (el.name === 'locale') setLocale(prefs().locale);
         shell();

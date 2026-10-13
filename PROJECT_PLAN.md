@@ -1203,7 +1203,7 @@ called done.
 | 22 | The live key model | session keys for execution, browser signing for consent (F12) |
 | 22 | Polymarket US | assess only (F13) |
 | 23 | The site's visual style | the "paper" default of `docs/site.md` as the placeholder; alternatives trialled later (F14) |
-| 15 | Who pays for model calls (2026-10-13) | a demo model the platform pays for, Gemini 3.1 Flash-Lite on Google's paid tier, under each workspace's budget, a platform-wide daily cap and the Google project's spend cap; an own Anthropic key runs the model its owner chooses (`docs/models.md`, F19) |
+| 15 | Models and who pays (2026-10-13, revised the same day) | any model from any provider plugs in (`vp/llm/`); the demo is Gemini 3.1 Flash-Lite on Google's free tier, which the owner pays nothing for, within a daily allowance of calls and only where the free tier may serve people; elsewhere people are told so and pointed to their own model or their own copy (`docs/models.md`, F19, F9) |
 
 ### Flags recorded with the decisions
 
@@ -1394,18 +1394,28 @@ called done.
   `tests/reports/phase13_platform.md`. Also decided that day: the fifteen
   stand-in test workspaces whose ledgers the negative-zero fault broke stay
   paused until a general cleanup of test data.
-- **F19 (decided 2026-10-13). The demo model is not free, and must not
-  be.** The owner asked for a free model so that people need no key.
-  Google's free Gemini quota uses prompts to improve its products, may be
-  read by human reviewers, and may not serve users in the EEA, Switzerland
-  or the UK, which contradicts the privacy notice and the first region. So
-  the demo runs on the paid tier at about $0.004 a forecast, behind three
-  limits: the workspace's monthly budget, `VP_PLATFORM_DAILY_USD` across
-  all workspaces ($2 by default), and a spend cap on the Google project
-  that the owner sets in AI Studio at the deploy. Nothing has run against
-  Google's API yet; the first keyed run checks that the compiler's schema
-  is accepted and measures the demo model's forecasts like any other
-  forecaster's (`docs/models.md`).
+- **F19 (decided 2026-10-13, revised the same day). The demo model is
+  free, and the owner pays nothing.** First proposed on Google's paid tier
+  (the free tier trains on prompts and may not serve the EEA, Switzerland
+  or the UK); the owner chose the free tier and no spending at all. So:
+  any model plugs in (`vp/llm/`, a workspace's own model from any
+  provider); the demo is Gemini's free tier within a daily allowance of
+  calls (`VP_DEMO_DAILY_CALLS`, per workspace `VP_DEMO_WORKSPACE_DAILY_CALLS`,
+  migration 0032), offered only in the countries Google lists less the
+  EEA, Switzerland, the UK, Gibraltar and the Crown Dependencies, by the
+  country a person states; the privacy notice says plainly that Google may
+  use what is sent to the demo and that people at Google may read it.
+  People elsewhere are told the demo is not available where they are and
+  shown their two ways forward: their own model, or their own copy
+  (`docs/tutorials/run_your_own.md`). Nothing has run against Google's API
+  yet; the OpenAI-compatible path ran end to end against a local model.
+  The first keyed run checks that Google accepts the compiler's schema.
+- **F9, amended 2026-10-13.** Running a copy stays a developer's path for
+  the archive and the sources' terms, but it is now offered to people as
+  the way to use a model the hosted demo cannot serve:
+  `deploy/run-your-own.sh` asks for the model and starts the same app,
+  showing the sign-in link on the page (no mail server on a personal
+  copy; refused in production).
 - **F18 (open, gating public sign-up). The terms of use and the privacy
   notice are drafts.** Written on 2026-09-23 from what the code does
   (`vp/platform/legal.py`), they need a lawyer's reading, in the

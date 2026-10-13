@@ -112,6 +112,37 @@ PRICES: dict[str, tuple[float, float]] = {
 }
 
 
+def call_cost(client: Any, usage: Any, model: str, batched: bool = False) -> float:
+    """What one response cost on ``client``: nothing on a free connection
+    (the demo's free tier, a model on your own computer)."""
+    if getattr(client, "free", False):
+        return 0.0
+    return usage_usd(usage, model, batched)
+
+
+def client_for_model(model: str) -> tuple[Any, str]:
+    """A client from the environment for the command line, and the model:
+    ``provider:model`` picks any provider (``groq:llama-3.3-70b``,
+    ``ollama:qwen2.5:1.5b``), a ``gemini-`` name Google, and anything else
+    Anthropic, each with its key from the environment (docs/models.md)."""
+    from vp.llm import PROVIDERS, connect
+    from vp.llm.providers import key_from_environment
+
+    provider, _, rest = model.partition(":")
+    if rest and provider in PROVIDERS:
+        model = rest
+    else:
+        provider = "gemini" if model.startswith("gemini") else "anthropic"
+    client = connect(
+        provider,
+        model,
+        key_from_environment(provider),
+        allow_private=True,  # the command line runs on your own computer
+        free=provider == "ollama",
+    )
+    return client, model
+
+
 def resolve_model(client: Any, model: str) -> str:
     """The model a call on ``client`` will actually run when ``model`` is
     asked for: a client may fix it (the platform's demo model, or the model
@@ -123,6 +154,8 @@ def resolve_model(client: Any, model: str) -> str:
 def rescale(usd: float, priced_for: str, model: str) -> float:
     """An estimate made at one model's prices, at another's (the larger of
     the input and output ratios, so it stays an upper end)."""
+    if priced_for not in PRICES or model not in PRICES:
+        return 0.0  # an unpriced model is billed by its own provider
     (a_in, a_out), (b_in, b_out) = PRICES[priced_for], PRICES[model]
     return usd * max(b_in / a_in, b_out / a_out)
 
@@ -243,7 +276,10 @@ TOOLS: list[dict[str, Any]] = [
 def estimate_usd(
     markets: int, model: str = DEFAULT_MODEL, samples: int = 1, batch: bool = False
 ) -> float:
-    """An upper-end estimate of what forecasting `markets` markets costs."""
+    """An upper-end estimate of what forecasting `markets` markets costs;
+    0 for a model without a recorded price (docs/models.md)."""
+    if model not in PRICES:
+        return 0.0
     price_in, price_out = PRICES[model]
     per_round = (EXPECTED_INPUT * price_in + EXPECTED_OUTPUT * price_out) / 1e6
     usd = markets * samples * EXPECTED_ROUNDS * per_round
@@ -251,7 +287,10 @@ def estimate_usd(
 
 
 def usage_usd(usage: Any, model: str, batched: bool = False) -> float:
-    """What one response cost, from its usage at the recorded prices."""
+    """What one response cost, from its usage at the recorded prices; 0 for
+    a model without one (the person's own provider bills it)."""
+    if model not in PRICES:
+        return 0.0
     price_in, price_out = PRICES[model]
     cache_read = getattr(usage, "cache_read_input_tokens", None) or 0
     cache_write = getattr(usage, "cache_creation_input_tokens", None) or 0
@@ -397,19 +436,10 @@ class LLMForecaster:
 
     def __post_init__(self) -> None:
         if self.client is None:
-            if self.model.startswith("gemini"):
-                from vp.forecast.gemini import GeminiClient
-
-                self.client = GeminiClient(model=self.model)
-            else:
-                import anthropic
-
-                self.client = anthropic.Anthropic()
+            self.client, self.model = client_for_model(self.model)
         self.model = resolve_model(self.client, self.model)
         if getattr(self.client.messages, "batches", None) is None:
-            self.batch = False  # the client has no batch API (the demo model)
-        if self.model not in PRICES:
-            raise ValueError(f"no price recorded for model {self.model!r}")
+            self.batch = False  # the client has no batch API
 
     def forecast(self, market: BinaryMarket, evidence: Evidence) -> Forecast | None:
         key = f"{market.market_id}@{evidence.cutoff.isoformat()}"
@@ -593,7 +623,7 @@ class LLMForecaster:
         usage = response.usage
         cache_read = getattr(usage, "cache_read_input_tokens", None) or 0
         cache_write = getattr(usage, "cache_creation_input_tokens", None) or 0
-        usd = usage_usd(usage, self.model, batched)
+        usd = call_cost(self.client, usage, self.model, batched)
         self.calls.append(
             {
                 "market_id": market.market_id,

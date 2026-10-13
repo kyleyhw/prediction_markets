@@ -8,6 +8,19 @@ import { prefs } from './prefs.js';
 export { esc, fmt, raw, t, tp };
 
 export const detailed = () => prefs().level === 'detailed';
+
+// How to run your own copy with your own model or script (docs/models.md).
+export const GUIDE_URL = 'https://github.com/kyleyhw/prediction_markets/blob/master/docs/tutorials/run_your_own.md';
+
+// A refusal shown where it happened: when the reason is the model (none
+// set up, the demo cannot serve this country, today's demo allowance), the
+// way forward comes with it; anything else is shown as said.
+export function explain(el, err) {
+  if (!el) return;
+  if (['none', 'country_needed', 'region_blocked', 'used_up'].includes(err?.code)) {
+    el.innerHTML = `${esc(err.message)} <a href="#settings">${t('model.settings')}</a> · <a href="${esc(GUIDE_URL)}">${t('model.copy')}</a>`;
+  } else el.textContent = err?.message ?? String(err);
+}
 // Pick the rendering for the current reading level.
 export const level = (simple, full) => (detailed() ? full : simple);
 

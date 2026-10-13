@@ -534,17 +534,17 @@ def register_delivery(app: FastAPI, pool: ConnectionPool, settings: Settings) ->
         )
 
         def ask(convo: UUID | None, question: str) -> UUID:
-            paid = llmops.key_hint(pool, acting) is None
-            if paid and not settings.platform_pays:
-                raise channels.CannotAsk(
-                    "The assistant is not available in this workspace yet: "
-                    "no model key is set."
-                )
+            paid = not llmops.has_own(pool, acting)
+            if paid:
+                try:
+                    llmops.demo_check(pool, acting, settings)
+                except llmops.DemoUnavailable as exc:
+                    raise channels.CannotAsk(str(exc)) from None
             convo = convo or strategies.open_conversation(pool, acting)
             reserved = (
-                rescale(RESEARCH_RESERVE_USD, MODEL, settings.platform_model or MODEL)
-                if paid
-                else 0.0
+                0.0
+                if not paid or settings.demo_free
+                else rescale(RESEARCH_RESERVE_USD, MODEL, settings.demo_model)
             )
             try:
                 budgets.reserve(pool, acting, reserved, settings.platform_daily_usd)

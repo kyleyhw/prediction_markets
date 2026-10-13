@@ -9,7 +9,7 @@ import { api, send, session } from '../api.js';
 import { render } from '../main.js';
 import { jobsPanel } from '../work.js';
 import { BASELINE, colorOf, lineChart } from '../charts.js';
-import { after, detailed, empty, esc, fmt, head, raw, signed, strategyLabel, strategyName, strategySentence, t, table, term, tp } from '../ui.js';
+import { after, detailed, empty, esc, explain, fmt, head, raw, signed, strategyLabel, strategyName, strategySentence, t, table, term, tp } from '../ui.js';
 import { orderedDomains, stampIso } from './markets.js';
 
 // Settled markets needed to detect a two-point Brier edge at 5% with 80%
@@ -140,7 +140,7 @@ async function form(o) {
         await send('POST', 'backtests', body());
         status.textContent = tp('bt.form.queued');
         await render(false);
-      } catch (err) { status.textContent = err.message; button.disabled = false; }
+      } catch (err) { explain(status, err); button.disabled = false; }
     });
     estimate();
   });

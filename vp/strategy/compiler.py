@@ -24,7 +24,7 @@ from pydantic import BaseModel, ConfigDict, ValidationError
 
 from vp.domains import DOMAINS, Domain
 from vp.domains.pack import load as load_pack
-from vp.forecast.llm import resolve_model, usage_usd
+from vp.forecast.llm import call_cost, resolve_model
 from vp.strategy.spec import (
     KIND_NAMES,
     Caps,
@@ -271,7 +271,7 @@ def compile_spec(
             output_config={"format": {"type": "json_schema", "schema": SCHEMA}},
             messages=messages,
         )
-        cost += usage_usd(response.usage, model)
+        cost += call_cost(client, response.usage, model)
         tokens[0] += response.usage.input_tokens
         tokens[1] += response.usage.output_tokens
         if response.stop_reason == "refusal":

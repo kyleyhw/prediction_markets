@@ -289,7 +289,7 @@ def test_a_chat_pairs_on_the_page_then_asks_and_resets(
     )
     assert say("/ask what closes today?") == 200
     # No model key on this service: the chat is told, and nothing is queued.
-    assert "no model key" in replies()[-1]
+    assert "connect your own model" in replies()[-1]
     assert say("/reset") == 200 and replies()[-1].startswith("Started a new")
 
 

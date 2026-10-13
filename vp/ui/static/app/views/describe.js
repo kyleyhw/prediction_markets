@@ -5,7 +5,7 @@
 // #describe/<strategy id or new>/<conversation id>.
 import { api, send, session } from '../api.js';
 import { render } from '../main.js';
-import { after, detailed, empty, esc, fmt, head, t, tp } from '../ui.js';
+import { after, detailed, empty, esc, explain, fmt, head, t, tp } from '../ui.js';
 
 const DONE = new Set(['succeeded', 'failed', 'dead', 'cancelled']);
 
@@ -65,7 +65,7 @@ export default async function describe([target = 'new', conversationId] = []) {
         if (location.hash !== next) location.hash = next;
         else await render(false);
       } catch (e) {
-        status.textContent = e.message;
+        explain(status, e);
         document.querySelectorAll('#say button, [data-say]').forEach((b) => { b.disabled = false; });
       }
     };

@@ -112,10 +112,23 @@ class Settings:
     s3_access_key: str | None = field(default=None, repr=False)
     s3_secret_key: str | None = field(default=None, repr=False)
     cache_dir: Path | None = None
-    anthropic_api_key: str | None = field(default=None, repr=False)
-    gemini_api_key: str | None = field(default=None, repr=False)
+    # The free demo model (docs/models.md): one connection the operator
+    # sets, Gemini's free tier by default.
+    demo_provider: str = "gemini"
     demo_model: str = "gemini-3.1-flash-lite"
+    demo_api_key: str | None = field(default=None, repr=False)
+    demo_base_url: str | None = None
+    demo_free: bool = True
+    demo_daily_calls: int = 400
+    demo_workspace_daily_calls: int = 60
+    # The free tier's country rule: None applies it to Gemini's free tier
+    # only; True or False forces it (VP_DEMO_REGION_RULE).
+    demo_region_rule_set: bool | None = None
+    # Spending limit per day across all workspaces when the demo is paid.
     platform_daily_usd: float = 2.0
+    allow_private_model_urls: bool = False
+    # Your own copy: show the sign-in link on the page (no mail server).
+    show_sign_in_link: bool = False
     open_meteo_key: str | None = field(default=None, repr=False)
     master_key: str | None = field(default=None, repr=False)
     telemetry: Telemetry = Telemetry.NONE
@@ -126,16 +139,26 @@ class Settings:
     metrics_dir: Path | None = None
 
     @property
-    def platform_pays(self) -> bool:
-        """Whether the platform has a model key of its own to pay with: the
-        demo model's, or Anthropic's (docs/models.md)."""
-        return bool(self.gemini_api_key or self.anthropic_api_key)
+    def has_demo(self) -> bool:
+        """Whether a demo model is configured (its key, if it needs one)."""
+        from vp.llm import PROVIDERS
+
+        p = PROVIDERS[self.demo_provider]
+        return bool(self.demo_api_key) or not p.needs_key
 
     @property
     def platform_model(self) -> str | None:
-        """The model the platform pays for when it fixes one: the demo model
-        whenever its key is set; None leaves Claude's tiers to decide."""
-        return self.demo_model if self.gemini_api_key else None
+        """The demo's model when there is a demo, else None."""
+        return self.demo_model if self.has_demo else None
+
+    @property
+    def demo_region_rule(self) -> bool:
+        """Whether the free tier's country rule applies: to Gemini's free
+        tier (docs/models.md), unless the operator says otherwise; a copy's
+        own model has none."""
+        if self.demo_region_rule_set is not None:
+            return self.demo_region_rule_set
+        return self.demo_provider == "gemini" and self.demo_free
 
     @property
     def store(self) -> str:
@@ -208,10 +231,27 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
         s3_access_key=_optional(source, "S3_ACCESS_KEY"),
         s3_secret_key=_optional(source, "S3_SECRET_KEY"),
         cache_dir=Path(c) if (c := _optional(source, "CACHE_DIR")) else None,
-        anthropic_api_key=_optional(source, "ANTHROPIC_API_KEY"),
-        gemini_api_key=_optional(source, "GEMINI_API_KEY"),
+        demo_provider=_optional(source, "DEMO_PROVIDER") or "gemini",
         demo_model=_optional(source, "DEMO_MODEL") or "gemini-3.1-flash-lite",
+        demo_api_key=_optional(source, "DEMO_API_KEY"),
+        demo_base_url=_optional(source, "DEMO_BASE_URL"),
+        demo_free=_flag(source, "DEMO_FREE", True),
+        demo_daily_calls=int(_amount(source, "DEMO_DAILY_CALLS", 400)),
+        demo_workspace_daily_calls=int(
+            _amount(source, "DEMO_WORKSPACE_DAILY_CALLS", 60)
+        ),
         platform_daily_usd=_amount(source, "PLATFORM_DAILY_USD", 2.0),
+        show_sign_in_link=_flag(source, "SHOW_SIGN_IN_LINK", False),
+        demo_region_rule_set=(
+            _flag(source, "DEMO_REGION_RULE", False)
+            if _optional(source, "DEMO_REGION_RULE")
+            else None
+        ),
+        allow_private_model_urls=_flag(
+            source,
+            "ALLOW_PRIVATE_MODEL_URLS",
+            environment is not Environment.PRODUCTION,
+        ),
         open_meteo_key=_optional(source, "OPEN_METEO_KEY"),
         master_key=_optional(source, "MASTER_KEY"),
         telemetry=_telemetry(source),
@@ -226,12 +266,17 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
             f"{PREFIX}STORE is s3:// but {PREFIX}S3_ACCESS_KEY or "
             f"{PREFIX}S3_SECRET_KEY is missing"
         )
-    from vp.forecast.llm import PRICES
+    from vp.llm import PROVIDERS
 
-    if settings.demo_model not in PRICES:
+    demo = PROVIDERS.get(settings.demo_provider)
+    if demo is None:
         raise ConfigError(
-            f"{PREFIX}DEMO_MODEL {settings.demo_model!r} has no recorded price"
+            f"{PREFIX}DEMO_PROVIDER must be one of {', '.join(PROVIDERS)}"
         )
+    if settings.show_sign_in_link and settings.is_production:
+        raise ConfigError(f"{PREFIX}SHOW_SIGN_IN_LINK is for your own copy only")
+    if demo.kind == "command" and settings.is_production:
+        raise ConfigError("a program as the demo model is for your own copy only")
     if not settings.store.startswith(("s3://", "file:")):
         raise ConfigError(f"{PREFIX}STORE must start with file: or s3://")
     if settings.is_production:
@@ -248,6 +293,17 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
 def _optional(env: Mapping[str, str], name: str) -> str | None:
     """Return an optional setting, or None when unset or blank."""
     return env.get(PREFIX + name, "").strip() or None
+
+
+def _flag(env: Mapping[str, str], name: str, default: bool) -> bool:
+    raw = (_optional(env, name) or "").lower()
+    if not raw:
+        return default
+    if raw in ("1", "true", "yes", "on"):
+        return True
+    if raw in ("0", "false", "no", "off"):
+        return False
+    raise ConfigError(f"{PREFIX}{name} must be true or false")
 
 
 def _amount(env: Mapping[str, str], name: str, default: float) -> float:

@@ -264,16 +264,23 @@ per-strategy P&L views. The domains will open up beyond CS2, weather and
 EPL; do not hard-code the three anywhere new, and the repository
 description no longer names them.
 
-**Models (2026-10-13, `docs/models.md`, F19):** without an own key the
-platform pays for a demo model, Gemini 3.1 Flash-Lite on Google's paid
-tier (`VP_GEMINI_API_KEY`; the free tier is ruled out by its terms),
-reached through `vp/forecast/gemini.py`, a client with the Anthropic SDK's
-call shape, so the forecaster, compiler and research assistant run
-unchanged; `resolve_model(client, model)` gives the model that actually
-runs. Platform spend is capped per workspace (monthly) and across all
-workspaces per day (`VP_PLATFORM_DAILY_USD`, migration 0031). An own
-Anthropic key may be set to run any priced Claude model (Fable 5.1
-included). Not yet run against Google's API.
+**Models (2026-10-13, `docs/models.md`, F19, F9 amended):** any model
+plugs in. `vp/llm/` is the only code that talks to providers:
+`connect(provider, model, key, base_url)` gives a client with the
+Anthropic SDK's call shape (Anthropic, Gemini over REST, any
+OpenAI-compatible server, or a program of your own on your own copy), so
+the forecaster, compiler and research assistant run unchanged, and
+`resolve_model(client, model)` gives the model that actually runs. A
+workspace connects its own model (`/api/model`, Settings); without one the
+free demo answers: Gemini's free tier (`VP_DEMO_*` settings), the owner
+pays nothing, within a daily allowance of calls (migration 0032), only in
+`FREE_TIER_COUNTRIES` by the country a person states in Settings; others
+get a 451 explaining their two ways forward, their own model or their own
+copy (`deploy/run-your-own.sh`, `docs/tutorials/run_your_own.md`). A
+typed model address must be public https on the hosted platform
+(`check_address`). Unpriced models cost $0 here (their provider bills).
+Not yet run against Google's API; the OpenAI-compatible path ran end to
+end against llama.cpp with a small Qwen model.
 
 What exists, in order of the data flow: the Polymarket client and data
 layer (`vp/venues`, `vp/markets`, `vp/domains`); forecasters behind a

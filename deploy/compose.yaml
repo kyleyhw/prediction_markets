@@ -29,12 +29,24 @@ x-app: &app
     VP_S3_SECRET_KEY: ${VP_S3_SECRET_KEY:-vp-minio-dev-secret}  # pragma: allowlist secret
     VP_METRICS_TOKEN: ${VP_METRICS_TOKEN:-vp-metrics-dev}  # pragma: allowlist secret
     VP_MASTER_KEY: ${VP_MASTER_KEY:-}
-    VP_ANTHROPIC_API_KEY: ${VP_ANTHROPIC_API_KEY:-}
-    VP_GEMINI_API_KEY: ${VP_GEMINI_API_KEY:-}
-    VP_PLATFORM_DAILY_USD: ${VP_PLATFORM_DAILY_USD:-2}
+    # The model that answers people without one of their own (docs/models.md):
+    # Gemini's free tier by default; on your own copy, whatever you choose
+    # (deploy/run-your-own.sh writes these).
+    VP_DEMO_PROVIDER: ${VP_DEMO_PROVIDER:-gemini}
+    VP_DEMO_MODEL: ${VP_DEMO_MODEL:-gemini-3.1-flash-lite}
+    VP_DEMO_API_KEY: ${VP_DEMO_API_KEY:-}
+    VP_DEMO_BASE_URL: ${VP_DEMO_BASE_URL:-}
+    VP_DEMO_FREE: ${VP_DEMO_FREE:-true}
+    VP_SHOW_SIGN_IN_LINK: ${VP_SHOW_SIGN_IN_LINK:-false}
     VP_OPEN_METEO_KEY: ${VP_OPEN_METEO_KEY:-}
   volumes:
     - data:/data
+    # Your own model program, if you use one (docs/tutorials/run_your_own.md).
+    - ${VP_MODEL_DIR:-../examples}:/models:ro
+  # A model on this computer (Ollama, LM Studio) is reached from inside the
+  # containers as host.docker.internal.
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
   depends_on:
     setup:
       condition: service_completed_successfully
@@ -106,8 +118,10 @@ services:
     # One process serves about 35 requests a second of the dashboard's mix;
     # more share the port (tests/reports/phase13_platform.md).
     command: ["serve", "--host", "0.0.0.0", "--port", "8000", "--workers", "${VP_WEB_WORKERS:-4}"]
+    # This computer only, unless VP_WEB_BIND says otherwise: your own copy
+    # shows sign-in links on the page.
     ports:
-      - "8000:8000"
+      - "${VP_WEB_BIND:-127.0.0.1}:8000:8000"
 
   # Worker pools per kind, sized independently: interactive work never
   # waits behind a dataset build, and the minute scheduler never waits

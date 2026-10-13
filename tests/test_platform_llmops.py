@@ -10,6 +10,7 @@ import threading
 import time
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 from uuid import uuid4
 
 import pytest
@@ -38,14 +39,29 @@ def test_an_own_key_is_the_workspace_s_alone(
     app_pool, pg_owner, two_workspaces
 ) -> None:
     ada, bob = two_workspaces["a"], two_workspaces["b"]
-    assert llmops.store_key(app_pool, ada, SECRET, MASTER) == "…" + SECRET[-4:]
-    assert llmops.own_key(app_pool, ada, MASTER) == (SECRET, None)
-    assert llmops.own_key(app_pool, bob, MASTER) is None
+    hint = llmops.store_connection(
+        app_pool,
+        ada,
+        provider="anthropic",
+        model=None,
+        key=SECRET,
+        base_url=None,
+        master_key=MASTER,
+    )
+    assert hint == "…" + SECRET[-4:]
+    assert llmops.own_connection(app_pool, ada, MASTER) == {
+        "provider": "anthropic",
+        "model": None,
+        "base_url": None,
+        "key": SECRET,
+    }
+    assert llmops.own_connection(app_pool, bob, MASTER) is None
     (stored,) = pg_owner.execute(
         "select ciphertext from provider_keys where workspace_id = %s", (ada.workspace,)
     ).fetchone()
     assert SECRET.encode() not in bytes(stored)
-    assert llmops.delete_key(app_pool, ada) and llmops.key_hint(app_pool, ada) is None
+    assert llmops.delete_connection(app_pool, ada)
+    assert llmops.connection(app_pool, ada) is None
 
 
 @needs_db
@@ -135,12 +151,26 @@ def test_a_model_backtest_charges_its_tokens_to_the_payer(
     assert budgets.standing(app_pool, ada).charged_usd == 0
 
 
+def _say_country(pool, principal, code: str | None) -> None:
+    from psycopg.types.json import Jsonb
+
+    from vp.platform.db import tenant_session
+
+    with pool.connection() as conn, tenant_session(conn, principal):
+        conn.execute(
+            "insert into user_settings (user_id, settings) "
+            "values (vp_current_user_id(), %s) on conflict (user_id) do "
+            "update set settings = excluded.settings",
+            (Jsonb({"country": code}),),
+        )
+
+
 @needs_db
-def test_routes_own_key_with_its_model_then_demo_then_none(
+def test_any_provider_connects_and_the_demo_answers_the_rest(
     app_pool, two_workspaces
 ) -> None:
-    """docs/models.md: an own key runs its owner's choice; without one the
-    platform pays for the demo model; with no key at all, nothing runs."""
+    """docs/models.md: a workspace's own model from any provider answers its
+    calls; without one the free demo does, for people where it may."""
     from vp.forecast.llm import resolve_model
     from vp.platform.config import Settings
 
@@ -148,27 +178,126 @@ def test_routes_own_key_with_its_model_then_demo_then_none(
     demo = Settings(
         database_url="unused",
         master_key=MASTER,
-        gemini_api_key="g" * 39,  # pragma: allowlist secret
+        demo_api_key="g" * 39,  # pragma: allowlist secret
     )
-    assert not llmops.set_key_model(app_pool, ada, "claude-fable-5-1"), "no key yet"
-    llmops.store_key(app_pool, ada, SECRET, MASTER)
-    with pytest.raises(ValueError):
-        llmops.set_key_model(app_pool, ada, "gemini-3.1-flash-lite")
+    for bad in (
+        {"provider": "groq", "model": None, "key": SECRET},  # no model named
+        {"provider": "groq", "model": "llama", "key": "short"},
+        {
+            "provider": "custom",
+            "model": "m",
+            "key": None,
+            "base_url": "https://10.1.1.1/v1",
+        },
+        {"provider": "ollama", "model": "qwen", "key": None},  # your own copy only
+        {"provider": "command", "model": "m", "key": None},
+    ):
+        with pytest.raises(ValueError):
+            kw: dict[str, Any] = {"base_url": None, "master_key": MASTER, **bad}
+            llmops.store_connection(
+                app_pool,
+                ada,
+                **kw,
+            )
+    llmops.store_connection(
+        app_pool,
+        ada,
+        provider="groq",
+        model="llama-3.3-70b",
+        key=SECRET,
+        base_url="https://ignored.example",  # a preset keeps its own address
+        master_key=MASTER,
+    )
+    assert llmops.connection(app_pool, ada) == {
+        "provider": "groq",
+        "model": "llama-3.3-70b",
+        "base_url": None,
+        "hint": "…" + SECRET[-4:],
+    }
     client, paid = llmops.client_for(app_pool, ada, demo)
-    assert paid == "own_key" and resolve_model(client, "claude-opus-5") == (
-        "claude-opus-5"
-    ), "no choice: the strategy's tier decides"
-    assert llmops.set_key_model(app_pool, ada, "claude-fable-5-1")
-    assert llmops.own_key(app_pool, ada, MASTER) == (SECRET, "claude-fable-5-1")
-    client, paid = llmops.client_for(app_pool, ada, demo)
-    assert resolve_model(client, "claude-opus-5") == "claude-fable-5-1"
+    assert (
+        paid == "own_key" and resolve_model(client, "claude-opus-5") == "llama-3.3-70b"
+    )
+    # A second connection replaces the first: one own model per workspace.
+    llmops.store_connection(
+        app_pool,
+        ada,
+        provider="custom",
+        model="my-model",
+        key=None,
+        base_url="https://8.8.8.8/v1",
+        master_key=MASTER,
+    )
+    assert (llmops.connection(app_pool, ada) or {}).get("provider") == "custom"
+    # Bob has none: the demo, once he says where he is, and only there.
+    _say_country(app_pool, bob, None)
+    with pytest.raises(llmops.DemoUnavailable) as caught:
+        llmops.client_for(app_pool, bob, demo)
+    assert caught.value.code == "country_needed"
+    _say_country(app_pool, bob, "DE")
+    with pytest.raises(llmops.DemoUnavailable) as caught:
+        llmops.client_for(app_pool, bob, demo)
+    assert caught.value.code == "region_blocked" and "own copy" in str(caught.value)
+    _say_country(app_pool, bob, "US")
     client, paid = llmops.client_for(app_pool, bob, demo)
-    assert paid == "platform"
+    assert paid == "platform" and client.free
     assert resolve_model(client, "claude-opus-5") == "gemini-3.1-flash-lite"
     assert client.messages.batches is None, "the demo model has no batch API"
-    with pytest.raises(llmops.KeysUnavailable):
+    # A copy whose demo is its own model has no country rule.
+    local = Settings(
+        database_url="unused",
+        demo_provider="custom",
+        demo_model="qwen",
+        demo_base_url="http://127.0.0.1:9/v1",
+        allow_private_model_urls=True,
+    )
+    _say_country(app_pool, bob, "DE")
+    assert llmops.client_for(app_pool, bob, local)[1] == "platform"
+    with pytest.raises(llmops.DemoUnavailable):
         llmops.client_for(app_pool, bob, Settings(database_url="unused"))
-    llmops.delete_key(app_pool, ada)
+    llmops.delete_connection(app_pool, ada)
+
+
+@needs_db
+def test_the_demo_allowance_is_counted_per_workspace_and_platform(
+    app_pool, pg_owner, two_workspaces
+) -> None:
+    from vp.platform.config import Settings
+
+    ada, bob = two_workspaces["a"], two_workspaces["b"]
+    pg_owner.execute("delete from demo_calls")
+    tight = Settings(
+        database_url="unused",
+        demo_api_key="g" * 39,  # pragma: allowlist secret
+        demo_workspace_daily_calls=2,
+        demo_daily_calls=3,
+    )
+    for who in (ada, bob):
+        _say_country(app_pool, who, "IN")
+    assert llmops.demo_check(app_pool, ada, tight) == 2
+    llmops.take_demo_call(app_pool, ada, tight)
+    llmops.take_demo_call(app_pool, ada, tight)
+    with pytest.raises(llmops.DemoUnavailable) as caught:
+        llmops.take_demo_call(app_pool, ada, tight)  # Ada's two are gone
+    assert caught.value.code == "used_up"
+    llmops.take_demo_call(app_pool, bob, tight)
+    with pytest.raises(llmops.DemoUnavailable):
+        llmops.demo_check(app_pool, bob, tight)  # the platform's three are gone
+    # The count is written only through the function, never directly.
+    with pytest.raises(Exception, match="permission denied"):
+        with app_pool.connection() as conn:
+            from vp.platform.db import tenant_session
+
+            with tenant_session(conn, bob):
+                conn.execute("delete from demo_calls")
+    # Each call through a demo client takes one before it is made.
+    pg_owner.execute("delete from demo_calls")
+    client, _ = llmops.client_for(app_pool, ada, tight)
+    client._client.messages.create = lambda **k: "answered"  # no network
+    client.messages._messages = client._client.messages
+    assert client.messages.create(model="m", messages=[], max_tokens=1) == "answered"
+    assert llmops.demo_check(app_pool, ada, tight) == 1
+    pg_owner.execute("delete from demo_calls")
 
 
 @needs_db

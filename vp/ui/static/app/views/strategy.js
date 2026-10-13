@@ -7,7 +7,7 @@ import { api, send, session } from '../api.js';
 import { commentsPanel } from '../comments.js';
 import { render } from '../main.js';
 import { jobsPanel } from '../work.js';
-import { after, detailed, empty, esc, fmt, head, signed, t, table, term, tp } from '../ui.js';
+import { after, detailed, empty, esc, explain, fmt, head, signed, t, table, term, tp } from '../ui.js';
 import { full as paperFull, simple as paperSimple } from './strategies.js';
 
 function previewHtml(p) {
@@ -180,7 +180,7 @@ export default async function strategy([id]) {
       if (b.dataset.act === 'backtest') await send('POST', `strategies/${id}/backtest`, {});
       else await send('POST', `strategies/${id}/${b.dataset.act}`);
       await render(false);
-    } catch (e) { status.textContent = e.message; b.disabled = false; }
+    } catch (e) { explain(status, e); b.disabled = false; }
   })));
   return h;
 }

@@ -14,11 +14,19 @@ import pytest
 
 from tests.test_forecast import EPL
 from vp.forecast.evidence import Evidence
-from vp.forecast.gemini import API, DEMO_MODEL, GeminiClient, reply
-from vp.forecast.llm import PRICES, LLMForecaster, rescale, resolve_model
+from vp.forecast.llm import (
+    PRICES,
+    LLMForecaster,
+    call_cost,
+    rescale,
+    resolve_model,
+)
+from vp.llm.gemini import API, GeminiClient, reply
+from vp.llm.shapes import Usage
 from vp.markets.store import write_markets
 
 KEY = "g" * 39  # pragma: allowlist secret
+DEMO_MODEL = "gemini-3.1-flash-lite"
 USAGE = {"promptTokenCount": 1000, "candidatesTokenCount": 80, "thoughtsTokenCount": 20}
 
 
@@ -55,7 +63,7 @@ def test_a_forecast_runs_its_tool_round_on_the_demo_model(tmp_path: Path) -> Non
     answer = {"text": json.dumps({"probability": 0.62, "rationale": "form"})}
     seen: list[httpx.Request] = []
     client = GeminiClient(
-        KEY, http=fake([(200, turn(call)), (200, turn(answer))], seen)
+        KEY, DEMO_MODEL, http=fake([(200, turn(call)), (200, turn(answer))], seen)
     )
     llm = LLMForecaster(client=client, batch=True)  # asks Opus; runs the demo
     assert llm.model == DEMO_MODEL and llm.batch is False
@@ -89,7 +97,9 @@ def test_ids_round_trip_and_errors_are_marked() -> None:
     seen: list[httpx.Request] = []
     call = {"functionCall": {"id": "c7", "name": "f", "args": {}}}
     client = GeminiClient(
-        KEY, http=fake([(200, turn(call)), (200, turn({"text": "ok"}))], seen)
+        KEY,
+        DEMO_MODEL,
+        http=fake([(200, turn(call)), (200, turn({"text": "ok"}))], seen),
     )
     first = client.messages.create(
         model="claude-opus-5",
@@ -140,12 +150,14 @@ def test_overload_is_retried_and_a_refusal_is_not() -> None:
     waits: list[float] = []
     seen: list[httpx.Request] = []
     answers = [(429, {}), (503, {}), (200, turn({"text": "ok"}))]
-    client = GeminiClient(KEY, http=fake(answers, seen), sleep=waits.append)
+    client = GeminiClient(KEY, DEMO_MODEL, http=fake(answers, seen), sleep=waits.append)
     got = client.messages.create(
         model=DEMO_MODEL, max_tokens=10, messages=[{"role": "user", "content": "hi"}]
     )
     assert got.content[0].text == "ok" and len(waits) == 2
-    client = GeminiClient(KEY, http=fake([(400, {"error": "bad schema"})], seen))
+    client = GeminiClient(
+        KEY, DEMO_MODEL, http=fake([(400, {"error": "bad schema"})], seen)
+    )
     with pytest.raises(RuntimeError, match="400") as caught:
         client.messages.create(
             model=DEMO_MODEL, max_tokens=10, messages=[{"role": "user", "content": "x"}]
@@ -155,9 +167,11 @@ def test_overload_is_retried_and_a_refusal_is_not() -> None:
 
 def test_model_resolution_and_repricing(monkeypatch) -> None:
     assert resolve_model(object(), "claude-opus-5") == "claude-opus-5"
-    assert resolve_model(GeminiClient(KEY), "claude-opus-5") == DEMO_MODEL
+    assert resolve_model(GeminiClient(KEY, DEMO_MODEL), "claude-opus-5") == DEMO_MODEL
     # An Opus estimate at the demo model's prices: the larger ratio, output's.
     assert rescale(1.0, "claude-opus-5", DEMO_MODEL) == pytest.approx(1.5 / 25)
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     with pytest.raises(RuntimeError, match="GEMINI_API_KEY"):
-        GeminiClient()
+        LLMForecaster(model=DEMO_MODEL)
+    free = GeminiClient(KEY, DEMO_MODEL, free=True)
+    assert call_cost(free, Usage(1000, 1000), DEMO_MODEL) == 0.0

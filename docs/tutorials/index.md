@@ -20,6 +20,10 @@ they are kept in step with it.
 | 6 | [Read your own record](day6_record.md): health, risk and readiness | Strategies → Risk |
 | 7 | [Compare and share](day7_share.md) | Leaderboards, sharing |
 
+If the app says its free demo model is not available where you are,
+[run your own copy with your own model](run_your_own.md): the same app,
+free, on your computer.
+
 Two reading levels run through everything: **Simple** says things in
 sentences, and **Detailed** adds the numbers, formulas and tables. You can
 switch at any time in Settings. Start in Simple.

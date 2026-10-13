@@ -1,12 +1,13 @@
-"""The demo model: Google's Gemini behind the Anthropic SDK's call shape.
+"""Google's Gemini behind the platform's one call shape (docs/models.md).
 
 The forecaster, the strategy compiler and the research assistant are
 written against the subset of the Anthropic SDK they use:
 ``messages.create`` (and ``beta.messages.create``) with a system prompt,
 tools, tool results and a JSON-schema answer, answered by content blocks,
 a stop reason and token usage. This client takes those arguments, calls
-Gemini's ``generateContent`` over REST and answers in the same shape, so
-the callers run unchanged on the platform's demo model (docs/models.md).
+Gemini's ``generateContent`` over REST and answers in the same shape
+(`vp/llm/shapes.py`), so the callers run unchanged on it; it is the
+platform's free demo model by default.
 
 Choices, each forced by the API (Google's documentation and the request
 its official SDK sends, read 2026-10-13):
@@ -30,64 +31,31 @@ version the market-data service needs.
 
 from __future__ import annotations
 
-import os
 import random
 import time
 import uuid
 from collections.abc import Callable
-from dataclasses import dataclass, field
 from types import SimpleNamespace
 from typing import Any
 
 import httpx
 
-DEMO_MODEL = "gemini-3.1-flash-lite"
+from vp.llm.shapes import (
+    Block,
+    Blocks,
+    ModelError,
+    QuotaExhausted,
+    Reply,
+    Usage,
+    kind_of,
+    text_of,
+)
+
 API = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 RETRY_STATUS = frozenset({429, 500, 502, 503, 504})
 REFUSALS = frozenset(
     {"SAFETY", "PROHIBITED_CONTENT", "BLOCKLIST", "SPII", "RECITATION"}
 )
-
-
-@dataclass
-class Usage:
-    input_tokens: int
-    output_tokens: int
-    cache_read_input_tokens: int = 0
-    cache_creation_input_tokens: int = 0
-
-
-@dataclass
-class Block:
-    type: str
-    text: str = ""
-    id: str = ""
-    name: str = ""
-    input: dict[str, Any] = field(default_factory=dict)
-    call_id: str | None = None  # Gemini's own id for a function call, if any
-
-
-class Blocks(list):
-    """A reply's blocks, with the model's turn as Gemini sent it."""
-
-    raw: dict[str, Any]
-
-
-@dataclass
-class Reply:
-    content: Blocks
-    stop_reason: str
-    usage: Usage
-    model: str
-
-
-def _text(content: Any) -> str:
-    if isinstance(content, str):
-        return content
-    return "".join(
-        b.get("text", "") if isinstance(b, dict) else getattr(b, "text", "")
-        for b in content
-    )
 
 
 def contents(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -109,10 +77,9 @@ def contents(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
             continue
         parts: list[dict[str, Any]] = []
         for b in content:
-            kind = b.get("type") if isinstance(b, dict) else getattr(b, "type", None)
-            if kind == "tool_result":
+            if kind_of(b) == "tool_result":
                 name, call_id = calls.get(b["tool_use_id"], ("unknown", None))
-                answer = _text(b.get("content", ""))
+                answer = text_of(b.get("content", ""))
                 fr: dict[str, Any] = {
                     "name": name,
                     "response": {"error" if b.get("is_error") else "result": answer},
@@ -121,7 +88,7 @@ def contents(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
                     fr["id"] = call_id
                 parts.append({"functionResponse": fr})
             else:
-                parts.append({"text": _text([b])})
+                parts.append({"text": text_of([b])})
         out.append({"role": role, "parts": parts})
     return out
 
@@ -136,7 +103,7 @@ def request(
     """The generateContent body for an Anthropic-shaped call."""
     body: dict[str, Any] = {"contents": contents(messages)}
     if system:
-        body["systemInstruction"] = {"parts": [{"text": _text(system)}]}
+        body["systemInstruction"] = {"parts": [{"text": text_of(system)}]}
     if tools:
         body["tools"] = [
             {
@@ -226,34 +193,35 @@ class Messages:
         output_config: dict[str, Any] | None = None,
         **_ignored: Any,  # betas, fallbacks, thinking: Anthropic's own
     ) -> Reply:
-        name = model if model.startswith("gemini") else self._client.model
+        name = self._client.model
         body = request(messages, max_tokens, system, tools, output_config)
         return reply(self._client.post(name, body), name)
 
 
 class GeminiClient:
-    """An ``anthropic.Anthropic``-shaped client on Gemini.
+    """A client on Gemini in the platform's call shape.
 
     Args:
-        api_key: Google's key; ``GEMINI_API_KEY`` from the environment when
-            omitted, as the Anthropic SDK reads its own.
+        api_key: Google's key.
         model: the model every call runs, whatever the caller asks for.
+        free: calls are on the free tier, so they cost nothing.
         http: an ``httpx.Client``; a transport-faked one in tests.
     """
 
     def __init__(
         self,
-        api_key: str | None = None,
-        model: str = DEMO_MODEL,
+        api_key: str | None,
+        model: str,
+        free: bool = False,
         http: httpx.Client | None = None,
         max_retries: int = 6,
         sleep: Callable[[float], None] = time.sleep,
     ) -> None:
-        key = api_key or os.environ.get("GEMINI_API_KEY")
-        if not key:
-            raise RuntimeError("no Gemini key: set GEMINI_API_KEY")
-        self._key = key
+        if not api_key:
+            raise ModelError("no Gemini key: set GEMINI_API_KEY")
+        self._key = api_key
         self.model = model
+        self.free = free
         self._http = http or httpx.Client(timeout=120.0)
         self._retries = max_retries
         self._sleep = sleep
@@ -277,10 +245,10 @@ class GeminiClient:
             else:
                 if r.status_code < 400:
                     return r.json()
+                if r.status_code == 429 and attempt == self._retries:
+                    raise QuotaExhausted("Google's quota for this model is used up")
                 if r.status_code not in RETRY_STATUS or attempt == self._retries:
-                    raise RuntimeError(
-                        f"Gemini answered {r.status_code}: {r.text[:300]}"
-                    )
+                    raise ModelError(f"Gemini answered {r.status_code}: {r.text[:300]}")
                 wait = r.headers.get("retry-after")
                 if wait and wait.isdigit():
                     self._sleep(min(float(wait), 60.0))
