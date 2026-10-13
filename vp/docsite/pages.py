@@ -42,7 +42,15 @@ DOC_GROUPS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ),
     (
         "Running it",
-        ("architecture", "platform", "scaling", "runbook", "security", "venues"),
+        (
+            "architecture",
+            "platform",
+            "models",
+            "scaling",
+            "runbook",
+            "security",
+            "venues",
+        ),
     ),
     ("About the project", ("site", "usability", "ui", "provenance", "vibe_trading")),
 )

@@ -113,6 +113,9 @@ class Settings:
     s3_secret_key: str | None = field(default=None, repr=False)
     cache_dir: Path | None = None
     anthropic_api_key: str | None = field(default=None, repr=False)
+    gemini_api_key: str | None = field(default=None, repr=False)
+    demo_model: str = "gemini-3.1-flash-lite"
+    platform_daily_usd: float = 2.0
     open_meteo_key: str | None = field(default=None, repr=False)
     master_key: str | None = field(default=None, repr=False)
     telemetry: Telemetry = Telemetry.NONE
@@ -121,6 +124,18 @@ class Settings:
     # Set by `vp serve --workers` for its processes, under the name
     # prometheus_client itself reads; not a setting anyone configures.
     metrics_dir: Path | None = None
+
+    @property
+    def platform_pays(self) -> bool:
+        """Whether the platform has a model key of its own to pay with: the
+        demo model's, or Anthropic's (docs/models.md)."""
+        return bool(self.gemini_api_key or self.anthropic_api_key)
+
+    @property
+    def platform_model(self) -> str | None:
+        """The model the platform pays for when it fixes one: the demo model
+        whenever its key is set; None leaves Claude's tiers to decide."""
+        return self.demo_model if self.gemini_api_key else None
 
     @property
     def store(self) -> str:
@@ -194,6 +209,9 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
         s3_secret_key=_optional(source, "S3_SECRET_KEY"),
         cache_dir=Path(c) if (c := _optional(source, "CACHE_DIR")) else None,
         anthropic_api_key=_optional(source, "ANTHROPIC_API_KEY"),
+        gemini_api_key=_optional(source, "GEMINI_API_KEY"),
+        demo_model=_optional(source, "DEMO_MODEL") or "gemini-3.1-flash-lite",
+        platform_daily_usd=_amount(source, "PLATFORM_DAILY_USD", 2.0),
         open_meteo_key=_optional(source, "OPEN_METEO_KEY"),
         master_key=_optional(source, "MASTER_KEY"),
         telemetry=_telemetry(source),
@@ -207,6 +225,12 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
         raise ConfigError(
             f"{PREFIX}STORE is s3:// but {PREFIX}S3_ACCESS_KEY or "
             f"{PREFIX}S3_SECRET_KEY is missing"
+        )
+    from vp.forecast.llm import PRICES
+
+    if settings.demo_model not in PRICES:
+        raise ConfigError(
+            f"{PREFIX}DEMO_MODEL {settings.demo_model!r} has no recorded price"
         )
     if not settings.store.startswith(("s3://", "file:")):
         raise ConfigError(f"{PREFIX}STORE must start with file: or s3://")
@@ -224,6 +248,17 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
 def _optional(env: Mapping[str, str], name: str) -> str | None:
     """Return an optional setting, or None when unset or blank."""
     return env.get(PREFIX + name, "").strip() or None
+
+
+def _amount(env: Mapping[str, str], name: str, default: float) -> float:
+    raw = _optional(env, name)
+    try:
+        value = float(raw) if raw else default
+    except ValueError:
+        raise ConfigError(f"{PREFIX}{name} must be a number of dollars") from None
+    if value < 0:
+        raise ConfigError(f"{PREFIX}{name} must not be negative")
+    return value
 
 
 def _telemetry(env: Mapping[str, str]) -> Telemetry:

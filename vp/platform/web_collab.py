@@ -451,6 +451,7 @@ def register_delivery(app: FastAPI, pool: ConnectionPool, settings: Settings) ->
     """Channels, pairing, inbound hooks, briefs and outgoing webhooks."""
     from fastapi.concurrency import run_in_threadpool
 
+    from vp.forecast.llm import rescale
     from vp.platform import (
         briefs,
         budgets,
@@ -463,6 +464,7 @@ def register_delivery(app: FastAPI, pool: ConnectionPool, settings: Settings) ->
     from vp.platform.db import tenant_session
     from vp.platform.principal import AuthMethod, Principal, Role
     from vp.platform.research import RESEARCH_RESERVE_USD
+    from vp.strategy.agent import MODEL
 
     @app.get("/api/channels")
     def get_channels(principal: Reader) -> list[dict[str, Any]]:
@@ -533,15 +535,19 @@ def register_delivery(app: FastAPI, pool: ConnectionPool, settings: Settings) ->
 
         def ask(convo: UUID | None, question: str) -> UUID:
             paid = llmops.key_hint(pool, acting) is None
-            if paid and not settings.anthropic_api_key:
+            if paid and not settings.platform_pays:
                 raise channels.CannotAsk(
                     "The assistant is not available in this workspace yet: "
                     "no model key is set."
                 )
             convo = convo or strategies.open_conversation(pool, acting)
-            reserved = RESEARCH_RESERVE_USD if paid else 0.0
+            reserved = (
+                rescale(RESEARCH_RESERVE_USD, MODEL, settings.platform_model or MODEL)
+                if paid
+                else 0.0
+            )
             try:
-                budgets.reserve(pool, acting, reserved)
+                budgets.reserve(pool, acting, reserved, settings.platform_daily_usd)
             except budgets.OverBudget as exc:
                 raise channels.CannotAsk(str(exc)) from None
             jobs.enqueue(

@@ -221,9 +221,7 @@ def compile_turn(ctx: JobContext) -> dict[str, Any]:
         current = strategies.latest(
             svc.pool, ctx.principal, UUID(convo["strategy_id"])
         )["spec"]
-    client, paid_by = llmops.client_for(
-        svc.pool, ctx.principal, svc.settings.anthropic_api_key, svc.settings.master_key
-    )
+    client, paid_by = llmops.client_for(svc.pool, ctx.principal, svc.settings)
     ctx.progress(0.1, "reading your description")
     out = compile_spec(
         words,
@@ -274,9 +272,7 @@ def research_message(ctx: JobContext) -> dict[str, Any]:
     words = str(p["words"])
     convo = strategies.conversation(svc.pool, ctx.principal, convo_id)
     past, tokens, turns = research.history(convo)
-    client, paid_by = llmops.client_for(
-        svc.pool, ctx.principal, svc.settings.anthropic_api_key, svc.settings.master_key
-    )
+    client, paid_by = llmops.client_for(svc.pool, ctx.principal, svc.settings)
     svc.refresh(list(DOMAINS))
     tools = research.PlatformToolBox(
         svc.shared.root,
@@ -361,12 +357,7 @@ def strategy_backtest(ctx: JobContext) -> dict[str, Any]:
 
     uses_model = model_backed(spec)
     if uses_model:
-        client, paid_by = llmops.client_for(
-            svc.pool,
-            ctx.principal,
-            svc.settings.anthropic_api_key,
-            svc.settings.master_key,
-        )
+        client, paid_by = llmops.client_for(svc.pool, ctx.principal, svc.settings)
         llm = {"client": client, "batch": bool(p.get("batch", True))}
     max_markets = p.get("max_markets") or (LLM_SAMPLE if uses_model else None)
     made: list[Forecaster] = []
@@ -473,12 +464,7 @@ def backtest(ctx: JobContext) -> dict[str, Any]:
         llm: dict[str, Any] = {}
         paid_by = "platform"
         if "llm" in config.forecasters:
-            client, paid_by = llmops.client_for(
-                svc.pool,
-                ctx.principal,
-                svc.settings.anthropic_api_key,
-                svc.settings.master_key,
-            )
+            client, paid_by = llmops.client_for(svc.pool, ctx.principal, svc.settings)
             llm = {"client": client, "batch": bool(p.get("batch", False))}
             if p.get("model"):
                 llm["model"] = str(p["model"])
@@ -594,12 +580,13 @@ def _trade(ctx: JobContext, principal: Principal, account_id: UUID) -> dict[str,
         if model_backed(spec):
             if budgets.standing(svc.pool, principal).remaining_usd <= 0:
                 return {"account_id": str(account["id"]), "skipped": "over budget"}
-            client, paid_by = llmops.client_for(
-                svc.pool,
-                principal,
-                svc.settings.anthropic_api_key,
-                svc.settings.master_key,
-            )
+            client, paid_by = llmops.client_for(svc.pool, principal, svc.settings)
+            if (
+                paid_by == "platform"
+                and budgets.platform_spent_today(svc.pool)
+                >= svc.settings.platform_daily_usd
+            ):
+                return {"account_id": str(account["id"]), "skipped": "daily cap"}
             llm = {"client": client}
     for i, domain in enumerate(domains):
         ctx.progress(i / max(len(domains), 1), f"trading {domain}")

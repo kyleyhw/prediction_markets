@@ -24,7 +24,7 @@ from pydantic import BaseModel, ConfigDict, ValidationError
 
 from vp.domains import DOMAINS, Domain
 from vp.domains.pack import load as load_pack
-from vp.forecast.llm import usage_usd
+from vp.forecast.llm import resolve_model, usage_usd
 from vp.strategy.spec import (
     KIND_NAMES,
     Caps,
@@ -242,6 +242,7 @@ def compile_spec(
     ``current`` is the confirmed spec being refined, if any; ``packs`` are
     a workspace's own pack texts by domain.
     """
+    model = resolve_model(client, model)
     if forecasters is None:
         from vp.forecast import forecaster_names
 

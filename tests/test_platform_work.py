@@ -204,6 +204,26 @@ def test_an_own_key_is_stored_encrypted_and_shown_only_as_a_hint(
     assert client.get("/api/keys").json()["hint"] is None
 
 
+def test_an_own_key_runs_the_model_its_owner_chooses(world) -> None:
+    """docs/models.md: the choice needs a key, names a priced Claude model,
+    and the key's page lists the choices."""
+    client = world["client"]
+    ada, _ = people(world)
+    _as(client, ada)
+    choose = {"model": "claude-fable-5-1"}
+    assert client.put("/api/keys/model", json=choose, headers=ORIGIN).status_code == 409
+    key = "sk-ant-" + "m" * 40  # pragma: allowlist secret
+    client.put("/api/keys", json={"key": key}, headers=ORIGIN)
+    got = client.get("/api/keys").json()
+    assert "claude-fable-5-1" in got["models"] and got["model"] is None
+    assert not any(m.startswith("gemini") for m in got["models"])
+    assert client.put("/api/keys/model", json=choose, headers=ORIGIN).status_code == 200
+    assert client.get("/api/keys").json()["model"] == "claude-fable-5-1"
+    bad = {"model": "gemini-3.1-flash-lite"}
+    assert client.put("/api/keys/model", json=bad, headers=ORIGIN).status_code == 422
+    assert client.delete("/api/keys", headers=ORIGIN).status_code == 204
+
+
 def test_spending_refresh_and_metrics(world) -> None:
     client = world["client"]
     ada, _ = people(world)

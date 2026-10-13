@@ -77,6 +77,12 @@ TRAINING_CUTOFFS: dict[str, str | None] = {
     "claude-opus-5": None,
     "claude-sonnet-5": None,
     "claude-haiku-4-5": None,
+    "claude-fable-5-1": None,
+    "claude-opus-5-5": None,
+    "claude-sonnet-5-5": None,
+    "claude-haiku-5-5": None,
+    "gemini-3.1-flash-lite": None,
+    "gemini-3.5-flash-lite": None,
 }
 
 
@@ -87,12 +93,39 @@ def contaminated(model: str, settled: str) -> bool:
     return cutoff is None or settled[:10] <= cutoff
 
 
-# USD per million tokens, input and output, for cost accounting.
+# USD per million tokens, input and output, for cost accounting (the
+# providers' pricing pages, 2026-10-13). Cache reads are priced at a tenth of
+# input for every model, which overstates the newest Claude models' (a
+# twentieth to a fortieth). Haiku 5.5's price is for prompts under 100,000
+# tokens, far above any prompt here. The Gemini models are the platform's
+# demo model (docs/models.md).
 PRICES: dict[str, tuple[float, float]] = {
     "claude-opus-5": (5.0, 25.0),
     "claude-sonnet-5": (2.0, 10.0),
     "claude-haiku-4-5": (1.0, 5.0),
+    "claude-fable-5-1": (10.0, 50.0),
+    "claude-opus-5-5": (4.0, 20.0),
+    "claude-sonnet-5-5": (2.0, 10.0),
+    "claude-haiku-5-5": (0.10, 0.50),
+    "gemini-3.1-flash-lite": (0.25, 1.50),
+    "gemini-3.5-flash-lite": (0.30, 2.50),
 }
+
+
+def resolve_model(client: Any, model: str) -> str:
+    """The model a call on ``client`` will actually run when ``model`` is
+    asked for: a client may fix it (the platform's demo model, or the model
+    a person chose for their own key; docs/models.md)."""
+    pick = getattr(client, "model_for", None)
+    return pick(model) if callable(pick) else model
+
+
+def rescale(usd: float, priced_for: str, model: str) -> float:
+    """An estimate made at one model's prices, at another's (the larger of
+    the input and output ratios, so it stays an upper end)."""
+    (a_in, a_out), (b_in, b_out) = PRICES[priced_for], PRICES[model]
+    return usd * max(b_in / a_in, b_out / a_out)
+
 
 SYSTEM = """You are a careful probabilistic forecaster of binary prediction-market
 contracts.
@@ -364,9 +397,17 @@ class LLMForecaster:
 
     def __post_init__(self) -> None:
         if self.client is None:
-            import anthropic
+            if self.model.startswith("gemini"):
+                from vp.forecast.gemini import GeminiClient
 
-            self.client = anthropic.Anthropic()
+                self.client = GeminiClient(model=self.model)
+            else:
+                import anthropic
+
+                self.client = anthropic.Anthropic()
+        self.model = resolve_model(self.client, self.model)
+        if getattr(self.client.messages, "batches", None) is None:
+            self.batch = False  # the client has no batch API (the demo model)
         if self.model not in PRICES:
             raise ValueError(f"no price recorded for model {self.model!r}")
 

@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.14"
 
 [[package]]
@@ -2052,6 +2052,7 @@ dependencies = [
     { name = "eth-hash", extra = ["pycryptodome"] },
     { name = "eth-keys" },
     { name = "fastapi" },
+    { name = "httpx" },
     { name = "keyring" },
     { name = "matplotlib" },
     { name = "mcp" },
@@ -2096,6 +2097,7 @@ requires-dist = [
     { name = "eth-hash", extras = ["pycryptodome"], specifier = ">=0.7" },
     { name = "eth-keys", specifier = ">=0.7" },
     { name = "fastapi", specifier = ">=0.115" },
+    { name = "httpx", specifier = ">=0.28" },
     { name = "keyring", specifier = ">=25.7.0" },
     { name = "matplotlib", specifier = ">=3.11.2" },
     { name = "mcp", specifier = ">=1.20" },

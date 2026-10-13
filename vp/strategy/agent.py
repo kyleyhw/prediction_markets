@@ -38,7 +38,7 @@ from pydantic import ValidationError
 from vp.domains import DOMAINS
 from vp.domains.pack import load as load_pack
 from vp.forecast.evidence import Evidence, canonical, settled_at
-from vp.forecast.llm import usage_usd
+from vp.forecast.llm import resolve_model, usage_usd
 from vp.markets.store import read_markets
 from vp.strategy import gate
 from vp.strategy.spec import Spec, validate
@@ -335,6 +335,7 @@ def research_turn(
     clock: Callable[[], float] = time.monotonic,
 ) -> Turn:
     """Answer one message: the tool loop, its guards, then the number gate."""
+    model = resolve_model(client, model)
     if used_turns >= limits.session_turns or used_tokens >= limits.session_tokens:
         return Turn(STOPPED_TEXT["session"], stopped="session", model=model)
     turn = Turn("", model=model)

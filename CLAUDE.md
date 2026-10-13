@@ -264,6 +264,17 @@ per-strategy P&L views. The domains will open up beyond CS2, weather and
 EPL; do not hard-code the three anywhere new, and the repository
 description no longer names them.
 
+**Models (2026-10-13, `docs/models.md`, F19):** without an own key the
+platform pays for a demo model, Gemini 3.1 Flash-Lite on Google's paid
+tier (`VP_GEMINI_API_KEY`; the free tier is ruled out by its terms),
+reached through `vp/forecast/gemini.py`, a client with the Anthropic SDK's
+call shape, so the forecaster, compiler and research assistant run
+unchanged; `resolve_model(client, model)` gives the model that actually
+runs. Platform spend is capped per workspace (monthly) and across all
+workspaces per day (`VP_PLATFORM_DAILY_USD`, migration 0031). An own
+Anthropic key may be set to run any priced Claude model (Fable 5.1
+included). Not yet run against Google's API.
+
 What exists, in order of the data flow: the Polymarket client and data
 layer (`vp/venues`, `vp/markets`, `vp/domains`); forecasters behind a
 cutoff-bounded `Evidence` object (`vp/forecast`: market price, constant,

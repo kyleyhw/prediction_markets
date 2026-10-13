@@ -13,7 +13,7 @@ from __future__ import annotations
 import html
 
 #: Bump when either text changes in substance; people are asked again.
-TERMS_VERSION = "2026-09-23"
+TERMS_VERSION = "2026-10-13"
 
 #: The minimum age to use the service.
 MINIMUM_AGE = 18
@@ -81,10 +81,12 @@ TERMS: list[Section] = [
     (
         "Costs",
         [
-            "Strategies that use an AI model cost money to run. The service "
-            "shows the estimated cost before a run starts and stops at your "
-            "monthly budget. If you add your own model key, its use is billed "
-            "to you by its provider.",
+            "Strategies that use an AI model cost money to run. Without your "
+            "own model key, the service's demo model answers, paid by the "
+            "service within your monthly budget and a daily allowance shared "
+            "by everyone. The service shows the estimated cost before a run "
+            "starts and stops at your budget. If you add your own model key, "
+            "its use is billed to you by its provider.",
         ],
     ),
     (
@@ -135,9 +137,11 @@ PRIVACY: list[Section] = [
     (
         "Who else handles it",
         [
-            "The hosting provider and its region, the email provider that "
-            "sends sign-in links, and the AI model provider. They are named "
-            "here when the service is deployed.",
+            "The hosting provider and its region and the email provider that "
+            "sends sign-in links, named here when the service is deployed; "
+            "and the AI model providers: Google for the demo model, on its "
+            "paid service, which does not use prompts to improve its "
+            "products, and Anthropic if you add your own key.",
         ],
     ),
     (

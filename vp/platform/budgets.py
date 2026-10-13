@@ -9,6 +9,12 @@ its token counts. Statistical forecasters cost nothing and never reserve.
 
 Rows live in `spend` (migration 0004) under row-level security: a
 workspace sees only its own. The month is the calendar month in UTC.
+
+Above the monthly limits sits the platform's daily cap
+(`VP_PLATFORM_DAILY_USD`, docs/models.md): what the platform pays across
+every workspace since midnight UTC, reservations included, may not pass
+it, so many new accounts cannot each spend their month on the owner's
+bill.
 """
 
 from __future__ import annotations
@@ -32,6 +38,16 @@ class OverBudget(Exception):
     """The estimate does not fit in what is left of this month's limit."""
 
 
+class PlatformCapReached(OverBudget):
+    """The platform's daily allowance for model calls is used up."""
+
+
+CAP_MESSAGE = (
+    "the demo model's allowance for today is used up; it resets at midnight "
+    "UTC, or add your own model key in Settings"
+)
+
+
 @dataclass(frozen=True)
 class Standing:
     """A workspace's month so far."""
@@ -48,6 +64,19 @@ class Standing:
 def _month_start(now: datetime | None = None) -> datetime:
     now = now or datetime.now(tz=UTC)
     return now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+
+def _day_start() -> datetime:
+    return datetime.now(tz=UTC).replace(hour=0, minute=0, second=0, microsecond=0)
+
+
+def platform_spent_today(pool: ConnectionPool) -> Decimal:
+    """What the platform has paid and holds reserved since midnight UTC."""
+    with pool.connection() as conn:
+        (spent,) = conn.execute(
+            "select vp_platform_spend_since(%s)", (_day_start(),)
+        ).fetchone() or (Decimal(0),)
+    return Decimal(spent)
 
 
 def standing(pool: ConnectionPool, principal: Principal) -> Standing:
@@ -68,12 +97,20 @@ def standing(pool: ConnectionPool, principal: Principal) -> Standing:
     )
 
 
-def reserve(pool: ConnectionPool, principal: Principal, usd: float) -> None:
-    """Check an estimate against the month and hold it, or raise OverBudget.
+def reserve(
+    pool: ConnectionPool,
+    principal: Principal,
+    usd: float,
+    platform_daily_usd: float | None = None,
+) -> None:
+    """Check an estimate against the month and hold it, or raise OverBudget
+    (PlatformCapReached when the platform's daily cap is what refuses).
 
     The check and the hold are one transaction under a lock on the
-    workspace, so two runs started together cannot both fit in the last
-    dollar. The hold is tied to the job when the job exists (`attach`).
+    workspace, and with a daily cap a second lock on the platform, always
+    taken in that order, so two runs started together cannot both fit in
+    the last dollar. The hold is tied to the job when the job exists
+    (`attach`).
     """
     if usd <= 0:
         return
@@ -96,6 +133,16 @@ def reserve(pool: ConnectionPool, principal: Principal, usd: float) -> None:
                 f"${max(limit - Decimal(used), 0):.2f} "
                 f"of this month's ${limit:.2f} is left"
             )
+        if platform_daily_usd is not None:
+            conn.execute(
+                "select pg_advisory_xact_lock(hashtextextended(%s, 0))",
+                ("budget:platform",),
+            )
+            (today,) = conn.execute(
+                "select vp_platform_spend_since(%s)", (_day_start(),)
+            ).fetchone() or (Decimal(0),)
+            if Decimal(today) + amount > Decimal(str(platform_daily_usd)):
+                raise PlatformCapReached(CAP_MESSAGE)
         conn.execute(
             "insert into spend (workspace_id, kind, usd) "
             "values (%s, 'reservation', %s)",

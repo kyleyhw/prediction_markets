@@ -70,13 +70,24 @@ async function ownKey() {
       await send('DELETE', 'keys');
       status.textContent = tp('settings.key_removed');
     });
+    document.getElementById('key-model')?.addEventListener('change', async (e) => {
+      try {
+        const r = await send('PUT', 'keys/model', { model: e.target.value || null });
+        status.textContent = tp('settings.key_model_saved', { model: r.model || tp('settings.key_model_tier') });
+      } catch (err) { status.textContent = err.message; }
+    });
   });
+  const models = k.hint ? `<p class="row"><label for="key-model">${t('settings.key_model')}</label>
+      <select id="key-model"><option value="">${t('settings.key_model_tier')}</option>
+      ${k.models.map((m) => `<option value="${esc(m)}"${m === k.model ? ' selected' : ''}>${esc(m)}</option>`).join('')}</select></p>` : '';
   return `<h2>${t('settings.key')}</h2><p class="muted measure">${t('settings.key_note')}</p>
+    ${!k.hint && k.demo_model ? `<p class="measure">${t('settings.key_demo', { model: k.demo_model })}</p>` : ''}
     ${k.hint ? `<p>${t('settings.key_current', { hint: k.hint })}</p>` : ''}
     <form id="key-form" class="row"><label for="key-input" class="sr-only">${t('settings.key')}</label>
       <input type="password" id="key-input" name="key" autocomplete="off" required minlength="20" placeholder="sk-ant-…" style="min-width:18em">
       <button class="btn" type="submit">${t('settings.key_save')}</button>
       ${k.hint ? `<button class="btn quiet" type="button" id="key-remove">${t('settings.key_remove')}</button>` : ''}</form>
+    ${models}
     <p class="small" id="key-status" role="status"></p>`;
 }
 
@@ -174,7 +185,7 @@ export default async function settings() {
     if (session.hosted) h += await ownKey();
     if (session.hosted) h += refreshData(o.domains);
     h += `<h2>${t('settings.export')}</h2><p class="muted measure">${t('settings.export_note')}</p><button class="btn" type="button" id="export">${t('settings.export_button')}</button>`;
-    h += `<h2>${t('settings.later')}</h2><ul class="notes measure">${['play_money', 'model'].map((k) => `<li>${t('settings.later_' + k)}</li>`).join('')}</ul>`;
+    h += `<h2>${t('settings.later')}</h2><ul class="notes measure">${['play_money'].map((k) => `<li>${t('settings.later_' + k)}</li>`).join('')}</ul>`;
   }
   if (session.hosted) {
     h += `<h2>${t('settings.account')}</h2><dl class="kv"><dt>${t('settings.email')}</dt><dd>${esc(session.me.email)}</dd>

@@ -24,6 +24,8 @@ Polymarket, scored by backtest and paper trading before any live execution. The
   principal and tenancy, storage, jobs and worker pools, the market-data
   service, evidence, budgets and keys, observability and the local
   stand-in.
+- [Models](models.md): the platform's demo model (Gemini Flash-Lite,
+  paid tier, under a daily cap) and a person's own key and model choice.
 - [Evidence sources](evidence.md): what the collectors capture, from
   where, and on what terms; how the archive is read without seeing past a
   cutoff, and the point-in-time sources (Phase 17).

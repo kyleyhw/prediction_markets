@@ -439,6 +439,11 @@ class KeyBody(BaseModel):
     key: str = Field(min_length=20, max_length=300)
 
 
+class KeyModelBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    model: str | None = Field(default=None, max_length=60)
+
+
 def _eligible_kinds(path: Path) -> dict[str | None, int]:
     """Markets a backtest can select from a dataset, counted by kind (the
     rule of `vp.backtest.run.select_markets`)."""
@@ -977,9 +982,10 @@ def create_app(
         """What this service can do for this workspace."""
         own = llmops.key_hint(pool, principal)
         return {
-            "llm": bool(settings.anthropic_api_key or own),
+            "llm": bool(settings.platform_pays or own),
             "own_keys": bool(settings.master_key),
             "own_key_hint": own,
+            "demo_model": None if own else settings.platform_model,
             "jobs": sorted(jobs.WORKSPACE_KINDS),
         }
 
@@ -1007,7 +1013,35 @@ def create_app(
             raise HTTPException(404, "no such job, or it has already finished")
         return {"id": job_id, "cancel_requested": True}
 
-    def _estimate(body: BacktestRequest) -> dict[str, Any]:
+    def _model_for(principal: Principal, requested: str) -> str:
+        """The model a job of this workspace will run when ``requested`` is
+        asked for: the own key's choice, or the platform's demo model
+        (docs/models.md)."""
+        if llmops.key_hint(pool, principal) is not None:
+            return llmops.key_model(pool, principal) or requested
+        return settings.platform_model or requested
+
+    def _priced(
+        principal: Principal, usd: float, priced_for: str, batched: bool = False
+    ) -> float:
+        """An estimate made at ``priced_for``'s prices, at the model this
+        workspace's job will run; the demo model has no batch API, so a
+        batched estimate loses its discount on it."""
+        from vp.forecast.llm import BATCH_DISCOUNT, rescale
+
+        runs = _model_for(principal, priced_for)
+        if runs == priced_for:
+            return usd
+        usd = rescale(usd, priced_for, runs)
+        return usd / BATCH_DISCOUNT if batched and runs.startswith("gemini") else usd
+
+    def _reserve(principal: Principal, usd: float) -> None:
+        try:
+            budgets.reserve(pool, principal, usd, settings.platform_daily_usd)
+        except budgets.OverBudget as exc:
+            raise HTTPException(402, str(exc)) from None
+
+    def _estimate(body: BacktestRequest, principal: Principal) -> dict[str, Any]:
         from vp.forecast.llm import DEFAULT_MODEL, estimate_usd
         from vp.ui.server import cached_file
 
@@ -1022,7 +1056,11 @@ def create_app(
         if body.max_markets is not None:
             markets = min(markets, body.max_markets)
         usd = (
-            estimate_usd(markets, body.model or DEFAULT_MODEL, batch=body.batch)
+            estimate_usd(
+                markets,
+                _model_for(principal, body.model or DEFAULT_MODEL),
+                batch=body.batch and settings.platform_model is None,
+            )
             if "llm" in body.forecasters
             else 0.0
         )
@@ -1032,7 +1070,7 @@ def create_app(
     def estimate_backtest(body: BacktestRequest, principal: Reader) -> dict[str, Any]:
         """What a backtest would cover and cost, before it runs."""
         standing = budgets.standing(pool, principal)
-        return _estimate(body) | {
+        return _estimate(body, principal) | {
             "remaining_usd": float(standing.remaining_usd),
             "limit_usd": float(standing.limit_usd),
         }
@@ -1040,16 +1078,13 @@ def create_app(
     @app.post("/api/backtests", status_code=202)
     def start_backtest(body: BacktestRequest, principal: Writer) -> dict[str, Any]:
         """Queue a backtest; its progress is at /api/jobs/{id}."""
-        estimate = _estimate(body)
+        estimate = _estimate(body, principal)
         paid_by_platform = llmops.key_hint(pool, principal) is None
         if "llm" in body.forecasters:
-            if not (settings.anthropic_api_key or not paid_by_platform):
+            if paid_by_platform and not settings.platform_pays:
                 raise HTTPException(409, "no model key is available for this workspace")
         reserved = estimate["estimate_usd"] if paid_by_platform else 0.0
-        try:
-            budgets.reserve(pool, principal, reserved)
-        except budgets.OverBudget as exc:
-            raise HTTPException(402, str(exc)) from None
+        _reserve(principal, reserved)
         payload = body.model_dump()
         try:
             job_id = jobs.enqueue(
@@ -1117,6 +1152,9 @@ def create_app(
         return {
             "hint": llmops.key_hint(pool, principal),
             "enabled": bool(settings.master_key),
+            "model": llmops.key_model(pool, principal),
+            "models": list(llmops.OWN_MODELS),
+            "demo_model": settings.platform_model,
         }
 
     @app.put("/api/keys")
@@ -1131,6 +1169,19 @@ def create_app(
         except ValueError as exc:
             raise HTTPException(422, str(exc)) from None
         return {"hint": hint}
+
+    @app.put("/api/keys/model")
+    def put_key_model(body: KeyModelBody, principal: BrowserSession) -> dict[str, Any]:
+        """Choose the model the workspace's own key runs; null: the tier's."""
+        if not principal.may_write:
+            raise HTTPException(403, "your role may not change keys")
+        try:
+            found = llmops.set_key_model(pool, principal, body.model)
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from None
+        if not found:
+            raise HTTPException(409, "add your own model key first")
+        return {"model": body.model}
 
     @app.delete("/api/keys", status_code=204)
     def delete_key(principal: BrowserSession) -> Response:
@@ -1149,18 +1200,21 @@ def create_app(
     def compile_strategy(body: CompileBody, principal: Writer) -> dict[str, Any]:
         """Send one message to the strategy compiler; the answer arrives as a
         turn of the conversation when the job is done."""
+        from vp.strategy.compiler import COMPILER_MODEL
+
         paid_by_platform = llmops.key_hint(pool, principal) is None
-        if paid_by_platform and not settings.anthropic_api_key:
+        if paid_by_platform and not settings.platform_pays:
             raise HTTPException(409, "no model key is available for this workspace")
         convo = body.conversation_id or _found(
             lambda: strategies.open_conversation(pool, principal, body.strategy_id)
         )
         _found(lambda: strategies.conversation(pool, principal, convo))
-        reserved = strategies.COMPILE_RESERVE_USD if paid_by_platform else 0.0
-        try:
-            budgets.reserve(pool, principal, reserved)
-        except budgets.OverBudget as exc:
-            raise HTTPException(402, str(exc)) from None
+        reserved = (
+            _priced(principal, strategies.COMPILE_RESERVE_USD, COMPILER_MODEL)
+            if paid_by_platform
+            else 0.0
+        )
+        _reserve(principal, reserved)
         job_id = jobs.enqueue(
             pool,
             principal,
@@ -1175,17 +1229,17 @@ def create_app(
         """Send one message to the research assistant; the answer arrives as
         a turn of the conversation when the job is done."""
         from vp.platform.research import RESEARCH_RESERVE_USD
+        from vp.strategy.agent import MODEL
 
         paid_by_platform = llmops.key_hint(pool, principal) is None
-        if paid_by_platform and not settings.anthropic_api_key:
+        if paid_by_platform and not settings.platform_pays:
             raise HTTPException(409, "no model key is available for this workspace")
         convo = body.conversation_id or strategies.open_conversation(pool, principal)
         _found(lambda: strategies.conversation(pool, principal, convo))
-        reserved = RESEARCH_RESERVE_USD if paid_by_platform else 0.0
-        try:
-            budgets.reserve(pool, principal, reserved)
-        except budgets.OverBudget as exc:
-            raise HTTPException(402, str(exc)) from None
+        reserved = (
+            _priced(principal, RESEARCH_RESERVE_USD, MODEL) if paid_by_platform else 0.0
+        )
+        _reserve(principal, reserved)
         job_id = jobs.enqueue(
             pool,
             principal,
@@ -1222,8 +1276,16 @@ def create_app(
     @app.get("/api/strategies/{strategy_id}/preview")
     def preview_strategy(strategy_id: UUID, principal: Reader) -> dict[str, Any]:
         """What the newest version would touch and cost, from data only."""
+        from vp.forecast.llm import TIERS
+
         head = _found(lambda: strategies.latest(pool, principal, strategy_id))
-        out = _preview(head["spec"], head["spec_hash"])
+        out = dict(_preview(head["spec"], head["spec_hash"]))
+        tier = TIERS[head["spec"].belief.tier]
+        # Priced at the model that will actually run (docs/models.md).
+        if out.get("backtest_usd"):
+            out["backtest_usd"] = _priced(principal, out["backtest_usd"], tier, True)
+        if out.get("paper_month_usd"):
+            out["paper_month_usd"] = _priced(principal, out["paper_month_usd"], tier)
         if principal.may_write:
             strategies.advance(pool, principal, strategy_id, "previewed")
         return out | {"version": head["version"], "spec_hash": head["spec_hash"]}
@@ -1256,15 +1318,19 @@ def create_app(
     ) -> dict[str, Any]:
         """Backtest the newest version on each of its domains."""
         head = _found(lambda: strategies.latest(pool, principal, strategy_id))
+        from vp.forecast.llm import TIERS
+
         estimate = _preview(head["spec"], head["spec_hash"])["backtest_usd"]
         paid_by_platform = llmops.key_hint(pool, principal) is None
-        if estimate and paid_by_platform and not settings.anthropic_api_key:
+        if estimate and paid_by_platform and not settings.platform_pays:
             raise HTTPException(409, "no model key is available for this workspace")
-        reserved = estimate if paid_by_platform else 0.0
-        try:
-            budgets.reserve(pool, principal, reserved)
-        except budgets.OverBudget as exc:
-            raise HTTPException(402, str(exc)) from None
+        tier = TIERS[head["spec"].belief.tier]
+        reserved = (
+            _priced(principal, estimate, tier, batched=True)
+            if paid_by_platform and estimate
+            else 0.0
+        )
+        _reserve(principal, reserved)
         job_id = jobs.enqueue(
             pool,
             principal,

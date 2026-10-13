@@ -31,11 +31,17 @@ CONFIG = PACKAGE / "platform" / "config.py"
 #: `cli.py` reads the Open-Meteo key for `vp evidence`, an engine command
 #: that must not load the platform; the platform reads the same variable
 #: through `config.py` (docs/evidence.md).
+#:
+#: `forecast/gemini.py` reads `GEMINI_API_KEY` when no key is passed, as
+#: the Anthropic SDK reads its own, for `vp backtest --model gemini-*`; the
+#: platform always passes the key it read through `config.py`
+#: (docs/models.md).
 ALLOWED = {
     PACKAGE / "cli.py": 'os.environ.get("VP_OPEN_METEO_KEY")',
     PACKAGE / "venues" / "_http.py": "def positive_env_float",
     PACKAGE / "live" / "controls.py": "VP_STOP_FILE",
     PACKAGE / "platform" / "run.py": "os.environ[METRICS_DIR] = metrics",
+    PACKAGE / "forecast" / "gemini.py": 'os.environ.get("GEMINI_API_KEY")',
 }
 
 _READERS = {("os", "getenv"), ("os", "environ")}

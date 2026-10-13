@@ -1203,6 +1203,7 @@ called done.
 | 22 | The live key model | session keys for execution, browser signing for consent (F12) |
 | 22 | Polymarket US | assess only (F13) |
 | 23 | The site's visual style | the "paper" default of `docs/site.md` as the placeholder; alternatives trialled later (F14) |
+| 15 | Who pays for model calls (2026-10-13) | a demo model the platform pays for, Gemini 3.1 Flash-Lite on Google's paid tier, under each workspace's budget, a platform-wide daily cap and the Google project's spend cap; an own Anthropic key runs the model its owner chooses (`docs/models.md`, F19) |
 
 ### Flags recorded with the decisions
 
@@ -1393,6 +1394,18 @@ called done.
   `tests/reports/phase13_platform.md`. Also decided that day: the fifteen
   stand-in test workspaces whose ledgers the negative-zero fault broke stay
   paused until a general cleanup of test data.
+- **F19 (decided 2026-10-13). The demo model is not free, and must not
+  be.** The owner asked for a free model so that people need no key.
+  Google's free Gemini quota uses prompts to improve its products, may be
+  read by human reviewers, and may not serve users in the EEA, Switzerland
+  or the UK, which contradicts the privacy notice and the first region. So
+  the demo runs on the paid tier at about $0.004 a forecast, behind three
+  limits: the workspace's monthly budget, `VP_PLATFORM_DAILY_USD` across
+  all workspaces ($2 by default), and a spend cap on the Google project
+  that the owner sets in AI Studio at the deploy. Nothing has run against
+  Google's API yet; the first keyed run checks that the compiler's schema
+  is accepted and measures the demo model's forecasts like any other
+  forecaster's (`docs/models.md`).
 - **F18 (open, gating public sign-up). The terms of use and the privacy
   notice are drafts.** Written on 2026-09-23 from what the code does
   (`vp/platform/legal.py`), they need a lawyer's reading, in the

@@ -434,6 +434,10 @@ from the model's token counts, cache reads and writes priced at 0.1 and
 1.25 times input, and batch at half price. Spend is recorded per model
 call with the forecaster, domain, model, tokens and who paid.
 
+Without an own key the platform pays for its demo model, Gemini
+3.1 Flash-Lite, under a daily cap across all workspaces as well; an own key may run
+the model its owner chooses ([models.md](models.md), 2026-10-13).
+
 A person may store their own Anthropic key. It is sealed with AES-GCM
 under a data key that is itself sealed under `VP_MASTER_KEY` (envelope
 encryption; the master key stands in for the cloud key-management service
@@ -518,8 +522,8 @@ themselves (F9). A developer who wants their own copy runs the same image
 with `deploy/compose.yaml` and brings everything the platform would
 otherwise provide:
 
-- **Their own keys:** `VP_ANTHROPIC_API_KEY` for the model, which the
-  budget then does not charge; `VP_OPEN_METEO_KEY` and any other source's
+- **Their own keys:** `VP_ANTHROPIC_API_KEY` or `VP_GEMINI_API_KEY` for
+  the model (docs/models.md); `VP_OPEN_METEO_KEY` and any other source's
   key.
 - **Their own acceptance of every source's terms.** The platform's
   licences cover the platform, not a copy of it. `docs/evidence.md` lists

@@ -13,6 +13,10 @@
   for one, so ten workers cannot open ten times the provider's allowance.
 * **Retries.** The client retries rate-limit and overload answers itself
   with backoff (six attempts), which is the provider SDK's own mechanism.
+* **Routes** (docs/models.md). An own key runs the model its owner chose,
+  or the strategy's tier. Without one the platform pays: for its demo model
+  when `VP_GEMINI_API_KEY` is set, otherwise for Claude on its Anthropic
+  key.
 """
 
 from __future__ import annotations
@@ -29,11 +33,15 @@ from typing import Any
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from psycopg_pool import ConnectionPool
 
+from vp.forecast.llm import PRICES
+from vp.platform.config import Settings
 from vp.platform.db import tenant_session
 from vp.platform.principal import Principal
 
 KEY_VERSION = 1
 MAX_RETRIES = 6
+#: The models an own key may be set to run: every Claude model with a price.
+OWN_MODELS = tuple(sorted(m for m in PRICES if m.startswith("claude-")))
 
 
 class KeysUnavailable(RuntimeError):
@@ -111,18 +119,44 @@ def delete_key(pool: ConnectionPool, principal: Principal) -> bool:
     return row is not None
 
 
-def own_key(
-    pool: ConnectionPool, principal: Principal, master_key: str | None
-) -> str | None:
-    """The workspace's own key in plaintext, for the length of a job; or None."""
+def key_model(pool: ConnectionPool, principal: Principal) -> str | None:
+    """The model the workspace's own key is set to run, if one was chosen."""
     with pool.connection() as conn, tenant_session(conn, principal):
         row = conn.execute(
-            "select ciphertext, wrapped_key from provider_keys "
+            "select model from provider_keys where provider = 'anthropic'"
+        ).fetchone()
+    return row[0] if row else None
+
+
+def set_key_model(
+    pool: ConnectionPool, principal: Principal, model: str | None
+) -> bool:
+    """Choose the model the own key runs (None: the strategy's tier).
+    False when the workspace has no own key."""
+    if model is not None and model not in OWN_MODELS:
+        raise ValueError(f"choose one of {', '.join(OWN_MODELS)}")
+    with pool.connection() as conn, tenant_session(conn, principal):
+        row = conn.execute(
+            "update provider_keys set model = %s where provider = 'anthropic' "
+            "returning 1",
+            (model,),
+        ).fetchone()
+    return row is not None
+
+
+def own_key(
+    pool: ConnectionPool, principal: Principal, master_key: str | None
+) -> tuple[str, str | None] | None:
+    """The workspace's own key in plaintext, for the length of a job, and the
+    model it is set to run; or None."""
+    with pool.connection() as conn, tenant_session(conn, principal):
+        row = conn.execute(
+            "select ciphertext, wrapped_key, model from provider_keys "
             "where provider = 'anthropic'"
         ).fetchone()
     if row is None:
         return None
-    return unseal(bytes(row[0]), bytes(row[1]), master_key)
+    return unseal(bytes(row[0]), bytes(row[1]), master_key), row[2]
 
 
 # --------------------------------------------------------------- concurrency
@@ -180,17 +214,25 @@ class LimitedBeta:
 
 
 class LimitedClient:
-    def __init__(self, client: Any, slots: Slots) -> None:
+    """A client under the slots. ``model`` fixes the model every call runs
+    (an own key's choice); otherwise the wrapped client's own choice holds
+    (the demo model's), or the caller's."""
+
+    def __init__(self, client: Any, slots: Slots, model: str | None = None) -> None:
         self.messages = LimitedMessages(client.messages, slots)
         self.beta = LimitedBeta(client.beta, slots)
+        self._client = client
+        self._model = model
+
+    def model_for(self, requested: str) -> str:
+        if self._model:
+            return self._model
+        inner = getattr(self._client, "model_for", None)
+        return inner(requested) if callable(inner) else requested
 
 
 def client_for(
-    pool: ConnectionPool,
-    principal: Principal,
-    platform_key: str | None,
-    master_key: str | None,
-    slots: int = 4,
+    pool: ConnectionPool, principal: Principal, settings: Settings, slots: int = 4
 ) -> tuple[Any, str]:
     """A limited client for this workspace, and who pays: 'own_key' or 'platform'.
 
@@ -199,10 +241,24 @@ def client_for(
     """
     import anthropic
 
-    mine = own_key(pool, principal, master_key) if master_key else None
-    key, paid_by = (mine, "own_key") if mine else (platform_key, "platform")
-    if not key:
+    mine = (
+        own_key(pool, principal, settings.master_key) if settings.master_key else None
+    )
+    if mine:
+        key, model = mine
+        client = anthropic.Anthropic(api_key=key, max_retries=MAX_RETRIES)
+        slot = Slots(pool, f"anthropic:{principal.workspace}", slots)
+        return LimitedClient(client, slot, model), "own_key"
+    if settings.gemini_api_key:
+        from vp.forecast.gemini import GeminiClient
+
+        demo = GeminiClient(
+            settings.gemini_api_key, settings.demo_model, max_retries=MAX_RETRIES
+        )
+        return LimitedClient(demo, Slots(pool, "gemini:platform", slots)), "platform"
+    if not settings.anthropic_api_key:
         raise KeysUnavailable("no model key: the platform has none configured")
-    client = anthropic.Anthropic(api_key=key, max_retries=MAX_RETRIES)
-    name = f"anthropic:{principal.workspace}" if mine else "anthropic:platform"
-    return LimitedClient(client, Slots(pool, name, slots)), paid_by
+    client = anthropic.Anthropic(
+        api_key=settings.anthropic_api_key, max_retries=MAX_RETRIES
+    )
+    return LimitedClient(client, Slots(pool, "anthropic:platform", slots)), "platform"

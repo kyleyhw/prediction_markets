@@ -10,6 +10,7 @@ import threading
 import time
 from pathlib import Path
 from types import SimpleNamespace
+from uuid import uuid4
 
 import pytest
 from cryptography.exceptions import InvalidTag
@@ -38,7 +39,7 @@ def test_an_own_key_is_the_workspace_s_alone(
 ) -> None:
     ada, bob = two_workspaces["a"], two_workspaces["b"]
     assert llmops.store_key(app_pool, ada, SECRET, MASTER) == "…" + SECRET[-4:]
-    assert llmops.own_key(app_pool, ada, MASTER) == SECRET
+    assert llmops.own_key(app_pool, ada, MASTER) == (SECRET, None)
     assert llmops.own_key(app_pool, bob, MASTER) is None
     (stored,) = pg_owner.execute(
         "select ciphertext from provider_keys where workspace_id = %s", (ada.workspace,)
@@ -132,3 +133,63 @@ def test_a_model_backtest_charges_its_tokens_to_the_payer(
     assert rows[0]["input_tokens"] > 0 and rows[0]["model"] == "claude-opus-5"
     # Spending on one's own key does not use the platform budget.
     assert budgets.standing(app_pool, ada).charged_usd == 0
+
+
+@needs_db
+def test_routes_own_key_with_its_model_then_demo_then_none(
+    app_pool, two_workspaces
+) -> None:
+    """docs/models.md: an own key runs its owner's choice; without one the
+    platform pays for the demo model; with no key at all, nothing runs."""
+    from vp.forecast.llm import resolve_model
+    from vp.platform.config import Settings
+
+    ada, bob = two_workspaces["a"], two_workspaces["b"]
+    demo = Settings(
+        database_url="unused",
+        master_key=MASTER,
+        gemini_api_key="g" * 39,  # pragma: allowlist secret
+    )
+    assert not llmops.set_key_model(app_pool, ada, "claude-fable-5-1"), "no key yet"
+    llmops.store_key(app_pool, ada, SECRET, MASTER)
+    with pytest.raises(ValueError):
+        llmops.set_key_model(app_pool, ada, "gemini-3.1-flash-lite")
+    client, paid = llmops.client_for(app_pool, ada, demo)
+    assert paid == "own_key" and resolve_model(client, "claude-opus-5") == (
+        "claude-opus-5"
+    ), "no choice: the strategy's tier decides"
+    assert llmops.set_key_model(app_pool, ada, "claude-fable-5-1")
+    assert llmops.own_key(app_pool, ada, MASTER) == (SECRET, "claude-fable-5-1")
+    client, paid = llmops.client_for(app_pool, ada, demo)
+    assert resolve_model(client, "claude-opus-5") == "claude-fable-5-1"
+    client, paid = llmops.client_for(app_pool, bob, demo)
+    assert paid == "platform"
+    assert resolve_model(client, "claude-opus-5") == "gemini-3.1-flash-lite"
+    assert client.messages.batches is None, "the demo model has no batch API"
+    with pytest.raises(llmops.KeysUnavailable):
+        llmops.client_for(app_pool, bob, Settings(database_url="unused"))
+    llmops.delete_key(app_pool, ada)
+
+
+@needs_db
+def test_the_platform_daily_cap_holds_across_workspaces(
+    app_pool, two_workspaces
+) -> None:
+    from decimal import Decimal
+
+    from vp.platform import budgets
+
+    ada, bob = two_workspaces["a"], two_workspaces["b"]
+    cap = float(budgets.platform_spent_today(app_pool)) + 1.0
+    budgets.reserve(app_pool, ada, 0.6, cap)
+    with pytest.raises(budgets.PlatformCapReached):
+        budgets.reserve(app_pool, bob, 0.5, cap)
+    # Within its own month Bob has room; the platform's day does not.
+    assert budgets.standing(app_pool, bob).remaining_usd >= Decimal("0.5")
+    budgets.reserve(app_pool, bob, 0.4, cap)
+    assert budgets.platform_spent_today(app_pool) == pytest.approx(cap, abs=1e-6)
+    # Releasing returns the room.
+    budgets.settle_job(app_pool, ada, uuid4(), 0.6, [])
+    budgets.settle_job(app_pool, bob, uuid4(), 0.4, [])
+    budgets.reserve(app_pool, bob, 0.9, cap)
+    budgets.settle_job(app_pool, bob, uuid4(), 0.9, [])

@@ -139,6 +139,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     back.add_argument("--max-markets", type=int, default=None)
     back.add_argument("--seed", type=int, default=0)
+    back.add_argument(
+        "--model",
+        default=None,
+        help="the llm forecaster's model (default claude-opus-5; a gemini-* "
+        "model uses GEMINI_API_KEY, docs/models.md)",
+    )
     back.add_argument("--fee-rate", type=float, default=0.0)
     back.add_argument(
         "--market-fees",
@@ -501,7 +507,12 @@ def main() -> None:
         )
         stamp = utc_now_iso().replace("-", "").replace(":", "")
         out = args.out or args.root / "backtests" / args.domain / stamp
-        run_backtest(config, args.root, out)
+        run_backtest(
+            config,
+            args.root,
+            out,
+            llm_options={"model": args.model} if args.model else None,
+        )
         print((out / "summary.md").read_text())
         print(f"written: {out}")
         return

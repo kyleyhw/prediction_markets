@@ -15,6 +15,7 @@ dependencies = [
     "eth-hash[pycryptodome]>=0.7",
     "eth-keys>=0.7",
     "fastapi>=0.115",
+    "httpx>=0.28",
     "keyring>=25.7.0",
     "matplotlib>=3.11.2",
     "mcp>=1.20",
