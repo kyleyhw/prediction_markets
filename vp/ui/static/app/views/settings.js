@@ -194,8 +194,9 @@ export default async function settings([part] = []) {
       <label for="play-money" class="sr-only">${t('settings.play_money')}</label><input type="number" id="play-money" name="play_money" min="100" max="1000000" step="100" inputmode="numeric" value="${esc(p.play_money ?? '')}" placeholder="1000" aria-describedby="play-money-note"></fieldset>`;
     // A section with its own heading, so a screen reader can jump to it.
     h += `<h2 id="where">${t('settings.country')}</h2><p class="small muted" id="country-note">${t('settings.country_note')}</p>
-      <p><label for="country" class="sr-only">${t('settings.country')}</label><select id="country" name="country" aria-describedby="country-note"><option value="">${t('settings.country_unset')}</option>
-      ${countries(p.locale).map(([code, name]) => `<option value="${code}"${p.country === code ? ' selected' : ''}>${esc(name)}</option>`).join('')}</select></p>`;
+      <p class="row"><label for="country" class="sr-only">${t('settings.country')}</label><select id="country" aria-describedby="country-note"><option value="">${t('settings.country_unset')}</option>
+      ${countries(p.locale).map(([code, name]) => `<option value="${code}"${p.country === code ? ' selected' : ''}>${esc(name)}</option>`).join('')}</select>
+      <button class="btn" type="button" id="country-save">${t('settings.country_save')}</button></p>`;
   }
   h += '</form>';
   if (session.hosted) {
@@ -220,6 +221,7 @@ export default async function settings([part] = []) {
     const form = document.getElementById('prefs'), status = document.getElementById('saved');
     let pending;
     form.addEventListener('change', (e) => {
+      if (!e.target.name) return; // a field with its own Save button
       // A list saves once the choice settles: arrowing through "Where you
       // are" saved each country on the way (simulated user, 2026-10-13).
       clearTimeout(pending);
@@ -235,11 +237,6 @@ export default async function settings([part] = []) {
         status.textContent = tp('settings.saved');
       } catch { status.textContent = tp('settings.not_saved'); return; }
       if (el.name === 'theme') applyTheme();
-      if (el.name === 'country') {
-        await render(false);
-        document.getElementById('country')?.focus();
-        document.getElementById('saved').textContent = tp('settings.saved');
-      }
       if (el.name === 'level' || el.name === 'locale') {
         if (el.name === 'locale') setLocale(prefs().locale);
         shell();
@@ -251,6 +248,16 @@ export default async function settings([part] = []) {
     // #settings/where or #settings/model: open at that section.
     const target = part && document.getElementById(part);
     if (target) setTimeout(() => { target.setAttribute('tabindex', '-1'); target.scrollIntoView(); target.focus(); }, 0);
+    // Where you are is saved by its button: a list that saves as it changes
+    // stored each country a keyboard user paused on (2026-10-13).
+    document.getElementById('country-save')?.addEventListener('click', async () => {
+      const box = document.getElementById('country');
+      try { await save({ country: box.value || null }); } catch { status.textContent = tp('settings.not_saved'); return; }
+      await render(false);
+      document.getElementById('country')?.focus();
+      const name = box.selectedOptions[0]?.textContent ?? '';
+      document.getElementById('saved').textContent = tp('settings.country_saved', { name });
+    });
     document.getElementById('restart').addEventListener('click', async () => { await save({ start: { step: 0, done: false } }); location.hash = '#start'; });
     const box = document.getElementById('tokens');
     if (!box) return;

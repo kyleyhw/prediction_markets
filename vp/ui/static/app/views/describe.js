@@ -50,8 +50,8 @@ export default async function describe([target = 'new', conversationId] = []) {
     <p id="say-status" class="small" role="status"></p>`;
   after(() => {
     const status = document.getElementById('say-status');
-    const wait = async (jobId, next) => {
-      const j = await follow(jobId, status);
+    const wait = async (jobId, next, since) => {
+      const j = await follow(jobId, status, since);
       markReplied(j?.state === 'succeeded');
       if (location.hash !== next) location.hash = next;
       else await render(false);
@@ -65,7 +65,12 @@ export default async function describe([target = 'new', conversationId] = []) {
         const r = await send('POST', 'strategies/compile', { words, conversation_id: conversationId || null, strategy_id: strategyId });
         document.getElementById('words').value = '';
         dropDraft();
-        await wait(r.job_id, `#describe/${target}/${r.conversation_id}`);
+        const next = `#describe/${target}/${r.conversation_id}`;
+        // A new conversation moves to its own address now: the message shows
+        // while it waits, and the reply's focus is not taken back by a route
+        // change when it arrives (keyboard-only run, 2026-10-13).
+        if (location.hash !== next) { location.hash = next; return; }
+        await wait(r.job_id, next);
       } catch (e) {
         explain(status, e);
         document.querySelectorAll('#say button, [data-say]').forEach((b) => { b.disabled = false; });
@@ -78,7 +83,9 @@ export default async function describe([target = 'new', conversationId] = []) {
     if (pending) {
       document.querySelectorAll('#say button').forEach((b) => { b.disabled = true; });
       status.textContent = tp('describe.waiting');
-      wait(pending.job_id, location.hash);
+      // Focus back in the text box after the move to this address.
+      setTimeout(() => document.getElementById('words')?.focus(), 0);
+      wait(pending.job_id, location.hash, pending.at);
     }
     document.getElementById('say').addEventListener('submit', (e) => {
       e.preventDefault();

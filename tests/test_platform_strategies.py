@@ -308,4 +308,11 @@ def test_a_message_waiting_for_its_reply_is_kept_and_its_conversation_listed(
         (job,),
     )
     failed = strategies.conversation(app_pool, ada, convo)["waiting"][0]
-    assert failed["state"] == "failed" and "used up" in failed["error"]
+    assert failed["state"] == "failed" and failed["error"] == "used up"
+    pg_owner.execute(
+        "update jobs set error = 'ModelError: could not reach the model''s address: "
+        "[Errno 111] Connection refused' where id = %s",
+        (job,),
+    )
+    plain = strategies.conversation(app_pool, ada, convo)["waiting"][0]["error"]
+    assert plain == "The AI could not answer just now; try again in a few minutes."

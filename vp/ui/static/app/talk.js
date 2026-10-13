@@ -19,8 +19,8 @@ export function waitingHtml(convo) {
 }
 
 // Follow a job to its end, telling the status how long it has been.
-export async function follow(jobId, status) {
-  const started = Date.now();
+export async function follow(jobId, status, since = Date.now()) {
+  const started = typeof since === 'string' ? new Date(since).getTime() : since;
   let told = 0;
   for (;;) {
     const j = await api(`jobs/${jobId}`);

@@ -130,7 +130,10 @@ export const signed = (v, text) => `<span class="${signedClass(v)}">${text}</spa
 // in paper) and of a market kind.
 export function strategyName(name) {
   const s = entry('forecasters.' + name);
-  return detailed() || !s ? term(name, name) : esc(s.name);
+  // The friendly name in both levels; Detailed adds the identifier as a
+  // glossary term (a heading changed with the reading level, 2026-10-13).
+  if (!s) return detailed() ? term(name, name) : esc(name);
+  return detailed() ? `${esc(s.name)} (${term(name, name)})` : esc(s.name);
 }
 // One name in both reading levels (a simulated user took "Coin flip" and
 // "constant" for two strategies); Detailed adds the identifier after it.

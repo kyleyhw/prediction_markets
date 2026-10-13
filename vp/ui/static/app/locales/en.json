@@ -516,7 +516,9 @@
     "prefs": "How the site looks and what it shows",
     "model_address_hint": "Only for a provider not in the list: the address its documentation gives for OpenAI-compatible access, usually ending in /v1.",
     "play_money": "Play money for a new strategy",
-    "play_money_note": "How much pretend money a strategy you describe starts with, in dollars; empty means $1,000. You can still say another amount when you describe it."
+    "play_money_note": "How much pretend money a strategy you describe starts with, in dollars; empty means $1,000. You can still say another amount when you describe it.",
+    "country_save": "Save",
+    "country_saved": "Saved: {name}."
   },
   "start": {
     "step": "Step {n} of {total}",

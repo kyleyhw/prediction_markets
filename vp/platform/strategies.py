@@ -109,7 +109,7 @@ def conversation(
                 "job_id": str(w["id"]),
                 "state": "failed" if w["state"] in ("dead", "failed") else "waiting",
                 "words": w["words"],
-                "error": (w["error"] or "").split("\n")[0][:300] or None,
+                "error": _plain_error(w["error"]),
                 "at": w["created_at"].isoformat(),
             }
             for w in waiting
@@ -126,6 +126,21 @@ def conversation(
     }
 
 
+def _plain_error(error: str | None) -> str | None:
+    """Why a reply failed, for the person: the demo's own reasons are
+    already plain; anything else is said in general words (a keyboard-only
+    run was read "ModelError: ... [Errno 111] Connection refused")."""
+    if not error:
+        return None
+    head = error.split("\n")[0]
+    kind, _, said = head.partition(": ")
+    if kind == "DemoUnavailable" and said:
+        return said[:300]
+    if kind == "QuotaExhausted":
+        return "The AI's allowance is used up for now; try again later."
+    return "The AI could not answer just now; try again in a few minutes."
+
+
 def unfinished(
     pool: ConnectionPool, principal: Principal, limit: int = 10
 ) -> list[dict[str, Any]]:
@@ -136,7 +151,10 @@ def unfinished(
     rows = _rows(
         pool,
         principal,
-        "select c.id, c.created_at, "
+        "select c.id, coalesce((select max(j.created_at) from jobs j "
+        "  where j.kind in ('compile', 'research') "
+        "  and j.payload->>'conversation_id' = c.id::text), c.created_at) "
+        "  as created_at, "
         "coalesce((select t.content->>'words' from conversation_turns t "
         "  where t.conversation_id = c.id and t.role = 'user' "
         "  order by t.id limit 1), "

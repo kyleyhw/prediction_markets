@@ -192,6 +192,45 @@ strategy's balance): 9 to 14 browser steps.
 axe-core (WCAG 2.0 to 2.2, A and AA) then found no violation on 44
 renders: 11 pages, phone and laptop, both reading levels.
 
+**Re-check runs E and F.** Of the earlier faults they checked, these are
+confirmed fixed:
+
+- the page fits a phone in Detailed mode;
+- the notice comes before typing, and the Settings links land on the right
+  section;
+- drafts are kept;
+- the model form asks only what is needed, a made-up key is refused, and
+  play money can be set;
+- focus stays in the text box after Send, and the status counts the minutes
+  and announces the reply;
+- a message left behind is kept and listed;
+- the glossary takes focus and Escape returns it;
+- headings, the name of the comment box.
+
+New or remaining faults, fixed the same day and checked in the browser:
+
+- On a new conversation, focus on the reply was taken back by a route
+  change, and the message was hidden while it waited. The page now moves to
+  the conversation's own address on Send, shows the message waiting and
+  keeps focus in the text box.
+- A failed reply showed a raw error. It is now plain, and only the free
+  demo's own reasons are passed through.
+- The tour's step number was not announced. It is now part of the heading
+  for screen readers.
+- A pause in the country list saved that country. The country now has its
+  own Save button, which says what was saved.
+- The waiting count restarted on return. It now counts from when the
+  message was sent.
+- Strategy names in Detailed headings were the internal ones. They now read
+  "Coin flip (constant)".
+- Also fixed:
+  - "no one is offering" beside a quoted bid and ask;
+  - "0%" for under 1%;
+  - the last-day box not saying it covers all the sample strategies;
+  - a raw key error;
+  - "Saved." out of sight on a phone;
+  - wide tables losing their first column.
+
 **Still open:**
 
 - Task 10 cannot be judged until a real model answers. The interface now

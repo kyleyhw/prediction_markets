@@ -12,7 +12,7 @@ import { marketCard, orderedDomains } from './markets.js';
 const STEPS = 5;
 
 const choice = (type, name, value, checked, title, text) => `<label class="choice"><input type="${type}" name="${name}" value="${esc(value)}"${checked ? ' checked' : ''}>
-  <span><span class="t">${title}</span><br><span class="d">${text}</span></span></label>`;
+  <span><span class="t">${title}</span><span class="sr-only">. </span><br><span class="d">${text}</span></span></label>`;
 
 async function body(step, o) {
   const p = prefs();
@@ -66,9 +66,9 @@ export default async function start([n] = []) {
   const step = Math.min(Math.max(parseInt(n, 10) || 0, 0), STEPS - 1);
   const o = await api('overview');
   const last = step === STEPS - 1;
-  let h = `<div class="start"><p class="steps">${t('start.step', { n: step + 1, total: STEPS })}</p>
+  let h = `<div class="start"><p class="steps" aria-hidden="true">${t('start.step', { n: step + 1, total: STEPS })}</p>
     <div class="progress" aria-hidden="true">${Array.from({ length: STEPS }, (_, i) => `<i class="${i <= step ? 'on' : ''}"></i>`).join('')}</div>
-    <h1 id="page-title" tabindex="-1">${t(`start.titles.${step}`)}</h1><form id="step">${await body(step, o)}
+    <h1 id="page-title" tabindex="-1">${t(`start.titles.${step}`)}<span class="sr-only">, ${t('start.step', { n: step + 1, total: STEPS })}</span></h1><form id="step">${await body(step, o)}
     <div class="nav-row">${step ? `<button class="btn" type="button" id="back">${t('start.back')}</button>` : ''}
     <button class="btn quiet" type="button" id="skip-tour">${t('start.skip')}</button><span class="spacer"></span>
     <button class="btn primary" type="submit">${last ? t('start.finish') : step ? t('start.next') : t('start.begin')}</button></div></form></div>`;
