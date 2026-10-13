@@ -15,22 +15,34 @@ export const GUIDE_URL = 'https://github.com/kyleyhw/prediction_markets/blob/mas
 // A refusal shown where it happened: when the reason is the model (none
 // set up, the demo cannot serve this country, today's demo allowance), the
 // way forward comes with it; anything else is shown as said.
-const nextSteps = () => `<a href="#settings">${t('model.settings')}</a> · <a href="${esc(GUIDE_URL)}" target="_blank" rel="noopener">${t('model.copy')}</a>`;
+// Straight to the part of Settings that answers it: where you are, or
+// your model (a newcomer landed at the top of a long page, 2026-10-13).
+const nextSteps = (code) => `<a href="#settings/${code === 'country_needed' ? 'where' : 'model'}">${t('model.settings')}</a> · <a href="${esc(GUIDE_URL)}" target="_blank" rel="noopener">${t('model.copy')}</a>`;
 
 export function explain(el, err) {
   if (!el) return;
   if (['none', 'country_needed', 'region_blocked', 'used_up'].includes(err?.code)) {
-    el.innerHTML = `<span class="aside" role="note">${esc(err.message)} ${nextSteps()}</span>`;
+    el.innerHTML = `<span class="aside" role="note">${esc(err.message)} ${nextSteps(err.code)}</span>`;
   } else el.textContent = err?.message ?? String(err);
 }
 
 // Before a person types anything for the AI: when no model can answer
 // them, say so first (a simulated user in Germany learnt it only after
 // writing a strategy, 2026-10-13). Empty when a model will answer.
+// A draft survives leaving the page (to Settings, say) and coming back;
+// it is kept in this tab only, and cleared once sent.
+export function keepDraft(box) {
+  if (!box) return;
+  const key = 'vp-draft:' + location.hash;
+  try { if (!box.value) box.value = sessionStorage.getItem(key) || ''; } catch { /* private mode */ }
+  box.addEventListener('input', () => { try { sessionStorage.setItem(key, box.value); } catch { /* private mode */ } });
+}
+export function dropDraft() { try { sessionStorage.removeItem('vp-draft:' + location.hash); } catch { /* private mode */ } }
+
 export async function modelNotice() {
   const caps = await api('capabilities');
   if (!caps || caps.llm || !caps.demo?.message) return '';
-  return `<div class="aside" role="note"><p>${esc(caps.demo.message)}</p><p>${nextSteps()}</p></div>`;
+  return `<div class="aside" role="note"><p>${esc(caps.demo.message)}</p><p>${nextSteps(caps.demo.reason)}</p></div>`;
 }
 // Pick the rendering for the current reading level.
 export const level = (simple, full) => (detailed() ? full : simple);

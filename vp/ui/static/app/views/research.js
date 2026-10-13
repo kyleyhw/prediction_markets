@@ -5,7 +5,7 @@
 import { api, send, session } from '../api.js';
 import { render } from '../main.js';
 import { announceReply, follow, markReplied, waitingHtml } from '../talk.js';
-import { after, detailed, empty, esc, explain, fmt, head, modelNotice, t, tp } from '../ui.js';
+import { after, detailed, dropDraft, empty, esc, explain, fmt, head, keepDraft, modelNotice, t, tp } from '../ui.js';
 
 
 function answer(c) {
@@ -56,6 +56,7 @@ export default async function research([conversationId] = []) {
       try {
         const r = await send('POST', 'research', { words, conversation_id: conversationId || null });
         document.getElementById('words').value = '';
+        dropDraft();
         await wait(r.job_id, `#research/${r.conversation_id}`);
       } catch (e) {
         explain(status, e);
@@ -68,6 +69,7 @@ export default async function research([conversationId] = []) {
       if (words) say(words);
     });
     document.querySelectorAll('[data-say]').forEach((b) => b.addEventListener('click', () => say(b.dataset.say)));
+    keepDraft(document.getElementById('words'));
     announceReply(status);
     const pending = (convo?.waiting || []).find((w) => w.state === 'waiting');
     if (pending) {

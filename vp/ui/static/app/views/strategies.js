@@ -89,6 +89,11 @@ export default async function strategies() {
           <p><span class="pill">${t('strategy.status.' + s.status)}</span> <span class="small muted">${t('strategies.mine_version', { n: s.version })}</span></p>
           <p class="small muted">${esc(s.rendering[0])}</p></a>`).join('')}</div>`
       : `<p class="muted">${t('strategies.mine_none')}</p>`;
+    const open = (await api('conversations')) || [];
+    if (open.length) {
+      h += `<h3>${t('strategies.unfinished')}</h3><ul class="notes">${open.map((c) => `<li><a href="${c.kind === 'research' ? `#research/${esc(c.id)}` : `#describe/new/${esc(c.id)}`}">${esc(c.words.length > 90 ? c.words.slice(0, 90) + '…' : c.words)}</a>
+        <span class="small muted">${c.waiting ? t('strategies.unfinished_waiting') : ''} ${esc(fmt.relative(c.at))}</span></li>`).join('')}</ul>`;
+    }
     h += `<div class="row"><a class="btn primary" href="#describe/new">${t('strategies.describe')}</a>
       <a class="btn" href="#research">${t('strategies.research')}</a>
       <a class="btn" href="#shadow">${t('strategies.shadow')}</a>

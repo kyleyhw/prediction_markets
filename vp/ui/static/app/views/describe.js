@@ -6,7 +6,7 @@
 import { api, send, session } from '../api.js';
 import { render } from '../main.js';
 import { announceReply, follow, markReplied, waitingHtml } from '../talk.js';
-import { after, detailed, empty, esc, explain, fmt, head, modelNotice, t, tp } from '../ui.js';
+import { after, detailed, dropDraft, empty, esc, explain, fmt, head, keepDraft, modelNotice, t, tp } from '../ui.js';
 
 function proposal(turn, convo) {
   const c = turn.content;
@@ -64,12 +64,14 @@ export default async function describe([target = 'new', conversationId] = []) {
       try {
         const r = await send('POST', 'strategies/compile', { words, conversation_id: conversationId || null, strategy_id: strategyId });
         document.getElementById('words').value = '';
+        dropDraft();
         await wait(r.job_id, `#describe/${target}/${r.conversation_id}`);
       } catch (e) {
         explain(status, e);
         document.querySelectorAll('#say button, [data-say]').forEach((b) => { b.disabled = false; });
       }
     };
+    keepDraft(document.getElementById('words'));
     announceReply(status);
     // A message still being answered when the page opens: keep waiting.
     const pending = (convo?.waiting || []).find((w) => w.state === 'waiting');

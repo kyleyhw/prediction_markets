@@ -214,7 +214,9 @@
     "samples_title": "Sample strategies",
     "research": "Ask the research assistant",
     "shadow": "Learn from your own record",
-    "risk": "Risk across your strategies"
+    "risk": "Risk across your strategies",
+    "unfinished": "Conversations to come back to",
+    "unfinished_waiting": "waiting for a reply ·"
   },
   "bt": {
     "title": "Backtests",

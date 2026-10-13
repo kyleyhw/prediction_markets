@@ -169,7 +169,7 @@ function deletion() {
     <p class="small" id="delete-status" role="status"></p>`;
 }
 
-export default async function settings() {
+export default async function settings([part] = []) {
   const o = await api('overview');
   const p = prefs();
   let h = head(t('settings.title'), t('settings.lede'));
@@ -248,6 +248,9 @@ export default async function settings() {
         document.getElementById('saved').textContent = tp('settings.saved');
       }
     };
+    // #settings/where or #settings/model: open at that section.
+    const target = part && document.getElementById(part);
+    if (target) setTimeout(() => { target.setAttribute('tabindex', '-1'); target.scrollIntoView(); target.focus(); }, 0);
     document.getElementById('restart').addEventListener('click', async () => { await save({ start: { step: 0, done: false } }); location.hash = '#start'; });
     const box = document.getElementById('tokens');
     if (!box) return;

@@ -50,7 +50,11 @@ export default async function markets([wanted] = []) {
   if (!snap || !snap.stamp) {
     return h + empty(t('markets.empty_title', { title: info.title }), t('markets.empty_text'), [['#learn/markets', t('learn.topics.markets.title')]], 'vp snapshot --domain ' + domain);
   }
-  const traded = snap.markets.filter((m) => m.has_book).length;
+  // A market past its closing date counts as not trading: its price is
+  // stale or already the result (a newcomer saw "due to close 7 months
+  // ago" at 0% among the open questions, 2026-10-13).
+  const live = (m) => m.has_book && !(m.end_date && new Date(m.end_date).getTime() < Date.now());
+  const traded = snap.markets.filter(live).length;
   // Soonest to close first; markets past their closing date but not yet
   // settled after those, then markets with no date.
   const now = Date.now(), rank = (m) => (!m.end_date ? 2 : new Date(m.end_date).getTime() < now ? 1 : 0);
@@ -67,7 +71,7 @@ export default async function markets([wanted] = []) {
     dead.checked = !traded;
     const draw = () => {
       const words = q.value.toLowerCase().split(/\s+/).filter(Boolean);
-      const rows = snap.markets.filter((m) => (dead.checked || m.has_book)
+      const rows = snap.markets.filter((m) => (dead.checked || live(m))
         && words.every((w) => `${m.question} ${m.event || ''}`.toLowerCase().includes(w)));
       document.getElementById('results').innerHTML = rows.slice(0, shown).map((m) => marketCard(m, domain)).join('');
       document.getElementById('count').innerHTML = t('markets.count', { n: rows.length, shown: Math.min(shown, rows.length) });

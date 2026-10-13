@@ -222,3 +222,7 @@ details.card > summary { cursor: pointer; font-weight: 600; min-height: 24px; }
 select, input, textarea { max-width: 100%; }
 /* The hidden attribute wins over any display rule (a hidden "Show more" button stayed visible). */
 [hidden] { display: none !important; }
+/* A conversation is a list for screen readers, not a numbered one on screen;
+   a form's label sits above its box (simulated users, 2026-10-13). */
+.turns { list-style: none; padding-left: 0; }
+.stack > label { display: block; margin-bottom: 6px; }

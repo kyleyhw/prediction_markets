@@ -126,6 +126,47 @@ def conversation(
     }
 
 
+def unfinished(
+    pool: ConnectionPool, principal: Principal, limit: int = 10
+) -> list[dict[str, Any]]:
+    """Conversations that have not become a strategy yet, newest first, with
+    the person's first words and whether a reply is still coming; so a
+    conversation left while it waited can be found again (a simulated user
+    could reach hers only by its address, 2026-10-13)."""
+    rows = _rows(
+        pool,
+        principal,
+        "select c.id, c.created_at, "
+        "coalesce((select t.content->>'words' from conversation_turns t "
+        "  where t.conversation_id = c.id and t.role = 'user' "
+        "  order by t.id limit 1), "
+        " (select j.payload->>'words' from jobs j "
+        "  where j.kind in ('compile', 'research') "
+        "  and j.payload->>'conversation_id' = c.id::text "
+        "  order by j.created_at limit 1)) as words, "
+        "(select j.kind from jobs j where j.kind in ('compile', 'research') "
+        "  and j.payload->>'conversation_id' = c.id::text "
+        "  order by j.created_at limit 1) as kind, "
+        "exists (select 1 from jobs j where j.kind in ('compile', 'research') "
+        "  and j.payload->>'conversation_id' = c.id::text "
+        "  and j.state in ('queued', 'running')) as waiting "
+        "from conversations c where c.strategy_id is null "
+        "order by c.created_at desc limit %s",
+        (limit,),
+    )
+    return [
+        {
+            "id": str(r["id"]),
+            "words": r["words"],
+            "kind": "research" if r["kind"] == "research" else "describe",
+            "waiting": r["waiting"],
+            "at": r["created_at"].isoformat(),
+        }
+        for r in rows
+        if r["words"]
+    ]
+
+
 def add_turns(
     pool: ConnectionPool,
     principal: Principal,

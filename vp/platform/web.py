@@ -1363,6 +1363,11 @@ def create_app(
     def list_strategies(principal: Reader) -> list[dict[str, Any]]:
         return strategies.listing(pool, principal)
 
+    @app.get("/api/conversations")
+    def list_conversations(principal: Reader) -> list[dict[str, Any]]:
+        """Conversations not yet a strategy, to come back to."""
+        return strategies.unfinished(pool, principal)
+
     @app.get("/api/strategies/{strategy_id}")
     def get_strategy(strategy_id: UUID, principal: Reader) -> dict[str, Any]:
         return _found(lambda: strategies.detail(pool, principal, strategy_id))
@@ -1629,6 +1634,7 @@ input { width: 100%; font: inherit; padding: 10px 12px; border-radius: 8px;
 button { width: 100%; font: inherit; font-weight: 600; padding: 10px 12px;
   border: 0; border-radius: 8px; background: var(--accent); color: var(--on-accent);
   cursor: pointer; }
+form + p, button + p { margin-top: 18px; }
 button:focus-visible, input:focus-visible, a:focus-visible {
   outline: 2px solid var(--accent); outline-offset: 2px; }
 a { color: var(--accent); }

@@ -281,3 +281,31 @@ def test_the_research_assistant_answers_as_the_person_and_is_charged(
             "select sum(usd) from spend where kind = 'charge' and forecaster = 'research'"
         ).fetchone()
     assert charged > 0
+
+
+@needs_db
+def test_a_message_waiting_for_its_reply_is_kept_and_its_conversation_listed(
+    app_pool, pg_owner, two_workspaces
+) -> None:
+    """A simulated user's answer vanished while its reply was slow, and her
+    conversation could be reached only by its address (2026-10-13)."""
+    ada, bob = two_workspaces["a"], two_workspaces["b"]
+    convo = strategies.open_conversation(app_pool, ada)
+    words = "back the underdog in Counter-Strike between 25 and 40 cents"
+    job = enqueue(
+        app_pool, ada, "compile", {"conversation_id": str(convo), "words": words}
+    )
+    seen = strategies.conversation(app_pool, ada, convo)
+    assert seen["turns"] == [] and seen["waiting"][0]["words"] == words
+    assert seen["waiting"][0]["state"] == "waiting"
+    listed = strategies.unfinished(app_pool, ada)
+    assert any(c["id"] == str(convo) and c["waiting"] for c in listed)
+    assert all(c["id"] != str(convo) for c in strategies.unfinished(app_pool, bob))
+    # A reply that failed is shown as such, with the words to send again.
+    pg_owner.execute(
+        "update jobs set state = 'dead', error = 'DemoUnavailable: used up' "
+        "where id = %s",
+        (job,),
+    )
+    failed = strategies.conversation(app_pool, ada, convo)["waiting"][0]
+    assert failed["state"] == "failed" and "used up" in failed["error"]
