@@ -172,16 +172,34 @@ class WorkspaceView(DataView):
             ).fetchall()
         return [r[0] for r in rows]
 
-    def latest_forecasts(self, domain: str) -> dict[str, list[dict[str, Any]]]:
+    def _latest(self, domain: str | None, market_id: str | None) -> list[tuple]:
+        """Each strategy's latest forecast per market: the workspace's own,
+        or the sample strategies' when it reads the sample account (a page
+        said none existed while the sample held positions, 2026-10-13)."""
+        with self.pool.connection() as conn:
+            if self.sample is not None:
+                return conn.execute(
+                    "select * from vp_sample_forecasts(%s, %s)", (domain, market_id)
+                ).fetchall()
+            with tenant_session(conn, self.principal):
+                return conn.execute(
+                    "select distinct on (market_id, forecaster) market_id, "
+                    "forecaster, p_hat, cutoff from forecasts "
+                    "where (%(d)s::text is null or domain = %(d)s) "
+                    "and (%(m)s::text is null or market_id = %(m)s) "
+                    "order by market_id, forecaster, at desc",
+                    {"d": domain, "m": market_id},
+                ).fetchall()
+
+    def market_forecasts(self, domain: str, market_id: str) -> list[dict[str, Any]]:
+        return self.latest_forecasts(domain, market_id).get(market_id, [])
+
+    def latest_forecasts(
+        self, domain: str, market_id: str | None = None
+    ) -> dict[str, list[dict[str, Any]]]:
         """Each strategy's latest forecast per market in the domain, read as
         the columns the list shows rather than decoded records."""
-        with self.pool.connection() as conn, tenant_session(conn, self.principal):
-            rows = conn.execute(
-                "select distinct on (market_id, forecaster) market_id, forecaster, "
-                "p_hat, cutoff from forecasts where domain = %s "
-                "order by market_id, forecaster, at desc",
-                (domain,),
-            ).fetchall()
+        rows = self._latest(domain, market_id)
         out: dict[str, list[dict[str, Any]]] = {}
         for market_id, forecaster, p_hat, cutoff in rows:
             out.setdefault(str(market_id), []).append(

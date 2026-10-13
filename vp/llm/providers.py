@@ -74,6 +74,16 @@ FREE_TIER_COUNTRIES: frozenset[str] = frozenset(
 )
 
 
+#: Where Google's terms let an app serve people only on paid services: the
+#: EEA (with the EU's outermost regions), Switzerland, the United Kingdom,
+#: and, by the same doubt as above, Gibraltar and the Crown Dependencies.
+#: Used only to say why the demo is refused (docs/models.md).
+PAID_ONLY_COUNTRIES: frozenset[str] = frozenset(
+    """AT BE BG HR CY CZ DK EE FI FR DE GR HU IE IT LV LT LU MT NL PL PT RO SK SI
+    ES SE IS LI NO GF RE AX MQ GP YT MF CH GB GI GG JE IM""".split()
+)
+
+
 def key_from_environment(provider: str) -> str | None:
     """A provider's key from the environment, under the name its own tools
     use (``GEMINI_API_KEY``, ``GROQ_API_KEY``...), for the command line.

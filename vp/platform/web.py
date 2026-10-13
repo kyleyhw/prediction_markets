@@ -1234,7 +1234,10 @@ def create_app(
                     "id": p.id,
                     "label": p.label,
                     "needs_key": p.needs_key,
-                    "address": p.base_url is None,
+                    # Only an OpenAI-compatible provider without a preset
+                    # address asks for one (found by a simulated user: the
+                    # form demanded an address for Anthropic and Gemini).
+                    "address": p.kind == "openai" and p.base_url is None,
                     "names_model": p.kind != "anthropic",
                 }
                 for p in PROVIDERS.values()
@@ -1250,6 +1253,13 @@ def create_app(
         if not principal.may_write:
             raise HTTPException(403, "your role may not change the model")
         try:
+            llmops.check_connection(
+                body.provider,
+                (body.model or "").strip() or None,
+                (body.key or "").strip() or None,
+                (body.base_url or "").strip() or None,
+                settings.allow_private_model_urls,
+            )
             hint = llmops.store_connection(
                 pool,
                 principal,

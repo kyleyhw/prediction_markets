@@ -4,7 +4,7 @@
 // The hash is #research/<conversation id>.
 import { api, send, session } from '../api.js';
 import { render } from '../main.js';
-import { after, detailed, empty, esc, explain, fmt, head, t, tp } from '../ui.js';
+import { after, detailed, empty, esc, explain, fmt, head, modelNotice, t, tp } from '../ui.js';
 
 const DONE = new Set(['succeeded', 'failed', 'dead', 'cancelled']);
 
@@ -27,6 +27,7 @@ function answer(c) {
 export default async function research([conversationId] = []) {
   let h = head(t('research.title'), t('research.lede'));
   if (!session.hosted) return h + empty(t('describe.local_title'), t('research.local_text'), [['#strategies', t('describe.back')]]);
+  h += await modelNotice();
   const convo = conversationId ? await api(`conversations/${conversationId}`) : null;
   if (convo?.turns.length) {
     h += `<ol class="turns" aria-label="${tp('describe.conversation')}">${convo.turns.map((x) => x.role === 'user'

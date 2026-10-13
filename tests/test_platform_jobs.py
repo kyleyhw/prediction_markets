@@ -114,7 +114,7 @@ def test_a_refused_job_goes_dead_at_once(app_pool, pg_owner, two_workspaces) -> 
 
     assert Worker(app_pool, {"leakage": refuse}, ("leakage",)).run_once()
     st, attempts, error, *_ = state(pg_owner, job_id)
-    assert st == "dead" and attempts == 1 and "not available where you are" in error
+    assert st == "dead" and attempts == 1 and "cannot be offered where you are" in error
 
 
 def test_cancelling_stops_a_queued_job_and_a_running_one(

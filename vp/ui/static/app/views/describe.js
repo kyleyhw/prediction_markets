@@ -5,7 +5,7 @@
 // #describe/<strategy id or new>/<conversation id>.
 import { api, send, session } from '../api.js';
 import { render } from '../main.js';
-import { after, detailed, empty, esc, explain, fmt, head, t, tp } from '../ui.js';
+import { after, detailed, empty, esc, explain, fmt, head, modelNotice, t, tp } from '../ui.js';
 
 const DONE = new Set(['succeeded', 'failed', 'dead', 'cancelled']);
 
@@ -45,6 +45,7 @@ export default async function describe([target = 'new', conversationId] = []) {
   const strategyId = target === 'new' ? null : target;
   let h = head(strategyId ? t('describe.refine_title') : t('describe.title'), strategyId ? t('describe.refine_lede') : t('describe.lede'));
   if (!session.hosted) return h + empty(t('describe.local_title'), t('describe.local_text'), [['#strategies', t('describe.back')]]);
+  h += await modelNotice();
   const convo = conversationId ? await api(`conversations/${conversationId}`) : null;
   if (convo?.turns.length) h += `<ol class="turns" aria-label="${tp('describe.conversation')}">${convo.turns.map((x) => turnHtml(x, convo)).join('')}</ol>`;
   else if (!strategyId) h += `<p class="muted">${t('describe.examples_intro')}</p><ul class="notes">${['one', 'two', 'three'].map((k) => `<li><button class="btn quiet" type="button" data-say="${tp('describe.example_' + k)}">${t('describe.example_' + k)}</button></li>`).join('')}</ul>`;

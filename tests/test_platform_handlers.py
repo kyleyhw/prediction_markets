@@ -116,12 +116,14 @@ def test_a_paper_cycle_trades_the_shared_capture_into_the_account_s_ledger(
     # The market list shows the workspace's own latest forecast, and only its.
     shown = WorkspaceView(services.shared, app_pool, ada, services.store)
     assert [f["forecaster"] for f in shown.latest_forecasts("cs2")["6"]] == ["constant"]
-    assert (
-        WorkspaceView(services.shared, app_pool, bob, services.store).latest_forecasts(
-            "cs2"
-        )
-        == {}
-    )
+    # Bob, with no account of his own, reads the sample strategies', never
+    # Ada's.
+    with app_pool.connection() as conn:
+        sample = conn.execute(
+            "select * from vp_sample_forecasts('cs2', null)"
+        ).fetchall()
+    bobs = WorkspaceView(services.shared, app_pool, bob, services.store)
+    assert sum(len(v) for v in bobs.latest_forecasts("cs2").values()) == len(sample)
     # Bob cannot run a cycle on Ada's account: the job fails, touching nothing.
     theirs = enqueue(app_pool, bob, "paper_cycle", {"account_id": str(account)})
     run_all(app_pool, services, ("paper_cycle",))
@@ -231,3 +233,12 @@ def test_the_platform_trades_the_sample_account_everyone_reads(
     assert any(e["kind"] == "cycle" for e in ledger.entries())
     with pytest.raises(PermissionError):
         ledger.append("cycle", {})
+    # A workspace reading the sample sees the sample strategies' forecasts
+    # on market pages too (found by a simulated user, 2026-10-13).
+    from vp.platform.views import WorkspaceView
+
+    view = WorkspaceView(services.shared, app_pool, two_workspaces["a"], services.store)
+    seen = view.latest_forecasts("cs2")
+    assert seen, "the sample's forecasts reach the reader"
+    market_id = next(iter(seen))
+    assert view.market_forecasts("cs2", market_id) == seen[market_id]

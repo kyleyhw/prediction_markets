@@ -303,20 +303,22 @@ def run_cycle(
 
 
 def _within(market: BinaryMarket, now: datetime, hours: float | None) -> bool:
-    """Whether the market's scheduled end is in the next ``hours`` (always
-    true without a window; false for a market with no end date)."""
-    if hours is None:
-        return True
+    """Whether the market's scheduled end is in the next ``hours``; without
+    a window, whether it is still ahead at all. A market whose event is
+    already over is never traded: its price carries the result (found by a
+    simulated user, 2026-10-13: a sample strategy bought "No" at 0.1 cents
+    on a match played in March, still listed open by the venue). A market
+    with no end date is traded only without a window."""
     if not market.end_date:
-        return False
+        return hours is None
     try:
         end = datetime.fromisoformat(market.end_date.replace("Z", "+00:00"))
     except ValueError:
-        return False
+        return hours is None
     if end.tzinfo is None:
         end = end.replace(tzinfo=timezone.utc)
     left = (end - now).total_seconds() / 3600
-    return 0 < left <= hours
+    return 0 < left and (hours is None or left <= hours)
 
 
 def settle(

@@ -210,6 +210,14 @@ class DataView:
             )
         return forecasts
 
+    def market_forecasts(self, domain: str, market_id: str) -> list[dict[str, Any]]:
+        """The forecasts shown on one market's page."""
+        return [
+            {"forecaster": f["forecaster"], "p_hat": f["p_hat"], "cutoff": f["cutoff"]}
+            for f in self.forecasts(limit=5000)
+            if str(f.get("market_id")) == market_id
+        ]
+
     def market(
         self, domain: str, market_id: str, *, history: int = 30
     ) -> dict[str, Any] | None:
@@ -229,11 +237,7 @@ class DataView:
             return None
         market = found[0]
         series = market_series(snaps[-history:], market_id)
-        forecasts = [
-            {"forecaster": f["forecaster"], "p_hat": f["p_hat"], "cutoff": f["cutoff"]}
-            for f in self.forecasts(limit=5000)
-            if str(f.get("market_id")) == market_id
-        ]
+        forecasts = self.market_forecasts(domain, market_id)
         first = market.outcomes[0]
         return _market_row(market, forecasts) | {
             "event_id": market.event_id,

@@ -30,6 +30,14 @@ pytestmark = needs_db
 MASTER = base64.b64encode(os.urandom(32)).decode()
 
 
+@pytest.fixture(autouse=True)
+def no_model_calls(monkeypatch) -> None:
+    """Connecting a model sends it a test message; here nothing leaves."""
+    from vp.platform import llmops
+
+    monkeypatch.setattr(llmops, "check_connection", lambda *a, **k: None)
+
+
 @pytest.fixture(scope="module")
 def world(pg_owner, tmp_path_factory) -> Iterator[dict]:
     root = tmp_path_factory.mktemp("work")
@@ -228,6 +236,24 @@ def test_any_model_connects_and_only_its_hint_comes_back(world) -> None:
     assert client.get("/api/model").json()["own"] is None
     _as(client, ada)
     assert client.delete("/api/model", headers=ORIGIN).status_code == 204
+
+
+def test_a_connection_the_model_refuses_is_not_saved(world, monkeypatch) -> None:
+    """A made-up key used to be accepted as connected (simulated user,
+    2026-10-13); the model now answers a test message first."""
+    from vp.platform import llmops
+
+    def refuse(*a, **k):
+        raise ValueError("the model did not answer: the provider refused the key")
+
+    monkeypatch.setattr(llmops, "check_connection", refuse)
+    client = world["client"]
+    ada, _ = people(world)
+    _as(client, ada)
+    body = {"provider": "openai", "model": "m", "key": "not-a-real-key-123456789012345"}
+    got = client.put("/api/model", json=body, headers=ORIGIN)
+    assert got.status_code == 422 and "refused the key" in got.json()["detail"]
+    assert client.get("/api/model").json()["own"] is None
     assert client.get("/api/model").json()["own"] is None
 
 

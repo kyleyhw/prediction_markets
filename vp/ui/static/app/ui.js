@@ -1,7 +1,7 @@
 // Shared pieces of every view: the reading level, glossary terms and their
 // popover, tables, empty states, and the hooks a view registers to wire up
 // its controls once its HTML is in the document.
-import { session } from './api.js';
+import { api, session } from './api.js';
 import { entry, esc, fmt, raw, t, tp } from './i18n.js';
 import { prefs } from './prefs.js';
 
@@ -15,11 +15,22 @@ export const GUIDE_URL = 'https://github.com/kyleyhw/prediction_markets/blob/mas
 // A refusal shown where it happened: when the reason is the model (none
 // set up, the demo cannot serve this country, today's demo allowance), the
 // way forward comes with it; anything else is shown as said.
+const nextSteps = () => `<a href="#settings">${t('model.settings')}</a> · <a href="${esc(GUIDE_URL)}" target="_blank" rel="noopener">${t('model.copy')}</a>`;
+
 export function explain(el, err) {
   if (!el) return;
   if (['none', 'country_needed', 'region_blocked', 'used_up'].includes(err?.code)) {
-    el.innerHTML = `${esc(err.message)} <a href="#settings">${t('model.settings')}</a> · <a href="${esc(GUIDE_URL)}">${t('model.copy')}</a>`;
+    el.innerHTML = `<span class="aside" role="note">${esc(err.message)} ${nextSteps()}</span>`;
   } else el.textContent = err?.message ?? String(err);
+}
+
+// Before a person types anything for the AI: when no model can answer
+// them, say so first (a simulated user in Germany learnt it only after
+// writing a strategy, 2026-10-13). Empty when a model will answer.
+export async function modelNotice() {
+  const caps = await api('capabilities');
+  if (!caps || caps.llm || !caps.demo?.message) return '';
+  return `<div class="aside" role="note"><p>${esc(caps.demo.message)}</p><p>${nextSteps()}</p></div>`;
 }
 // Pick the rendering for the current reading level.
 export const level = (simple, full) => (detailed() ? full : simple);
@@ -100,7 +111,13 @@ export function strategyName(name) {
   const s = entry('forecasters.' + name);
   return detailed() || !s ? term(name, name) : esc(s.name);
 }
-export const strategyLabel = (name) => (detailed() ? name : entry('forecasters.' + name)?.name ?? name);
+// One name in both reading levels (a simulated user took "Coin flip" and
+// "constant" for two strategies); Detailed adds the identifier after it.
+export const strategyLabel = (name) => {
+  const friendly = entry('forecasters.' + name)?.name;
+  if (!friendly) return name;
+  return detailed() ? `${friendly} (${name})` : friendly;
+};
 export const strategySentence = (name) => entry('forecasters.' + name)?.simple ?? t('forecasters_unknown');
 export const kindName = (kind) => entry('kinds.' + (kind || 'unparsed'))?.name ?? esc(kind);
 

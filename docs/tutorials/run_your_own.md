@@ -11,8 +11,10 @@ have two ways to carry on, and both are free if you want them to be.
    works, and several have free plans of their own.
 2. **Run your own copy** of the app on your computer, with any model,
    including a free one that runs on the computer itself, or a program you
-   write. This page shows how. It takes about twenty minutes the first
-   time, and you need no experience with code.
+   write. This page shows how. It takes about half an hour the first
+   time. You write no code, but you do install one program (Docker) and
+   type two short commands into a terminal; each step below says exactly
+   what to type.
 
 Your copy is the same app, with the same pages. It is yours: it runs only
 on your computer, nobody else can reach it, and nothing you do in it is
@@ -30,16 +32,24 @@ sources.
 
 ## 1. Get the app
 
-Download the code: on the project's GitHub page, *Code*, then *Download
-ZIP*, and unzip it. (If you use GitHub, *Fork* it instead, so you can keep
-your own changes.)
+Download it as one file:
+<https://github.com/kyleyhw/prediction_markets/archive/refs/heads/master.zip>,
+and unzip it (double-click the file). You get a folder called
+`prediction_markets-master`. (If you use GitHub, *Fork* the project
+instead, so you can keep your own changes.)
+
+**Opening a terminal in that folder.** On a Mac, right-click the folder
+in Finder and choose *Services → New Terminal at Folder*. On Windows, open the folder, right-click in an
+empty part of it and choose *Open Git Bash here* (Git for Windows adds
+it). A terminal is a window where you type a command and press Enter.
 
 ## 2. Choose a model
 
 Pick one before you start:
 
-- **A free model on your computer.** Install Ollama from ollama.com, then
-  in a terminal type `ollama pull qwen2.5:7b`. Larger models answer better
+- **A free model on your computer.** Install Ollama from ollama.com (an
+  ordinary installer), then in a terminal type `ollama pull qwen2.5:7b`
+  and press Enter; it downloads the model, about 5 GB. Larger models answer better
   and need more memory; the 7b model is a good start.
 - **A provider's model.** Get a key from the provider's website
   (Anthropic, Google, OpenAI, Groq, OpenRouter, Mistral and others). Some

@@ -23,23 +23,6 @@ function tokens(list) {
       <button class="btn" type="submit">${t('settings.create_token')}</button></form><div id="token-secret" role="status"></div>`;
 }
 
-async function download() {
-  const parts = await Promise.all([
-    session.hosted ? fetch('/auth/me').then((r) => r.json()) : null,
-    Promise.resolve(prefs()),
-    session.hosted ? api('tokens') : [],
-    api('paper?limit=1000'),
-    api('forecasts?limit=1000'),
-  ]);
-  const [account, settings, apiTokens, paper, forecasts] = parts;
-  const blob = new Blob([JSON.stringify({ exported_at: new Date().toISOString(), account, settings, api_tokens: apiTokens, paper, forecasts }, null, 1)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'vibe-predict-export.json';
-  a.click();
-  URL.revokeObjectURL(a.href);
-}
-
 // This month's model spending: a sentence in both levels, the breakdown in
 // Detailed. It is a fact that changes decisions, so Simple keeps it.
 async function spending() {
@@ -55,7 +38,7 @@ async function spending() {
   return h;
 }
 
-const copyLine = () => `<p class="measure">${t('settings.model_copy')} <a href="${esc(GUIDE_URL)}">${t('settings.model_copy_link')}</a></p>`;
+const copyLine = () => `<p class="measure">${t('settings.model_copy')} <a href="${esc(GUIDE_URL)}" target="_blank" rel="noopener">${t('settings.model_copy_link')}</a></p>`;
 
 // The model that answers this workspace (docs/models.md): its own, from
 // any provider, or the free demo; in both levels, since a person the demo
@@ -220,7 +203,6 @@ export default async function settings() {
   if (detailed()) {
     if (session.hosted) h += `<h2>${t('settings.tokens')}</h2><p class="muted measure">${t('settings.tokens_note')}</p><div id="tokens">${tokens(await api('tokens'))}</div>`;
     if (session.hosted) h += refreshData(o.domains);
-    h += `<h2>${t('settings.export')}</h2><p class="muted measure">${t('settings.export_note')}</p><button class="btn" type="button" id="export">${t('settings.export_button')}</button>`;
     h += `<h2>${t('settings.later')}</h2><ul class="notes measure">${['play_money'].map((k) => `<li>${t('settings.later_' + k)}</li>`).join('')}</ul>`;
   }
   if (session.hosted) {
@@ -254,7 +236,6 @@ export default async function settings() {
       }
     });
     document.getElementById('restart').addEventListener('click', async () => { await save({ start: { step: 0, done: false } }); location.hash = '#start'; });
-    document.getElementById('export')?.addEventListener('click', download);
     const box = document.getElementById('tokens');
     if (!box) return;
     box.addEventListener('click', async (e) => {

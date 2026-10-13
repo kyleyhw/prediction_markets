@@ -35,6 +35,7 @@ from psycopg_pool import ConnectionPool
 
 from vp.llm import FREE_TIER_COUNTRIES, PROVIDERS
 from vp.llm.openai_compat import check_address
+from vp.llm.providers import PAID_ONLY_COUNTRIES
 from vp.platform.config import Settings
 from vp.platform.db import tenant_session
 from vp.platform.jobs import JobRefused
@@ -89,10 +90,17 @@ MESSAGES = {
         "(Settings, Where you are)."
     ),
     "region_blocked": (
-        "The free demo model is not available where you are: Google's free "
-        "tier may not serve your country. You can still connect your own "
-        "model in Settings, or run your own copy with your own model or "
-        "script, free, on your computer."
+        "The free demo model cannot be offered where you are: Google does "
+        "not offer its free AI service in your country. You can still use "
+        "everything with an AI model of your own (Settings, Your AI model), "
+        "or run your own copy of the app on your computer."
+    ),
+    "region_paid_only": (
+        "The free demo model cannot be offered where you are: Google's terms "
+        "do not allow its free AI service to be used for people in the "
+        "European Economic Area, Switzerland or the United Kingdom. You can "
+        "still use everything with an AI model of your own (Settings, Your "
+        "AI model), or run your own copy of the app on your computer."
     ),
     "used_up": (
         "The free demo model's allowance for today is used up; it starts "
@@ -167,6 +175,44 @@ def store_connection(
     return hint
 
 
+def check_connection(
+    provider: str,
+    model: str | None,
+    key: str | None,
+    base_url: str | None,
+    allow_private: bool = False,
+) -> None:
+    """Send one short message to the model before it is saved, so a wrong
+    key, name or address is found now rather than in the middle of a
+    backtest (a simulated user's made-up key was accepted as connected,
+    2026-10-13). Raises ValueError with the provider's answer."""
+    from vp.llm import connect
+
+    p = PROVIDERS.get(provider)
+    if p is None:
+        raise ValueError(f"unknown provider {provider!r}")
+    if p.kind != "openai" or p.base_url is not None:
+        base_url = None  # a preset keeps its own address
+    try:
+        client = connect(
+            provider,
+            model or "claude-haiku-4-5",
+            key,
+            base_url,
+            allow_private=allow_private,
+            max_retries=1,
+        )
+        client.messages.create(
+            model=model or "claude-haiku-4-5",
+            max_tokens=16,
+            messages=[{"role": "user", "content": "Reply with the word OK."}],
+        )
+    except ValueError:
+        raise
+    except Exception as exc:  # noqa: BLE001 - every provider fails in its own way
+        raise ValueError(f"the model did not answer: {str(exc)[:240]}") from None
+
+
 def connection(pool: ConnectionPool, principal: Principal) -> dict[str, Any] | None:
     """The workspace's own model, without its key: provider, model, address
     and the key's hint; or None."""
@@ -232,7 +278,10 @@ def demo_check(
         if where is None:
             raise _unavailable("country_needed")
         if where not in FREE_TIER_COUNTRIES:
-            raise _unavailable("region_blocked")
+            reason = "region_paid_only" if where in PAID_ONLY_COUNTRIES else None
+            raise DemoUnavailable(
+                "region_blocked", MESSAGES[reason or "region_blocked"]
+            )
     with pool.connection() as conn, tenant_session(conn, principal):
         (left,) = conn.execute(
             "select vp_demo_left(%s, %s)",

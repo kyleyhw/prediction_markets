@@ -224,3 +224,22 @@ def test_an_account_stakes_only_the_cash_it_has(tmp_path: Path) -> None:
         now=NOW,
     )
     assert counts["orders"] == 0
+
+
+def test_a_market_whose_event_is_over_is_never_traded() -> None:
+    """Found by a simulated user (2026-10-13): a sample strategy bought "No"
+    at 0.1 cents on a match played months before, still listed open."""
+    from dataclasses import replace
+    from datetime import datetime, timezone
+
+    from tests.test_forecast import EPL
+    from vp.paper.loop import _within
+
+    now = datetime(2026, 10, 13, tzinfo=timezone.utc)
+    over = replace(EPL[0], end_date="2026-03-21T17:40:00Z")
+    ahead = replace(EPL[0], end_date="2026-10-14T12:00:00Z")
+    undated = replace(EPL[0], end_date=None)
+    assert not _within(over, now, None) and not _within(over, now, 48)
+    assert _within(ahead, now, None) and _within(ahead, now, 48)
+    assert not _within(ahead, now, 6)
+    assert _within(undated, now, None) and not _within(undated, now, 48)
