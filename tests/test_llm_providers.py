@@ -115,12 +115,10 @@ def test_refusals_of_known_differences_are_repaired_once_and_remembered() -> Non
     assert got.stop_reason == "end_turn" and "probability" in got.content[0].text
     last = seen[2]["body"]
     assert "max_completion_tokens" in last and "max_tokens" not in last
-    assert last["response_format"] == {"type": "json_object"}
+    assert last["response_format"] == {"type": "json_object", "schema": SCHEMA}
     assert "JSON schema" in last["messages"][0]["content"]
     client.messages.create(**ask)  # remembered: one request, already adapted
-    assert (
-        len(seen) == 4 and seen[3]["body"]["response_format"]["type"] == "json_object"
-    )
+    assert len(seen) == 4 and seen[3]["body"]["response_format"]["schema"] == SCHEMA
 
 
 def test_errors_say_what_went_wrong_without_the_key() -> None:

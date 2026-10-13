@@ -9,11 +9,12 @@ tools, a tool result one ``tool`` message per call, and a JSON-schema
 answer ``response_format``. Replies come back as content blocks
 (`vp/llm/shapes.py`).
 
-Servers differ, so two refusals are repaired once and remembered for the
-client's life: a server that rejects ``json_schema`` is asked for
-``json_object`` with the schema stated in the system prompt, and one that
-rejects ``max_tokens`` (OpenAI's newer models) gets
-``max_completion_tokens``.
+Servers differ, so known refusals are repaired once and remembered for
+the client's life: a server that rejects ``json_schema`` is asked for
+``json_object`` holding the schema (llama.cpp's servers constrain the
+output to it), then for bare ``json_object``, with the schema stated in
+the system prompt either way; one that rejects ``max_tokens`` (OpenAI's
+newer models) gets ``max_completion_tokens``.
 
 An address a person typed is the one way they could aim the platform's
 servers at something; :func:`check_address` refuses anything but a public
@@ -48,6 +49,10 @@ from vp.llm.shapes import (
 )
 
 RETRY_STATUS = frozenset({429, 500, 502, 503, 504})
+SCHEMA_NOTE = (
+    "\n\nAnswer with one JSON object, and nothing else, that follows this "
+    "JSON schema:\n"
+)
 
 
 def check_address(url: str, allow_private: bool = False) -> None:
@@ -171,12 +176,8 @@ class Messages:
     ) -> Reply:
         c = self._client
         schema = ((output_config or {}).get("format") or {}).get("schema")
-        if schema is not None and c.json_object:
-            system = (
-                text_of(system or "")
-                + "\n\nAnswer with one JSON object, and nothing else, that "
-                "follows this JSON schema:\n" + json.dumps(schema)
-            )
+        if schema is not None and c.json_mode != "schema":
+            system = text_of(system or "") + SCHEMA_NOTE + json.dumps(schema)
         body: dict[str, Any] = {
             "model": c.model,
             "messages": chat_messages(system, messages),
@@ -198,14 +199,14 @@ class Messages:
             # Python server) ignore tools unless asked (2026-10-13).
             body["tool_choice"] = "auto"
         if schema is not None:
-            body["response_format"] = (
-                {"type": "json_object"}
-                if c.json_object
-                else {
+            body["response_format"] = {
+                "schema": {
                     "type": "json_schema",
                     "json_schema": {"name": "answer", "schema": schema, "strict": True},
-                }
-            )
+                },
+                "object_schema": {"type": "json_object", "schema": schema},
+                "object": {"type": "json_object"},
+            }[c.json_mode]
         return reply(c.post(body), c.model)
 
 
@@ -242,7 +243,10 @@ class OpenAICompatClient:
         self._http = http or httpx.Client(timeout=timeout, follow_redirects=False)
         self._retries = max_retries
         self._sleep = sleep
-        self.json_object = False
+        # How this server takes a JSON-schema answer: "schema" (OpenAI's
+        # json_schema), "object_schema" (json_object holding the schema, as
+        # llama.cpp's servers do), or "object" (bare json_object).
+        self.json_mode = "schema"
         self.tokens_field = "max_tokens"
         self.messages = Messages(self)
         self.beta = SimpleNamespace(messages=self.messages)
@@ -258,19 +262,24 @@ class OpenAICompatClient:
             self.tokens_field = "max_completion_tokens"
             body["max_completion_tokens"] = body.pop("max_tokens")
             return True
-        if "response_format" in low or "json_schema" in low:
-            if body.get("response_format", {}).get("type") == "json_schema":
-                self.json_object = True
-                schema = body["response_format"]["json_schema"]["schema"]
-                body["response_format"] = {"type": "json_object"}
-                note = (
-                    "\n\nAnswer with one JSON object, and nothing else, that "
-                    "follows this JSON schema:\n" + json.dumps(schema)
-                )
+        fmt = body.get("response_format") or {}
+        if "response_format" in low or "json_schema" in low or "schema" in low:
+            if fmt.get("type") == "json_schema":
+                # llama.cpp's servers take the schema inside json_object and
+                # hold the output to it (unconstrained JSON can run on as
+                # whitespace to the token limit: 2026-10-13).
+                self.json_mode = "object_schema"
+                schema = fmt["json_schema"]["schema"]
+                body["response_format"] = {"type": "json_object", "schema": schema}
+                note = SCHEMA_NOTE + json.dumps(schema)
                 if body["messages"] and body["messages"][0]["role"] == "system":
                     body["messages"][0]["content"] += note
                 else:
                     body["messages"].insert(0, {"role": "system", "content": note})
+                return True
+            if fmt.get("type") == "json_object" and "schema" in fmt:
+                self.json_mode = "object"
+                del fmt["schema"]
                 return True
         return False
 
@@ -293,7 +302,7 @@ class OpenAICompatClient:
                 # Validation refusals come as 400, 422 or (llama.cpp) 500.
                 if (
                     r.status_code in (400, 422, 500)
-                    and repaired < 2
+                    and repaired < 3
                     and self._repair(body, r.text)
                 ):
                     repaired += 1

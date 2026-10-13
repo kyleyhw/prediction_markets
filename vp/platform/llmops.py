@@ -37,6 +37,7 @@ from vp.llm import FREE_TIER_COUNTRIES, PROVIDERS
 from vp.llm.openai_compat import check_address
 from vp.platform.config import Settings
 from vp.platform.db import tenant_session
+from vp.platform.jobs import JobRefused
 from vp.platform.principal import Principal
 
 KEY_VERSION = 1
@@ -72,7 +73,7 @@ def unseal(ciphertext: bytes, wrapped: bytes, master_key: str | None) -> str:
     )
 
 
-class DemoUnavailable(KeysUnavailable):
+class DemoUnavailable(KeysUnavailable, JobRefused):
     """The free demo model cannot answer this person now; ``code`` says why:
     ``country_needed``, ``region_blocked``, ``used_up`` or ``none``."""
 

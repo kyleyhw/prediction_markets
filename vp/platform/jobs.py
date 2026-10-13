@@ -89,6 +89,11 @@ class JobCancelled(Exception):
     """Someone asked the running job to stop."""
 
 
+class JobRefused(Exception):
+    """A failure no retry can mend (the demo model may not serve this
+    person): the job ends dead at once, with this as its reason."""
+
+
 class LeaseLost(Exception):
     """The job's lease expired and it was taken back; stop without finishing."""
 
@@ -350,6 +355,8 @@ class Worker:
                 result = self.handlers[job.kind](ctx) or {}
         except JobCancelled:
             state, error = "cancelled", "cancelled on request"
+        except JobRefused as exc:
+            state, error = "refused", str(exc)
         except LeaseLost:
             done.set()
             logger.warning("job %s lost its lease; not recording an outcome", job.id)

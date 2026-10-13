@@ -101,6 +101,22 @@ def test_a_failing_job_retries_then_goes_dead(
     assert state(pg_owner, job_id)[0] == "dead"
 
 
+def test_a_refused_job_goes_dead_at_once(app_pool, pg_owner, two_workspaces) -> None:
+    """A failure no retry mends (the demo may not serve this person) is
+    not retried (found running the free demo, 2026-10-13)."""
+    from vp.platform.llmops import MESSAGES, DemoUnavailable
+
+    ada = two_workspaces["a"]
+    job_id = enqueue(app_pool, ada, "leakage", {})
+
+    def refuse(ctx):
+        raise DemoUnavailable("region_blocked", MESSAGES["region_blocked"])
+
+    assert Worker(app_pool, {"leakage": refuse}, ("leakage",)).run_once()
+    st, attempts, error, *_ = state(pg_owner, job_id)
+    assert st == "dead" and attempts == 1 and "not available where you are" in error
+
+
 def test_cancelling_stops_a_queued_job_and_a_running_one(
     app_pool, pg_owner, two_workspaces
 ) -> None:
