@@ -498,7 +498,8 @@ Started 2026-09-21; what is built is recorded in `docs/platform.md`.
       accumulates forward and every week not captured is a week no backtest
       can use honestly. Storage in object storage as Parquet with capture
       times; the readers come in Phase 17.
-34. [in-progress] Deploy. The local stand-in, `vp admin` and CI landed
+34. [in-progress] Deploy. Preceded on 2026-10-13, at the owner's request,
+    by a static demo on GitHub Pages (`docs/demo.md`), which needs no host. The local stand-in, `vp admin` and CI landed
     2026-09-23; the cloud part waits. **Cloud deployment deferred to the end** (decided
     2026-09-23, flag F16): the platform is built and verified on a local
     stand-in, and the Fly.io account, the region probe of F1 and the
@@ -1214,6 +1215,7 @@ called done.
 | 22 | Polymarket US | assess only (F13) |
 | 23 | The site's visual style | the "paper" default of `docs/site.md` as the placeholder; alternatives trialled later (F14) |
 | 15 | Models and who pays (2026-10-13, revised the same day) | any model from any provider plugs in (`vp/llm/`); the demo is Gemini 3.1 Flash-Lite on Google's free tier, which the owner pays nothing for, within a daily allowance of calls and only where the free tier may serve people; elsewhere people are told so and pointed to their own model or their own copy (`docs/models.md`, F19, F9) |
+| 13 | A proof of concept before the deploy (2026-10-13) | the public face is a static demo on GitHub Pages, free: visitors bring their own model key or use a form, nothing is saved, the strategy and the transcript download; forks get a harness for strategy scripts any AI can write; the hosted platform with sign-in (task 34) follows later, unchanged (`docs/demo.md`) |
 
 ### Flags recorded with the decisions
 

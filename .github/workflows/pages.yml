@@ -1,0 +1,59 @@
+# The demo on GitHub Pages (docs/demo.md): resolved markets and their
+# prices are rebuilt daily, exported with every statistical forecast, and
+# published with the documentation site under docs/. No server and no key:
+# visitors use their own model from the page. Enable it once in the
+# repository's Settings, Pages, Source: GitHub Actions.
+name: pages
+
+on:
+  push:
+    branches: [master]
+  schedule:
+    - cron: "17 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --frozen
+      # Datasets and price histories carry over between runs, so a day's
+      # build fetches only what is new.
+      - uses: actions/cache@v4
+        with:
+          path: |
+            data/markets
+            data/histories
+          key: demo-data-${{ github.run_id }}
+          restore-keys: demo-data-
+      - name: Resolved markets and their price histories, every domain
+        run: |
+          domains=$(uv run python -c "from vp.domains import DOMAINS; print(' '.join(DOMAINS))")
+          uv run vp build-dataset --domain $domains --histories 600
+      - run: uv run vp demo --out data/pages
+      - run: uv run vp site --out data/pages/docs
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: data/pages
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,47 @@
+{
+ "version": 1,
+ "name": "An AI model's forecast of Premier League matches",
+ "idea": "Ask an AI model for each match's chance and bet where it disagrees with the price.",
+ "selector": {
+  "domains": [
+   "epl"
+  ],
+  "kinds": [
+   "match"
+  ],
+  "where": [],
+  "words": [],
+  "exclude_words": [],
+  "min_volume_usd": null,
+  "min_liquidity_usd": null,
+  "max_spread": null
+ },
+ "belief": {
+  "forecaster": "constant",
+  "instructions": "",
+  "tier": "standard",
+  "samples": 1,
+  "sees_price": false
+ },
+ "rule": {
+  "kind": "edge",
+  "min_edge": 0.05,
+  "sides": "both",
+  "follow": null,
+  "price_min": 0.1,
+  "price_max": 0.9
+ },
+ "sizing": {
+  "kelly_fraction": 0.25,
+  "max_fraction": 0.02,
+  "flat_fraction": 0.01,
+  "max_stake_usd": null,
+  "max_open": null,
+  "max_per_event": null,
+  "initial_cash": 1000.0
+ },
+ "schedule": {
+  "hours_before_close": 24.0,
+  "cadence_hours": 1
+ }
+}

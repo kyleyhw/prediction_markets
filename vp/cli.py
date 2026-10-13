@@ -229,6 +229,12 @@ def build_parser() -> argparse.ArgumentParser:
     sback.add_argument("--root", type=Path, default=Path("data"))
     sback.add_argument("--max-markets", type=int, default=None)
     sback.add_argument("--out", type=Path, default=None)
+    sback.add_argument(
+        "--script",
+        type=Path,
+        default=None,
+        help="a Python file whose forecast(market, evidence) is the belief",
+    )
 
     paper = sub.add_parser("paper", help="paper trading")
     paper_sub = paper.add_subparsers(dest="paper_command", required=True)
@@ -274,6 +280,10 @@ def build_parser() -> argparse.ArgumentParser:
         lab_sub.add_parser(name, help=text).add_argument(
             "pages", nargs="*", type=Path, help="default: docs/lab/*.md"
         )
+
+    dem = sub.add_parser("demo", help="build the static demo for GitHub Pages")
+    dem.add_argument("--root", type=Path, default=Path("data"))
+    dem.add_argument("--out", type=Path, default=Path("data/pages"))
 
     site = sub.add_parser("site", help="build the documentation site (docs/site.md)")
     site.add_argument("--out", type=Path, default=Path("data/site"))
@@ -370,6 +380,13 @@ def main() -> None:
 
     if args.command == "site":
         _site(args.out, parser)
+        return
+
+    if args.command == "demo":
+        from vp import demo
+
+        got = demo.build(args.root, args.out)
+        print(f"{got['markets']} markets in {got['seconds']} s, in {args.out}")
         return
 
     if args.command == "serve":
@@ -644,8 +661,18 @@ def _strategy(args: argparse.Namespace) -> None:
             print(f"{path}: {old!r} -> {new!r}")
         return
     spec = load(args.spec)
+    script = getattr(args, "script", None)
+    if script is not None:
+        # The script is the belief; the spec chooses markets, when and how much.
+        if spec.rule.kind != "edge":
+            raise SystemExit("A script forecasts, so the spec's rule must be 'edge'.")
+        belief = spec.belief.model_copy(update={"forecaster": "constant"})
+        spec = spec.model_copy(update={"belief": belief})
     problems = validate(spec)
-    print("\n".join(render(spec)))
+    words = render(spec)
+    if script is not None:
+        words[1] = f"Belief: your script {script}."
+    print("\n".join(words))
     print(f"version {spec_hash(spec)}")
     for problem in problems:
         print(f"problem: {problem}")
@@ -657,7 +684,15 @@ def _strategy(args: argparse.Namespace) -> None:
         print(json.dumps(preview(spec, args.root).as_json(), indent=1))
     if args.strategy_command == "backtest":
         out = args.out or args.root / "strategies" / spec_hash(spec)[:12]
-        results = run.backtest(spec, args.root, out, max_markets=args.max_markets)
+        wrap = None
+        if script is not None:
+            from vp.strategy.script import ScriptForecaster
+
+            forecaster = ScriptForecaster(script)
+            wrap = lambda _f, _d: forecaster  # noqa: E731
+        results = run.backtest(
+            spec, args.root, out, max_markets=args.max_markets, wrap=wrap
+        )
         for domain, result in results.items():
             print(f"{domain}: {result.common} markets scored; {out / domain}")
             print((out / domain / "summary.md").read_text())

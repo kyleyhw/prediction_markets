@@ -290,6 +290,21 @@ forty faults were found and fixed, results in
 checklist, pass/fail, reproducible faults; no personas. Real people and a
 real screen reader still wait on the deploy.
 
+**Static demo first (2026-10-13, `docs/demo.md`):** the owner chose a quick
+proof of concept over the hosted deploy: the public face is a static demo
+on GitHub Pages (`pages/`, built by `vp demo` from `vp/demo.py` and
+published with the docs site by `.github/workflows/pages.yml`; Pages must
+be enabled once, Source: GitHub Actions). Visitors bring their own model
+key (called from the browser) or use a form; nothing is saved; strategy
+and transcript download. Forecasts are precomputed at fixed cutoffs;
+`pages/engine.js` ports the selection, sizing, simulation, checks and
+words line for line, and `tests/test_demo.py` compares it with the Python
+engine (node required; skipped without it). Change one, change both. Forks
+get the harness: `vp strategy backtest SPEC --script FILE`
+(`vp/strategy/script.py`, `strategies/README.md` written for the AI that
+writes the script, the `strategy` workflow). The hosted platform with
+logins comes later and is unchanged.
+
 What exists, in order of the data flow: the Polymarket client and data
 layer (`vp/venues`, `vp/markets`, `vp/domains`); forecasters behind a
 cutoff-bounded `Evidence` object (`vp/forecast`: market price, constant,

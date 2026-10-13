@@ -1,5 +1,12 @@
 # Tutorials: a Week With the App
 
+**Start with the [demo](https://kyleyhw.github.io/prediction_markets/)**: it
+runs in the browser, needs no account, and backtests a strategy you
+describe in a sentence (with your own AI key) or build from a form. To go
+further, [make your own copy and have any AI write a strategy
+script](your_own_strategy.md). The week below describes the full app,
+which is not public yet.
+
 Seven short days, for someone who has never traded anything and never
 written code. Each day takes about fifteen minutes in the app and ends
 with one thing you can now do. Nothing here uses real money: every

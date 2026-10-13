@@ -1,0 +1,67 @@
+# Backtest a strategy on your own copy without installing anything
+# (docs/tutorials/your_own_strategy.md): Actions, "strategy", Run workflow,
+# or push a change under strategies/. The report is the run's summary and
+# its files are an artifact. A script that calls an AI model reads its key
+# from the repository's secrets (GEMINI_API_KEY and the others below) and
+# the model from the variable VP_MODEL.
+name: strategy
+
+on:
+  workflow_dispatch:
+    inputs:
+      spec:
+        description: "The strategy (a JSON file, such as one the demo downloads)"
+        default: strategies/example/strategy.json
+      script:
+        description: "Its forecast script, if it has one (leave empty if not)"
+        default: strategies/example/forecast.py
+      max_markets:
+        description: "At most this many past markets (empty: all)"
+        default: ""
+  push:
+    paths: ["strategies/**"]
+
+permissions:
+  contents: read
+
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      SPEC: ${{ inputs.spec || 'strategies/example/strategy.json' }}
+      SCRIPT: ${{ github.event_name == 'push' && 'strategies/example/forecast.py' || inputs.script }}
+      MAX_MARKETS: ${{ inputs.max_markets }}
+      VP_MODEL: ${{ vars.VP_MODEL }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --frozen
+      - uses: actions/cache@v4
+        with:
+          path: |
+            data/markets
+            data/histories
+          key: strategy-data-${{ github.run_id }}
+          restore-keys: strategy-data-
+      - name: The strategy's markets and their price histories
+        run: |
+          domains=$(uv run python -c "import json, os; print(' '.join(json.load(open(os.environ['SPEC']))['selector']['domains']))")
+          uv run vp build-dataset --domain $domains --histories 600
+      - name: Backtest
+        run: |
+          mkdir -p out
+          args=(strategy backtest "$SPEC" --out out)
+          [ -n "$SCRIPT" ] && args+=(--script "$SCRIPT")
+          [ -n "$MAX_MARKETS" ] && args+=(--max-markets "$MAX_MARKETS")
+          uv run vp "${args[@]}" | tee out/report.txt
+          cat out/*/summary.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: backtest
+          path: out

@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; img-src 'self' data:; style-src 'self'; script-src 'self'; font-src 'self'; base-uri 'none'; form-action 'none'">
+<title>vibe-predict demo</title>
+<meta name="description" content="Describe a forecasting strategy for real prediction markets in plain words and see how it would have done. Play money; nothing is saved.">
+<link rel="stylesheet" href="demo.css">
+<script type="module" src="demo.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to the demo</a>
+<header class="top">
+  <span class="brand">vibe-predict <small>demo</small></span>
+  <nav aria-label="Elsewhere"><a href="docs/docs/demo/">How it works</a> <a id="repo-link" href="https://github.com/kyleyhw/prediction_markets">Source and your own copy</a></nav>
+</header>
+<main id="main" tabindex="-1">
+  <h1>Try a strategy on real markets</h1>
+  <p class="lead">Say in plain words how you would bet on prediction markets. The strategy is turned into exact rules and run on hundreds of real markets that have already ended, so you can see how it would have done against the market's own prices.</p>
+  <p class="note">Play money only. Nothing you do here is saved or sent to us: close the tab and it is gone, so download what you want to keep. <span id="built"></span></p>
+
+  <div class="ways">
+    <section class="card" aria-labelledby="ai-h">
+      <h2 id="ai-h">Describe it to an AI</h2>
+      <p>Uses your own AI key. Google gives one free in a minute.</p>
+      <details id="model" open>
+        <summary>Your AI model <span id="model-state" class="muted"></span></summary>
+        <form id="model-form" class="stack">
+          <label>Provider <select id="provider"></select></label>
+          <label id="url-row" hidden>Address <input id="base-url" type="url" placeholder="https://…/v1" autocomplete="off"></label>
+          <label>Model <input id="model-name" autocomplete="off" required></label>
+          <label id="key-row">Key <input id="key" type="password" autocomplete="off" spellcheck="false"></label>
+          <p id="provider-note" class="small muted"></p>
+          <p class="small muted">Your key stays in this tab's memory and goes only to the provider you picked. It is forgotten when you close the tab.</p>
+          <button class="btn" type="submit">Use this model</button>
+        </form>
+      </details>
+      <ol id="turns" class="turns" aria-label="Conversation"></ol>
+      <form id="say" class="stack">
+        <label for="words">What should the strategy do?</label>
+        <textarea id="words" rows="3" placeholder="For example: in football matches, bet on the home team when it is the underdog but the Elo ratings favour it."></textarea>
+        <div class="row"><button class="btn primary" type="submit">Send</button><span class="spacer"></span><button class="btn quiet" type="button" id="new-chat">Start again</button></div>
+      </form>
+    </section>
+
+    <section class="card" aria-labelledby="form-h">
+      <h2 id="form-h">Or build it from a form</h2>
+      <p>No key needed.</p>
+      <form id="build" class="stack">
+        <label>Markets <select id="f-domain"></select></label>
+        <fieldset><legend>How it bets</legend>
+          <label class="choice"><input type="radio" name="f-way" value="favourite" checked> Always back the favourite</label>
+          <label class="choice"><input type="radio" name="f-way" value="underdog"> Always back the underdog</label>
+          <label class="choice"><input type="radio" name="f-way" value="edge"> Bet when a forecast beats the price</label>
+        </fieldset>
+        <label id="f-belief-row" hidden>Forecast <select id="f-belief"></select></label>
+        <label id="f-edge-row" hidden>Only when it beats the price by at least (points) <input id="f-edge" type="number" min="3" max="50" step="1" value="3"></label>
+        <label>Most staked on one market (% of the balance) <input id="f-stake" type="number" min="0.5" max="5" step="0.5" value="1"></label>
+        <label>Bet this long before a market ends <select id="f-when"></select></label>
+        <button class="btn primary" type="submit">Run it</button>
+      </form>
+    </section>
+  </div>
+
+  <p id="status" class="status" role="status" aria-live="polite"></p>
+
+  <section id="result" hidden aria-labelledby="result-h">
+    <h2 id="result-h" tabindex="-1">How it would have done</h2>
+    <div id="words-out" class="aside"></div>
+    <div id="numbers"></div>
+    <div class="row"><button class="btn" type="button" id="dl-spec">Download the strategy (JSON)</button>
+      <button class="btn" type="button" id="dl-talk">Download the conversation and results (Markdown)</button></div>
+  </section>
+
+  <section class="own" aria-labelledby="own-h">
+    <h2 id="own-h">Take it further</h2>
+    <p>Everything here is open source. On your own copy you can run the downloaded strategy, have any AI write a strategy script for you, forecast with an AI model, and paper-trade it on markets as they happen. <a id="own-link" href="docs/tutorials/your_own_strategy/">How to make your own copy</a>.</p>
+  </section>
+</main>
+<footer class="foot"><p>Market data from Polymarket's public API. Past results do not predict future ones. This is not advice and places no real bets.</p></footer>
+</body>
+</html>
