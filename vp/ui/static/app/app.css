@@ -226,3 +226,5 @@ select, input, textarea { max-width: 100%; }
    a form's label sits above its box (simulated users, 2026-10-13). */
 .turns { list-style: none; padding-left: 0; }
 .stack > label { display: block; margin-bottom: 6px; }
+/* A glossary term is a target of at least 24 px (WCAG 2.5.8; axe, 2026-10-13). */
+.term { min-height: 24px; min-width: 24px; }
