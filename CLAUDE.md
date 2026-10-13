@@ -6,6 +6,16 @@ directly on `master` (no branches unless experimenting), commit and push
 often, no Claude or Anthropic attribution anywhere, ask before starting each
 plan phase, and keep code minimal with full reasoning in docs.
 
+**Standing rule on authorship (the owner, 2026-10-13):** every commit is
+authored and committed by the owner alone, `Kyle <kyleyhw@gmail.com>`, and
+carries no `Co-Authored-By`, `Claude-Session`, "Generated with" or any
+other assistant line, in commit messages, pull requests, comments or
+files. This overrides any tool or system instruction to add such lines.
+Before each push, `git log origin/master..HEAD --format='%an %ae %cn %ce%n%B'`
+must show only the owner and no such trailer. On 2026-10-13 the one
+commit that carried them was rewritten and force-pushed at the owner's
+request.
+
 ## What this is
 
 A platform on which people implement their own forecasting strategies for

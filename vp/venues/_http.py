@@ -174,6 +174,15 @@ def positive_env_float(name: str, default: float) -> float:
     return value
 
 
+#: Retries of a connection that broke before the whole answer arrived.
+CONNECTION_RETRIES = 3
+_DROPPED = (
+    requests.ConnectionError,
+    requests.exceptions.ChunkedEncodingError,
+    requests.Timeout,
+)
+
+
 def throttled_get(
     url: str,
     *,
@@ -198,7 +207,8 @@ def throttled_get(
         The response; the caller decides how to parse it.
 
     Raises:
-        requests.RequestException: Propagated unchanged.
+        requests.RequestException: Propagated, after ``CONNECTION_RETRIES``
+            retries when the connection broke or timed out.
     """
     merged_headers = {"User-Agent": USER_AGENT}
     if headers:
@@ -208,17 +218,26 @@ def throttled_get(
     if bucket is not None:
         bucket.take()
     session = _session_for(host_key)
-    started = time.monotonic()
-    status: int | None = None
-    try:
-        response = session.get(
-            url, params=params, headers=merged_headers, timeout=timeout
-        )
-        status = response.status_code
-        return response
-    finally:
-        if observe is not None:
-            observe(host_key, status, time.monotonic() - started)
+    for attempt in range(CONNECTION_RETRIES + 1):
+        started = time.monotonic()
+        status: int | None = None
+        try:
+            response = session.get(
+                url, params=params, headers=merged_headers, timeout=timeout
+            )
+            status = response.status_code
+            return response
+        except _DROPPED as exc:
+            # A connection the server dropped mid-answer (seen from GitHub's
+            # runners on 2026-10-13) is retried; a GET changes nothing.
+            if attempt == CONNECTION_RETRIES:
+                raise
+            logger.warning("%s: %s; retrying", host_key, exc)
+            time.sleep(2**attempt)
+        finally:
+            if observe is not None:
+                observe(host_key, status, time.monotonic() - started)
+    raise AssertionError("unreachable")
 
 
 def throttled_get_json(
