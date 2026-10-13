@@ -92,7 +92,7 @@
     "fees_paid": "Its fees so far are {fees}; they come off the balance with each result.",
     "chart_later": "Its chart appears once one of its positions settles.",
     "follow_other": "Follow a different sample strategy",
-    "today_title": "In the last day",
+    "today_title": "In the last day, across all the sample strategies",
     "today_none": "Nothing changed in the last 24 hours.",
     "today_settled": {
       "one": "1 position settled, {pnl} in total.",
@@ -147,7 +147,9 @@
     "closes": "Closes {when}",
     "overdue": "Was due to close {when}; not settled yet",
     "no_close": "No closing date given",
-    "no_book": "No one is offering to trade right now"
+    "no_book": "No one is offering to trade right now",
+    "under_1": "under 1%",
+    "over_99": "over 99%"
   },
   "market": {
     "back": "Back to the markets",
@@ -594,7 +596,7 @@
   "glossary": {
     "brier": {
       "name": "Brier score",
-      "text": "Mean of (forecast − outcome)² over the scored markets. 0 is perfect, 0.25 is what forecasting 0.5 every time earns, 1 is confidently wrong every time. Lower is better.",
+      "text": "How far the forecasts were from what happened; lower is better. Mean of (forecast − outcome)² over the scored markets. 0 is perfect, 0.25 is what forecasting 0.5 every time earns, 1 is confidently wrong every time. Lower is better.",
       "doc": "docs/scoring.md"
     },
     "log": {
@@ -604,7 +606,7 @@
     },
     "skill": {
       "name": "Skill against the market",
-      "text": "1 − (forecaster Brier ÷ market Brier) on the same markets. Positive means the forecaster beat the market price as a forecast, zero equal, negative worse. On paper accounts it is computed from the settled positions so far.",
+      "text": "How much better (above 0) or worse (below 0) the forecasts were than simply trusting the market's price. 1 − (forecaster Brier ÷ market Brier) on the same markets. Positive means the forecaster beat the market price as a forecast, zero equal, negative worse. On paper accounts it is computed from the settled positions so far.",
       "doc": "docs/scoring.md"
     },
     "reliability": {
@@ -704,12 +706,12 @@
     },
     "constant": {
       "name": "constant (forecaster)",
-      "text": "Always 0.5. A scale anchor: it scores 0.25 Brier by construction, and its bets show what the sizing rule does with no information.",
+      "text": "Coin flip: always says 50%. Always 0.5. A scale anchor: it scores 0.25 Brier by construction, and its bets show what the sizing rule does with no information.",
       "doc": "docs/forecasters.md"
     },
     "elo": {
       "name": "elo (forecaster)",
-      "text": "Elo ratings fitted on results settled before the cutoff, replayed in order from 1500; a home advantage in football; draws from the empirical draw rate.",
+      "text": "Team ratings: each team's strength, learned from its past results. Elo ratings fitted on results settled before the cutoff, replayed in order from 1500; a home advantage in football; draws from the empirical draw rate.",
       "doc": "docs/forecasters.md"
     },
     "climatology": {
@@ -724,12 +726,12 @@
     },
     "ledger": {
       "name": "Ledger",
-      "text": "The append-only record of paper trading: every cycle, forecast, order and settlement, each entry hashed together with the previous one.",
+      "text": "The strategy's full record of what it did. The append-only record of paper trading: every cycle, forecast, order and settlement, each entry hashed together with the previous one.",
       "doc": "docs/paper_trading.md"
     },
     "verified": {
       "name": "Chain verified",
-      "text": "Every ledger entry's hash matches its content and its predecessor, so nothing has been edited, deleted or reordered.",
+      "text": "Nobody has changed the record since it was written. Every ledger entry's hash matches its content and its predecessor, so nothing has been edited, deleted or reordered.",
       "doc": "docs/paper_trading.md"
     },
     "bankroll": {
@@ -1103,16 +1105,16 @@
     "read_all": "Mark all as read",
     "unread_sr": "(unread)",
     "kinds": {
-      "mention": "Mention",
-      "reply": "Reply",
-      "invitation": "Invitation",
-      "fill": "Fill",
-      "settlement": "Settlement",
-      "budget": "Budget",
-      "halt": "Halt",
-      "brief": "Brief",
-      "health": "Strategy health",
-      "delivery": "Delivery problem"
+      "mention": "Someone mentioned you",
+      "reply": "A reply to you",
+      "invitation": "An invitation",
+      "fill": "A bet was placed",
+      "settlement": "A bet's result came in",
+      "budget": "Spending",
+      "halt": "A strategy was stopped",
+      "brief": "Your summary",
+      "health": "A strategy's health",
+      "delivery": "A message could not be delivered"
     },
     "where": "Where notices go",
     "where_note": "Every notice appears on this page. Tick where else each kind should reach you.",

@@ -368,7 +368,11 @@ def _market_row(
         "outcomes": [o.name for o in market.outcomes],
         "kind": market.parsed.get("kind"),
         "parsed": market.parsed,
-        "has_book": bool(first.bids or first.asks),
+        # Someone is offering when the book has levels or the venue quotes
+        # a bid and an ask (a light capture fetches no levels; a newcomer
+        # read "no one is offering" beside Bid 0.620 · Ask 0.630).
+        "has_book": bool(first.bids or first.asks)
+        or (market.best_bid is not None and market.best_ask is not None),
         "forecasts": forecasts,
         "p_yes": market.p_yes,
         "bid": first.bids[0].price if first.bids else market.best_bid,

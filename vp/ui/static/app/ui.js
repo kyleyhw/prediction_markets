@@ -153,8 +153,12 @@ export function feeSentence(m) {
 }
 
 // "62% chance" for Yes/No, "62% chance: Spirit" when the outcomes are named.
+// A chance that rounds to 0% or 100% but is not is said as "under 1%" or
+// "over 99%" (a newcomer read "0% chance" on a market still trading).
+const pctWords = (p) => (p > 0 && p < 0.005 ? tp('markets.under_1') : p < 1 && p > 0.995 ? tp('markets.over_99') : fmt.pct(p));
+
 export function chance(m) {
   if (m.p_yes == null) return t('markets.no_price');
   const yesNo = (m.outcomes || []).join('/').toLowerCase() === 'yes/no';
-  return yesNo ? t('markets.chance', { pct: fmt.pct(m.p_yes) }) : t('markets.chance_of', { pct: fmt.pct(m.p_yes), outcome: m.outcomes[0] });
+  return yesNo ? t('markets.chance', { pct: pctWords(m.p_yes) }) : t('markets.chance_of', { pct: pctWords(m.p_yes), outcome: m.outcomes[0] });
 }

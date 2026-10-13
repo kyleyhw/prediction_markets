@@ -57,7 +57,7 @@ function today(paper) {
 function nextStep(accounts) {
   const [href, label] = !prefs().interests.length ? ['#start/1', t('next.interests')]
     : !accounts.length ? ['#learn/paper', t('next.learn_paper')]
-      : accounts.some((a) => a.open_count) ? ['#strategies', t('next.positions')]
+      : followed(accounts)?.open_count ? ['#strategies', t('next.positions')]
         : ['#markets', t('next.markets')];
   return `<a class="btn primary" href="${href}">${label}</a>`;
 }

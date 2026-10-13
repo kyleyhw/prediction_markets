@@ -228,3 +228,8 @@ select, input, textarea { max-width: 100%; }
 .stack > label { display: block; margin-bottom: 6px; }
 /* A glossary term is a target of at least 24 px (WCAG 2.5.8; axe, 2026-10-13). */
 .term { min-height: 24px; min-width: 24px; }
+/* "Saved." stays in sight while the page is scrolled (a phone user never
+   saw it, 2026-10-13); and a wide table keeps its first column in view
+   when it scrolls sideways. */
+#saved:not(:empty) { position: sticky; top: 0; z-index: 5; background: var(--surface); padding: 6px 0; }
+.wrap table th:first-child, .wrap table td:first-child { position: sticky; left: 0; background: var(--surface); z-index: 1; }

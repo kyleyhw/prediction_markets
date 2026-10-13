@@ -322,3 +322,17 @@ def test_the_platform_daily_cap_holds_across_workspaces(
     budgets.settle_job(app_pool, bob, uuid4(), 0.4, [])
     budgets.reserve(app_pool, bob, 0.9, cap)
     budgets.settle_job(app_pool, bob, uuid4(), 0.9, [])
+
+
+def test_a_refused_connection_is_said_in_one_plain_sentence() -> None:
+    """A simulated user was shown a provider's raw 401 (2026-10-13)."""
+    said = llmops._plain_failure(
+        "Anthropic (Claude)",
+        None,
+        "Error code: 401 - {'type': 'error', 'error': {'type': "
+        "'authentication_error', 'message': 'invalid x-api-key'}}",
+    )
+    assert said == (
+        "Anthropic (Claude) did not accept that key. Check that you copied all of it."
+    )
+    assert "no model named 'gpt-x'" in llmops._plain_failure("OpenAI", "gpt-x", "404")

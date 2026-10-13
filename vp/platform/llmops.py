@@ -210,7 +210,29 @@ def check_connection(
     except ValueError:
         raise
     except Exception as exc:  # noqa: BLE001 - every provider fails in its own way
-        raise ValueError(f"the model did not answer: {str(exc)[:240]}") from None
+        raise ValueError(_plain_failure(p.label, model, str(exc))) from None
+
+
+def _plain_failure(provider: str, model: str | None, error: str) -> str:
+    """One sentence a person can act on, from a provider's error (a
+    simulated user was shown "Error code: 401 - {'type': 'error', ...}",
+    2026-10-13)."""
+    low = error.lower()
+    if any(w in low for w in ("401", "403", "authentication", "api key", "api-key")):
+        return f"{provider} did not accept that key. Check that you copied all of it."
+    if any(w in low for w in ("404", "not_found", "not found", "no model")):
+        return (
+            f"{provider} has no model named {model!r}. Check the name on the "
+            "provider's website."
+        )
+    if any(w in low for w in ("429", "quota", "rate limit", "credit", "billing")):
+        return (
+            f"{provider} accepted the key but would not answer now: the account "
+            "may be out of credit or over its limit."
+        )
+    if any(w in low for w in ("could not reach", "connect", "timed out", "timeout")):
+        return "The model's address could not be reached. Check the address."
+    return f"The model did not answer. {provider} said: {error[:160]}"
 
 
 def connection(pool: ConnectionPool, principal: Principal) -> dict[str, Any] | None:
