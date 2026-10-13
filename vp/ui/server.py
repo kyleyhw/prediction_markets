@@ -77,6 +77,12 @@ def cached_file(path: Path, load: Any) -> Any:
     return hit[1]
 
 
+#: The venue lists slots for names it has not filled yet ("Will Team A win
+#: the 2026-27 English Premier League?"); a newcomer took them for real
+#: teams (simulated user, 2026-10-13), so the market list leaves them out.
+PLACEHOLDER = re.compile(r"^Will (Team [A-Z]|Another Team|Player [A-Z]|Other) ")
+
+
 class DataView:
     """Read-only queries over a data root, with mtime-keyed caching.
 
@@ -194,6 +200,7 @@ class DataView:
         rows = [
             row | {"forecasts": forecasts.get(str(row["market_id"]), [])}
             for row in self._cached(snaps[-1], _snapshot_rows) or []
+            if not PLACEHOLDER.match(str(row.get("question") or ""))
         ]
         return {"domain": domain, "stamp": snaps[-1].stem, "markets": rows}
 

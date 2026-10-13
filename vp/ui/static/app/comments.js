@@ -20,7 +20,7 @@ function one(c, reply) {
     ${c.replies.length ? `<ul class="comments">${c.replies.map((r) => one(r, true)).join('')}</ul>` : ''}</li>`;
 }
 
-const form = (id, label, value = '') => `<form class="comment-form" data-form="${esc(id)}"><label for="cf-${esc(id)}" class="sr-only">${label}</label>
+const form = (id, label, value = '') => `<form class="comment-form" data-form="${esc(id)}"><label for="cf-${esc(id)}" class="sr-only">${tp('comments.placeholder')}</label>
   <textarea id="cf-${esc(id)}" name="body" rows="3" maxlength="4000" required placeholder="${tp('comments.placeholder')}">${esc(value)}</textarea>
   <div class="row" style="margin:6px 0 0"><button class="btn" type="submit">${label}</button></div></form>`;
 

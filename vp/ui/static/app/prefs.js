@@ -6,7 +6,7 @@
 import { send, session } from './api.js';
 
 const KEY = 'vp-settings';
-export const DEFAULTS = { level: 'simple', theme: 'system', locale: null, interests: [], follow: null, start: { step: 0, done: false }, country: null };
+export const DEFAULTS = { level: 'simple', theme: 'system', locale: null, interests: [], follow: null, start: { step: 0, done: false }, country: null, play_money: null };
 let current = { ...DEFAULTS };
 
 function readLocal() {

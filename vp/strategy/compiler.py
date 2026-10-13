@@ -118,10 +118,13 @@ Answer with exactly one of:
   be expressed and another cannot, refuse and say so.
 
 "message" is always written for the person, in plain words, without figures
-that are not in their request or in this prompt. "remember" lists at most
-two short durable preferences the person stated about themselves (risk
-appetite, interests, sizing), to be offered to them for saving; usually it is
-empty.
+that are not in their request or in this prompt. The person has never
+traded: never name the spec's parts ("edge rule", "follow rule",
+"selector", "belief") in "message"; say what they mean ("bet when the
+forecast is better than the price", "always back the favourite").
+"remember" lists at most two short durable preferences the person stated
+about themselves (risk appetite, interests, sizing), to be offered to them
+for saving; usually it is empty.
 
 Rules of the spec:
 - selector.domains: from the domains below. selector.kinds: from that domain's
@@ -258,6 +261,7 @@ def compile_spec(
     cost = 0.0
     tokens = [0, 0]
     problems: list[str] = []
+    garbled = False  # the last answer did not even parse as a spec
     for attempt in range(REPAIRS + 1):
         response = client.beta.messages.create(
             model=model,
@@ -287,6 +291,7 @@ def compile_spec(
         try:
             answer = Answer.model_validate_json(text)
         except ValidationError as exc:
+            garbled = True
             problems = [
                 f"{'.'.join(str(p) for p in e['loc'])}: {e['msg']}"
                 for e in exc.errors()
@@ -303,6 +308,8 @@ def compile_spec(
                 input_tokens=tokens[0],
                 output_tokens=tokens[1],
             )
+        if answer is not None:
+            garbled = False
         if answer is not None and answer.spec is not None:
             spec = answer.spec.model_copy(
                 update={"idea": current.idea if current else words}
@@ -333,11 +340,23 @@ def compile_spec(
                     + "\nFix it if the person's words allow; otherwise ask them.",
                 }
             )
+    # The engine's refusals are plain ("the stake ... must be at most 5% of
+    # the balance"); a schema error is not, so the person gets a question
+    # they can answer and the error stays in ``problems`` for the Detailed
+    # view (simulated users were shown "spec.selector.where.0.values: List
+    # should have at least 1 item").
+    message = (
+        "I could not turn that into something that runs. Could you say it "
+        "another way: which markets to look at, which side to back, and the "
+        "most you would pay for a share?"
+        if garbled
+        else "This can't run as described: "
+        + " ".join(problems)
+        + " What would you like to change?"
+    )
     return Compiled(
         "question",
-        "This can't run as described: "
-        + " ".join(problems)
-        + " What would you like to change?",
+        message,
         problems=problems,
         cost_usd=cost,
         model=model,

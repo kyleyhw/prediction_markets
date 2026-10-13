@@ -10,8 +10,10 @@ import { prefs, save } from '../prefs.js';
 import { countries } from '../countries.js';
 import { after, detailed, esc, fmt, GUIDE_URL, head, strategyLabel, strategySentence, t, table, tp } from '../ui.js';
 
+// The description gets a full stop a screen reader hears, so name and
+// description are not read as one run-on phrase (simulated user, 2026-10-13).
 const radio = (name, value, current, title, text = '') => `<label class="choice"><input type="radio" name="${name}" value="${esc(value)}"${value === current ? ' checked' : ''}>
-  <span><span class="t">${title}</span>${text ? `<br><span class="d">${text}</span>` : ''}</span></label>`;
+  <span><span class="t">${title}</span>${text ? `<span class="sr-only">. </span><br><span class="d">${text}</span>` : ''}</span></label>`;
 
 function tokens(list) {
   const rows = list.filter((k) => !k.revoked_at).map((k) => [esc(k.name), esc(k.scope), esc(fmt.dateTime(k.created_at)),
@@ -91,10 +93,11 @@ async function modelSection() {
       <p><label for="model-provider">${t('settings.model_provider')}</label><br>
         <select id="model-provider" name="provider">${m.providers.map((p) => `<option value="${esc(p.id)}"${p.id === current ? ' selected' : ''}>${esc(p.label)}</option>`).join('')}</select></p>
       <p><label for="model-name">${t('settings.model_name')}</label><br>
-        <input type="text" id="model-name" name="model" maxlength="200" autocomplete="off" value="${esc(m.own?.model ?? '')}" placeholder="${tp('settings.model_name_placeholder')}" style="min-width:18em">
+        <input type="text" id="model-name" name="model" maxlength="200" autocomplete="off" value="${esc(m.own?.model ?? '')}" placeholder="${tp('settings.model_name_placeholder')}" style="min-width:18em" aria-describedby="model-name-tier">
         <br><span class="small muted" id="model-name-tier">${t('settings.model_name_tier')}</span></p>
       <p id="model-address-row"><label for="model-address">${t('settings.model_address')}</label><br>
-        <input type="url" id="model-address" name="base_url" maxlength="500" autocomplete="off" value="${esc(m.own?.base_url ?? '')}" placeholder="https://…/v1" style="min-width:18em"></p>
+        <input type="url" id="model-address" name="base_url" maxlength="500" autocomplete="off" value="${esc(m.own?.base_url ?? '')}" placeholder="https://…/v1" style="min-width:18em" aria-describedby="model-address-hint">
+        <br><span class="small muted" id="model-address-hint">${t('settings.model_address_hint')}</span></p>
       <p><label for="model-key" id="model-key-label">${t('settings.model_key')}</label><br>
         <input type="password" id="model-key" name="key" autocomplete="off" maxlength="500" style="min-width:18em"></p>
       <p class="row"><button class="btn" type="submit">${t('settings.model_save')}</button>
@@ -170,7 +173,7 @@ export default async function settings() {
   const o = await api('overview');
   const p = prefs();
   let h = head(t('settings.title'), t('settings.lede'));
-  h += `<p class="small muted" id="saved" role="status"></p><form id="prefs" class="measure">`;
+  h += `<p class="small muted" id="saved" role="status"></p><h2>${t('settings.prefs')}</h2><form id="prefs" class="measure">`;
   h += `<fieldset><legend>${t('settings.level')}</legend><div class="choices">
     ${radio('level', 'simple', p.level, t('level.simple'), t('settings.level_simple'))}${radio('level', 'detailed', p.level, t('level.detailed'), t('settings.level_detailed'))}</div></fieldset>`;
   h += `<fieldset><legend>${t('settings.theme')}</legend><div class="choices">
@@ -180,16 +183,19 @@ export default async function settings() {
     <p class="small muted" style="margin-top:6px">${t('settings.language_note', { example: fmt.dateTime(new Date().toISOString()) })}</p></fieldset>`;
   h += `<fieldset><legend>${t('settings.interests')}</legend><p class="small muted">${t('settings.interests_note')}</p><div class="choices">
     ${Object.entries(o.domains).map(([name, d]) => `<label class="choice"><input type="checkbox" name="interests" value="${esc(name)}"${p.interests.includes(name) ? ' checked' : ''}>
-      <span><span class="t">${esc(d.title)}</span><br><span class="d">${esc(d.summary)}</span></span></label>`).join('')}</div></fieldset>`;
+      <span><span class="t">${esc(d.title)}</span><span class="sr-only">. </span><br><span class="d">${esc(d.summary)}</span></span></label>`).join('')}</div></fieldset>`;
   const accounts = o.paper.accounts;
   if (accounts.length) {
     h += `<fieldset><legend>${t('settings.follow')}</legend><div class="choices">
       ${accounts.map((a) => radio('follow', a.forecaster, p.follow, esc(strategyLabel(a.forecaster)), esc(strategySentence(a.forecaster)))).join('')}</div></fieldset>`;
   }
   if (session.hosted) {
-    h += `<fieldset><legend>${t('settings.country')}</legend><p class="small muted">${t('settings.country_note')}</p>
-      <label for="country" class="sr-only">${t('settings.country')}</label><select id="country" name="country"><option value="">${t('settings.country_unset')}</option>
-      ${countries(p.locale).map(([code, name]) => `<option value="${code}"${p.country === code ? ' selected' : ''}>${esc(name)}</option>`).join('')}</select></fieldset>`;
+    h += `<fieldset><legend>${t('settings.play_money')}</legend><p class="small muted" id="play-money-note">${t('settings.play_money_note')}</p>
+      <label for="play-money" class="sr-only">${t('settings.play_money')}</label><input type="number" id="play-money" name="play_money" min="100" max="1000000" step="100" inputmode="numeric" value="${esc(p.play_money ?? '')}" placeholder="1000" aria-describedby="play-money-note"></fieldset>`;
+    // A section with its own heading, so a screen reader can jump to it.
+    h += `<h2 id="where">${t('settings.country')}</h2><p class="small muted" id="country-note">${t('settings.country_note')}</p>
+      <p><label for="country" class="sr-only">${t('settings.country')}</label><select id="country" name="country" aria-describedby="country-note"><option value="">${t('settings.country_unset')}</option>
+      ${countries(p.locale).map(([code, name]) => `<option value="${code}"${p.country === code ? ' selected' : ''}>${esc(name)}</option>`).join('')}</select></p>`;
   }
   h += '</form>';
   if (session.hosted) {
@@ -203,7 +209,6 @@ export default async function settings() {
   if (detailed()) {
     if (session.hosted) h += `<h2>${t('settings.tokens')}</h2><p class="muted measure">${t('settings.tokens_note')}</p><div id="tokens">${tokens(await api('tokens'))}</div>`;
     if (session.hosted) h += refreshData(o.domains);
-    h += `<h2>${t('settings.later')}</h2><ul class="notes measure">${['play_money'].map((k) => `<li>${t('settings.later_' + k)}</li>`).join('')}</ul>`;
   }
   if (session.hosted) {
     h += `<h2>${t('settings.account')}</h2><dl class="kv"><dt>${t('settings.email')}</dt><dd>${esc(session.me.email)}</dd>
@@ -213,7 +218,15 @@ export default async function settings() {
   }
   after(() => {
     const form = document.getElementById('prefs'), status = document.getElementById('saved');
-    form.addEventListener('change', async (e) => {
+    let pending;
+    form.addEventListener('change', (e) => {
+      // A list saves once the choice settles: arrowing through "Where you
+      // are" saved each country on the way (simulated user, 2026-10-13).
+      clearTimeout(pending);
+      if (e.target.tagName === 'SELECT') pending = setTimeout(() => saveChange(e), 900);
+      else saveChange(e);
+    });
+    const saveChange = async (e) => {
       const el = e.target, patch = {};
       if (el.name === 'interests') patch.interests = [...form.querySelectorAll('input[name=interests]:checked')].map((x) => x.value);
       else patch[el.name] = el.value || null;
@@ -234,7 +247,7 @@ export default async function settings() {
         document.querySelector(`#prefs [name="${el.name}"]${el.type === 'radio' ? `[value="${el.value}"]` : ''}`)?.focus();
         document.getElementById('saved').textContent = tp('settings.saved');
       }
-    });
+    };
     document.getElementById('restart').addEventListener('click', async () => { await save({ start: { step: 0, done: false } }); location.hash = '#start'; });
     const box = document.getElementById('tokens');
     if (!box) return;

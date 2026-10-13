@@ -5,9 +5,8 @@
 // #describe/<strategy id or new>/<conversation id>.
 import { api, send, session } from '../api.js';
 import { render } from '../main.js';
+import { announceReply, follow, markReplied, waitingHtml } from '../talk.js';
 import { after, detailed, empty, esc, explain, fmt, head, modelNotice, t, tp } from '../ui.js';
-
-const DONE = new Set(['succeeded', 'failed', 'dead', 'cancelled']);
 
 function proposal(turn, convo) {
   const c = turn.content;
@@ -22,23 +21,19 @@ function proposal(turn, convo) {
 
 function turnHtml(turn, convo) {
   const c = turn.content;
-  if (turn.role === 'user') return `<li class="turn you"><h3 class="k">${t('describe.you')}</h3><p>${esc(c.words)}</p></li>`;
+  if (turn.role === 'user') return `<li class="turn you"><h2 class="k">${t('describe.you')}</h2><p>${esc(c.words)}</p></li>`;
   let body;
   if (c.kind === 'spec') body = proposal(turn, convo);
   else if (c.kind === 'question') {
     body = `<p>${esc(c.message)}</p>${c.choices?.length ? `<div class="row">${c.choices.map((x) => `<button class="btn" type="button" data-say="${esc(x)}">${esc(x)}</button>`).join('')}</div>` : ''}`;
   } else body = `<div class="aside caution"><p>${esc(c.message)}</p></div>`;
   const remember = (c.remember || []).map((note) => `<button class="btn quiet" type="button" data-remember="${esc(note)}">${t('describe.remember', { note })}</button>`).join('');
+  const problems = detailed() && c.problems?.length
+    ? `<details><summary>${t('describe.problems')}</summary><ul class="notes small">${c.problems.map((x) => `<li><code>${esc(x)}</code></li>`).join('')}</ul></details>`
+    : '';
+  body += problems;
   const cost = detailed() && c.cost_usd ? `<p class="small muted">${t('describe.cost', { usd: fmt.money(c.cost_usd, 3), model: c.model })}</p>` : '';
-  return `<li class="turn card"><h3 class="k">${t('describe.assistant')}</h3>${body}${remember ? `<div class="row">${remember}</div>` : ''}${cost}</li>`;
-}
-
-async function waitFor(job) {
-  for (;;) {
-    const j = await api(`jobs/${job}`);
-    if (!j || DONE.has(j.state)) return j;
-    await new Promise((r) => setTimeout(r, 1500));
-  }
+  return `<li class="turn card"><h2 class="k">${t('describe.assistant')}</h2>${body}${remember ? `<div class="row">${remember}</div>` : ''}${cost}</li>`;
 }
 
 export default async function describe([target = 'new', conversationId] = []) {
@@ -47,7 +42,7 @@ export default async function describe([target = 'new', conversationId] = []) {
   if (!session.hosted) return h + empty(t('describe.local_title'), t('describe.local_text'), [['#strategies', t('describe.back')]]);
   h += await modelNotice();
   const convo = conversationId ? await api(`conversations/${conversationId}`) : null;
-  if (convo?.turns.length) h += `<ol class="turns" aria-label="${tp('describe.conversation')}">${convo.turns.map((x) => turnHtml(x, convo)).join('')}</ol>`;
+  if (convo?.turns.length || convo?.waiting?.length) h += `<ol class="turns" aria-label="${tp('describe.conversation')}">${convo.turns.map((x) => turnHtml(x, convo)).join('')}${waitingHtml(convo)}</ol>`;
   else if (!strategyId) h += `<p class="muted">${t('describe.examples_intro')}</p><ul class="notes">${['one', 'two', 'three'].map((k) => `<li><button class="btn quiet" type="button" data-say="${tp('describe.example_' + k)}">${t('describe.example_' + k)}</button></li>`).join('')}</ul>`;
   h += `<form id="say" class="stack"><label for="words">${t(convo?.turns.length ? 'describe.reply_label' : 'describe.label')}</label>
     <textarea id="words" rows="3" maxlength="2000" required></textarea>
@@ -55,21 +50,34 @@ export default async function describe([target = 'new', conversationId] = []) {
     <p id="say-status" class="small" role="status"></p>`;
   after(() => {
     const status = document.getElementById('say-status');
+    const wait = async (jobId, next) => {
+      const j = await follow(jobId, status);
+      markReplied(j?.state === 'succeeded');
+      if (location.hash !== next) location.hash = next;
+      else await render(false);
+    };
     const say = async (words) => {
+      // Buttons wait; the text box keeps the focus (it used to fall off).
       document.querySelectorAll('#say button, [data-say]').forEach((b) => { b.disabled = true; });
+      document.getElementById('words').focus();
       status.textContent = tp('describe.sending');
       try {
         const r = await send('POST', 'strategies/compile', { words, conversation_id: conversationId || null, strategy_id: strategyId });
-        const next = `#describe/${target}/${r.conversation_id}`;
-        const j = await waitFor(r.job_id);
-        if (j && j.state !== 'succeeded') status.textContent = tp('describe.failed', { error: (j.error || '').split('\n')[0] });
-        if (location.hash !== next) location.hash = next;
-        else await render(false);
+        document.getElementById('words').value = '';
+        await wait(r.job_id, `#describe/${target}/${r.conversation_id}`);
       } catch (e) {
         explain(status, e);
         document.querySelectorAll('#say button, [data-say]').forEach((b) => { b.disabled = false; });
       }
     };
+    announceReply(status);
+    // A message still being answered when the page opens: keep waiting.
+    const pending = (convo?.waiting || []).find((w) => w.state === 'waiting');
+    if (pending) {
+      document.querySelectorAll('#say button').forEach((b) => { b.disabled = true; });
+      status.textContent = tp('describe.waiting');
+      wait(pending.job_id, location.hash);
+    }
     document.getElementById('say').addEventListener('submit', (e) => {
       e.preventDefault();
       const words = document.getElementById('words').value.trim();

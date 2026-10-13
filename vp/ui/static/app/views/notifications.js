@@ -29,8 +29,18 @@ function preferences(prefs, channels) {
       <label class="check"><input type="checkbox" id="quiet-on"${q.start ? ' checked' : ''}> <span>${t('notifications.quiet_on')}</span></label>
       <div class="row"><label for="quiet-start">${t('notifications.quiet_from')}</label><input type="time" id="quiet-start" value="${esc(q.start || '22:00')}">
       <label for="quiet-end">${t('notifications.quiet_to')}</label><input type="time" id="quiet-end" value="${esc(q.end || '07:00')}">
-      <label for="quiet-tz">${t('notifications.quiet_tz')}</label><input type="text" id="quiet-tz" maxlength="64" value="${esc(q.tz || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC')}"></div></fieldset>
+      <label for="quiet-tz">${t('notifications.quiet_tz')}</label>${zonePicker(q.tz || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC')}</div></fieldset>
     <button class="btn primary" type="submit">${t('notifications.save')}</button></form>`;
+}
+
+// The time zone from a list, not typed: a simulated user in Kenya was
+// refused "Nairobi", "Kenya" and "EAT" before guessing "Africa/Nairobi".
+function zonePicker(current) {
+  let zones = [];
+  try { zones = Intl.supportedValuesOf('timeZone'); } catch { /* older browsers */ }
+  if (!zones.includes('UTC')) zones = ['UTC', ...zones];
+  if (!zones.includes(current)) zones = [current, ...zones];
+  return `<select id="quiet-tz">${zones.map((z) => `<option value="${esc(z)}"${z === current ? ' selected' : ''}>${esc(z.replaceAll('_', ' '))}</option>`).join('')}</select>`;
 }
 
 export default async function notifications() {

@@ -27,7 +27,10 @@ async function body(step, o) {
       for (const [name, d] of orderedDomains(o.domains)) {
         if (p.interests.length && !p.interests.includes(name)) continue;
         const snap = await api('snapshots/' + encodeURIComponent(name));
-        const cards = (snap?.markets || []).filter((m) => m.has_book && m.p_yes != null).slice(0, 3);
+        const priced = (snap?.markets || []).filter((m) => m.p_yes != null);
+        // Markets with offers first, any priced one otherwise (a newcomer was
+        // told none had arrived while Markets listed 300, 2026-10-13).
+        const cards = [...priced.filter((m) => m.has_book), ...priced.filter((m) => !m.has_book)].slice(0, 3);
         if (cards.length) {
           return `<p>${t('start.markets_intro', { title: d.title })}</p><div class="grid">${cards.map((m) => marketCard(m, name)).join('')}</div>
             <p class="small muted" style="margin-top:12px">${t('start.markets_note')}</p>`;

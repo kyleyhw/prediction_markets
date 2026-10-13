@@ -254,6 +254,9 @@ class SettingsBody(BaseModel):
     # Where the person says they are (ISO 3166 code): the free demo model
     # may serve only some countries (docs/models.md).
     country: str | None = Field(default=None, pattern=r"^[A-Z]{2}$")
+    # Play money a new strategy starts with (task 46); the strategy assistant
+    # is told it, and a person's words in the conversation still win.
+    play_money: int | None = Field(default=None, ge=100, le=1_000_000)
 
     @field_validator("interests")
     @classmethod

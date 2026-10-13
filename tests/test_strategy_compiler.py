@@ -151,6 +151,19 @@ def test_the_engine_refuses_a_spec_over_the_caps_and_the_model_gets_one_repair()
     assert out.kind == "question"
 
 
+def test_a_garbled_answer_becomes_a_plain_question_not_the_parser_s_words():
+    """Simulated users were shown "spec.selector.where.0.values: List should
+    have at least 1 item" (2026-10-13); the person now gets a question and
+    the parser's words stay in ``problems`` for the Detailed view."""
+    broken = with_(GOOD, "rule", price_max=7)
+    model = FakeModel(answer("spec", broken), answer("spec", broken))
+    out = compile_spec("home teams", client=model)
+    assert out.kind == "question" and "say it another way" in out.message
+    assert "price_max" not in out.message and any(
+        "price_max" in p for p in out.problems
+    )
+
+
 def test_refining_keeps_the_idea_and_shows_the_change():
     current = Spec.model_validate({**GOOD, "idea": "Arsenal by Elo"})
     smaller = with_(GOOD, "sizing", max_fraction=0.02)

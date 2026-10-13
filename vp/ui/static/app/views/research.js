@@ -4,9 +4,9 @@
 // The hash is #research/<conversation id>.
 import { api, send, session } from '../api.js';
 import { render } from '../main.js';
+import { announceReply, follow, markReplied, waitingHtml } from '../talk.js';
 import { after, detailed, empty, esc, explain, fmt, head, modelNotice, t, tp } from '../ui.js';
 
-const DONE = new Set(['succeeded', 'failed', 'dead', 'cancelled']);
 
 function answer(c) {
   let h = `<div class="prose">${esc(c.text).split(/\n{2,}/).map((p) => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('')}</div>`;
@@ -29,10 +29,10 @@ export default async function research([conversationId] = []) {
   if (!session.hosted) return h + empty(t('describe.local_title'), t('research.local_text'), [['#strategies', t('describe.back')]]);
   h += await modelNotice();
   const convo = conversationId ? await api(`conversations/${conversationId}`) : null;
-  if (convo?.turns.length) {
+  if (convo?.turns.length || convo?.waiting?.length) {
     h += `<ol class="turns" aria-label="${tp('describe.conversation')}">${convo.turns.map((x) => x.role === 'user'
-      ? `<li class="turn you"><h3 class="k">${t('describe.you')}</h3><p>${esc(x.content.words)}</p></li>`
-      : `<li class="turn card"><h3 class="k">${t('describe.assistant')}</h3>${answer(x.content)}</li>`).join('')}</ol>`;
+      ? `<li class="turn you"><h2 class="k">${t('describe.you')}</h2><p>${esc(x.content.words)}</p></li>`
+      : `<li class="turn card"><h2 class="k">${t('describe.assistant')}</h2>${answer(x.content)}</li>`).join('')}${waitingHtml(convo)}</ol>`;
   } else {
     h += `<p class="muted">${t('describe.examples_intro')}</p><ul class="notes">${['one', 'two', 'three'].map((k) =>
       `<li><button class="btn quiet" type="button" data-say="${tp('research.example_' + k)}">${t('research.example_' + k)}</button></li>`).join('')}</ul>`;
@@ -43,23 +43,20 @@ export default async function research([conversationId] = []) {
     <p id="say-status" class="small" role="status"></p>`;
   after(() => {
     const status = document.getElementById('say-status');
+    const wait = async (jobId, next) => {
+      const j = await follow(jobId, status);
+      markReplied(j?.state === 'succeeded');
+      if (location.hash !== next) location.hash = next;
+      else await render(false);
+    };
     const say = async (words) => {
       document.querySelectorAll('#say button, [data-say]').forEach((b) => { b.disabled = true; });
+      document.getElementById('words').focus();
       status.textContent = tp('research.working');
       try {
         const r = await send('POST', 'research', { words, conversation_id: conversationId || null });
-        for (;;) {
-          const j = await api(`jobs/${r.job_id}`);
-          if (!j || DONE.has(j.state)) {
-            if (j && j.state !== 'succeeded') status.textContent = tp('describe.failed', { error: (j.error || '').split('\n')[0] });
-            break;
-          }
-          if (j.progress?.message) status.textContent = j.progress.message;
-          await new Promise((res) => setTimeout(res, 1500));
-        }
-        const next = `#research/${r.conversation_id}`;
-        if (location.hash !== next) location.hash = next;
-        else await render(false);
+        document.getElementById('words').value = '';
+        await wait(r.job_id, `#research/${r.conversation_id}`);
       } catch (e) {
         explain(status, e);
         document.querySelectorAll('#say button, [data-say]').forEach((b) => { b.disabled = false; });
@@ -71,6 +68,13 @@ export default async function research([conversationId] = []) {
       if (words) say(words);
     });
     document.querySelectorAll('[data-say]').forEach((b) => b.addEventListener('click', () => say(b.dataset.say)));
+    announceReply(status);
+    const pending = (convo?.waiting || []).find((w) => w.state === 'waiting');
+    if (pending) {
+      document.querySelectorAll('#say button').forEach((b) => { b.disabled = true; });
+      status.textContent = tp('describe.waiting');
+      wait(pending.job_id, location.hash);
+    }
   });
   return h;
 }

@@ -130,7 +130,7 @@
     "title": "Markets",
     "lede": "Open questions people are trading on right now. The chance is the market's price: what traders together think is likely.",
     "interests_label": "Interests",
-    "empty_title": "No {title} markets captured yet",
+    "empty_title": "No {title} markets have arrived yet",
     "empty_text": "The platform captures the open markets on a schedule; the first capture appears here. Meanwhile, read what a prediction market is.",
     "search_label": "Search the markets",
     "search_placeholder": "Search questions",
@@ -140,7 +140,7 @@
       "other": "{n} markets, showing {shown}."
     },
     "more": "Show more",
-    "as_of": "Prices as captured {when} ({date}).",
+    "as_of": "Prices as last checked {when} ({date}).",
     "chance": "{pct} chance",
     "chance_of": "{pct} chance: {outcome}",
     "no_price": "No price yet",
@@ -159,7 +159,7 @@
     "history_title": "Chance over time",
     "series": "Chance of {outcome}",
     "history_summary": "The chance across {n} captures, from {first} to {last}.",
-    "history_later": "The chance over time appears once this market has been captured more than once.",
+    "history_later": "The chance over time appears once the site has checked this market more than once.",
     "forecasts_title": "What the sample strategies think",
     "no_forecasts": "No sample strategy has forecast this market yet.",
     "forecast_line": "{name} put it at {pct} ({when}).",
@@ -182,7 +182,7 @@
   "strategies": {
     "title": "Strategies",
     "lede": "Sample strategies trading with play money against the real order book, settled when the markets resolve.",
-    "never_bets": "It never bets: it is the yardstick the others are measured against.",
+    "never_bets": "It never bets: it is the measuring stick the others are compared with.",
     "counts": "{n} positions settled, {open} waiting.",
     "waiting": "Waiting to settle",
     "side_yes": "the outcome happening",
@@ -273,7 +273,7 @@
     "form": {
       "title": "Run a backtest",
       "domain": "Markets",
-      "strategies": "Strategies to test (the market's own price is always the yardstick)",
+      "strategies": "Strategies to test (the market's own price is always the one to beat)",
       "hours": "Hours before settlement",
       "max": "At most",
       "all": "all markets",
@@ -453,8 +453,6 @@
     "revoke": "Revoke",
     "token_once": "Copy this token now; it will not be shown again.",
     "export_button": "Download my data",
-    "later": "Not here yet",
-    "later_play_money": "Your own play-money amount: arrives with your own paper account, when strategies become yours to make.",
     "account": "Account",
     "email": "Email",
     "workspace": "Workspace",
@@ -464,7 +462,7 @@
     "paid_own": "your key",
     "paid_platform": "platform",
     "refresh": "Refresh market data",
-    "refresh_note": "Markets are captured every fifteen minutes. Ask for a fresh capture now; if one was asked for in the last fifteen minutes, that one is used.",
+    "refresh_note": "Prices are checked every fifteen minutes. Ask for a fresh check now; if one was asked for in the last fifteen minutes, that one is used.",
     "refresh_button": "Refresh {title}",
     "refresh_queued": "Asked for. The markets page shows it when it arrives.",
     "refresh_recent": "A refresh was already asked for in the last fifteen minutes.",
@@ -510,7 +508,11 @@
     "model_removed": "Disconnected.",
     "model_copy": "You can also run your own copy of this app, free, on your computer, with any model or a script of your own.",
     "model_off": "Your own models need the platform's encryption key, which is not set here.",
-    "model_copy_link": "How to run your own copy"
+    "model_copy_link": "How to run your own copy",
+    "prefs": "How the site looks and what it shows",
+    "model_address_hint": "Only for a provider not in the list: the address its documentation gives for OpenAI-compatible access, usually ending in /v1.",
+    "play_money": "Play money for a new strategy",
+    "play_money_note": "How much pretend money a strategy you describe starts with, in dollars; empty means $1,000. You can still say another amount when you describe it."
   },
   "start": {
     "step": "Step {n} of {total}",
@@ -528,12 +530,12 @@
     "interests_note": "You can change these at any time in Settings.",
     "markets_intro": "Some open {title} markets. The chance is the market's price; the fee is what a buyer pays.",
     "markets_note": "Open any of them later from Markets.",
-    "markets_none": "No markets have been captured for your interests yet. They appear under Markets once they are.",
-    "sample_q": "Which one should Home follow?",
+    "markets_none": "No markets for your interests have arrived yet. They appear under Markets within a few minutes.",
+    "sample_q": "Which strategy should your Home page show?",
     "sample_balance": "Balance now: {balance}.",
     "sample_none": "No sample strategies are running yet. Home will show one as soon as they start.",
     "level_q": "Choose a reading level",
-    "level_note": "Switch at any time from the side bar.",
+    "level_note": "Switch at any time with the Simple and Detailed buttons at the top of the menu.",
     "begin": "Start",
     "next": "Next",
     "back": "Back",
@@ -544,7 +546,7 @@
   "forecasters": {
     "market": {
       "name": "Market price",
-      "simple": "Uses the market's own chance as its forecast. It never bets, so it is the yardstick the others are measured against."
+      "simple": "Uses the market's own chance as its forecast. It never bets, so it is the measuring stick the others are compared with."
     },
     "constant": {
       "name": "Coin flip",
@@ -861,7 +863,7 @@
     "label": "Your strategy, in a sentence or two",
     "reply_label": "Your answer, or what to change",
     "send": "Send",
-    "sending": "Reading your description; this takes up to a minute.",
+    "sending": "Sending. The reply usually takes under a minute, and can take a few; you can leave this page, and your message and its reply will be here.",
     "failed": "That did not work: {error}",
     "remembered": "Remembered. You can see and delete it in Settings.",
     "changes": "What changes",
@@ -872,7 +874,17 @@
     "you": "You",
     "assistant": "Assistant",
     "remember": "Remember: {note}",
-    "cost": "This answer cost {usd} ({model})."
+    "cost": "This answer cost {usd} ({model}).",
+    "waiting": "Waiting for the reply. You can leave this page; it will be here.",
+    "still": {
+      "one": "Still working: 1 minute so far.",
+      "other": "Still working: {n} minutes so far."
+    },
+    "replied": "The assistant replied; the reply is below your message.",
+    "reply_failed": "No reply came; your message is below, with a button to send it again.",
+    "no_reply": "No reply came: {error}",
+    "send_again": "Send it again",
+    "problems": "What the engine refused"
   },
   "strategy": {
     "missing": "No such strategy",
@@ -930,7 +942,7 @@
     "lede": "Ask about markets, what was known before a date, or how your strategies have done. It answers only from the data it looks up, and every figure it states is checked against that data before you see it.",
     "local_text": "The research assistant needs the service and its AI model.",
     "label": "Your question",
-    "working": "Looking into it; this can take a minute.",
+    "working": "Working on it. This usually takes under a minute, and can take a few; you can leave this page, and the answer will be here.",
     "example_one": "Which Counter-Strike series open now are priced between 60 and 85 cents?",
     "example_two": "How did Arsenal do in their matches before 1 March 2026?",
     "example_three": "Compare my strategies' backtests.",

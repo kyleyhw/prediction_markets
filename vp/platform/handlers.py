@@ -207,6 +207,24 @@ def _charges(forecasters: Sequence[Any], domain: str | None) -> list[dict[str, A
     return charges
 
 
+def _play_money_note(svc: Services, principal: Principal) -> list[str]:
+    """The person's chosen play money for new strategies, as a note the
+    compiler reads (Settings, task 46); none when they have not chosen."""
+    if not principal.attributable:
+        return []
+    with svc.pool.connection() as conn, tenant_session(conn, principal):
+        row = conn.execute(
+            "select settings->>'play_money' from user_settings "
+            "where user_id = vp_current_user_id()"
+        ).fetchone()
+    if not row or not row[0]:
+        return []
+    return [
+        f"New strategies start with ${int(row[0]):,} of play money unless "
+        "the person says otherwise."
+    ]
+
+
 def compile_turn(ctx: JobContext) -> dict[str, Any]:
     """One message of a strategy conversation through the compiler."""
     from vp.strategy.compiler import as_json, compile_spec
@@ -228,7 +246,8 @@ def compile_turn(ctx: JobContext) -> dict[str, Any]:
         client=client,
         history=strategies.history(convo),
         current=current,
-        memory=[m["note"] for m in strategies.memory(svc.pool, ctx.principal)],
+        memory=[m["note"] for m in strategies.memory(svc.pool, ctx.principal)]
+        + _play_money_note(svc, ctx.principal),
         packs=strategies.workspace_packs(svc.pool, ctx.principal),
     )
     strategies.add_turns(

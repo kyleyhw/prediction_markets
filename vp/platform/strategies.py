@@ -85,10 +85,35 @@ def conversation(
         (conversation_id,),
     )
     head = rows[0]
+    # A message is stored with its reply, so one still being answered, or
+    # whose answer failed, lives only in its job: shown here, it is never
+    # lost from the page (a simulated user's answer vanished, 2026-10-13).
+    last = turns[-1]["created_at"] if turns else head["created_at"]
+    waiting = _rows(
+        pool,
+        principal,
+        "select id, state, payload->>'words' as words, error, created_at from jobs "
+        "where kind in ('compile', 'research') "
+        "and payload->>'conversation_id' = %s "
+        "and (state in ('queued', 'running') "
+        "or (state in ('dead', 'failed') and created_at > %s)) "
+        "order by created_at",
+        (str(conversation_id), last),
+    )
     return {
         "id": str(head["id"]),
         "strategy_id": str(head["strategy_id"]) if head["strategy_id"] else None,
         "cost_usd": float(head["cost_usd"]),
+        "waiting": [
+            {
+                "job_id": str(w["id"]),
+                "state": "failed" if w["state"] in ("dead", "failed") else "waiting",
+                "words": w["words"],
+                "error": (w["error"] or "").split("\n")[0][:300] or None,
+                "at": w["created_at"].isoformat(),
+            }
+            for w in waiting
+        ],
         "turns": [
             {
                 "id": t["id"],

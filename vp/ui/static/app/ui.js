@@ -64,7 +64,9 @@ function openPop(button) {
   if (!g) return;
   const p = pop();
   closePop(false);
-  p.innerHTML = `<b id="pop-title">${esc(g.name)}</b>${esc(g.text)}${g.doc ? `<span class="doc">${t('glossary_doc', { doc: g.doc })}</span>` : ''}`;
+  // No file path for the derivation: three simulated newcomers read
+  // "docs/forecasters.md" as noise (2026-10-13); the site links them.
+  p.innerHTML = `<b id="pop-title">${esc(g.name)}</b>${esc(g.text)}`;
   p.hidden = false;
   const r = button.getBoundingClientRect();
   let x = r.left, y = r.bottom + 8;
@@ -73,6 +75,12 @@ function openPop(button) {
   p.style.left = x + 'px'; p.style.top = y + 'px';
   button.setAttribute('aria-expanded', 'true');
   opener = button;
+  // The definition sits at the end of the page, so a screen reader would
+  // never meet it from the button: focus goes into it, and Escape or
+  // leaving it comes back (simulated screen-reader user, 2026-10-13).
+  p.setAttribute('tabindex', '-1');
+  p.setAttribute('aria-labelledby', 'pop-title');
+  p.focus();
 }
 export function installGlossary() {
   document.addEventListener('click', (e) => {
@@ -81,6 +89,7 @@ export function installGlossary() {
     if (!e.target.closest('#pop')) closePop(false);
   });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePop(true); });
+  pop().addEventListener('keydown', (e) => { if (e.key === 'Tab') { e.preventDefault(); closePop(true); } });
   addEventListener('hashchange', () => closePop(false));
 }
 
