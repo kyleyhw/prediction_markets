@@ -61,3 +61,13 @@ failed task gets a fix or a stated reason not to. The Phase 14 report adds
 a section with the three tables (completion, times, words) and the list of
 fixes, and the sessions are repeated with new people if more than one task
 failed for two or more participants.
+
+## Simulated Runs (2026-10-13)
+
+Before the deploy, the same tasks were run by subagents driving a real
+browser under fixed conditions (screen size, keyboard only, the country
+stated), with a checklist and pass/fail criteria, not allowed to read the
+code; the brief and results are in the Phase 14 report. They find what a
+browser can show (faults, dead ends, unclear words) and do not replace
+sessions with real people, which still follow this protocol after the
+deploy.

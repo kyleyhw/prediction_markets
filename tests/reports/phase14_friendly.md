@@ -99,13 +99,116 @@ an edit) passed every Python test and blanked the page in the browser. A
 plain `node --check` also passed it, because it reads the files as scripts;
 the new test parses each module as a module and fails on it.
 
+## Simulated Usability Runs (tasks 46, 47, 49; 2026-10-13)
+
+The protocol's ten tasks (`docs/usability.md`) and four Settings tasks,
+run by subagents that drove a real Chromium browser and were not allowed
+to read the code. The platform ran locally on real market data, with a
+small local model (Qwen 2.5 1.5B) as the AI. These runs do not replace
+sessions with real newcomers or a pass with a real screen reader: they
+find faults, and they cannot tell how real people feel.
+
+| Run | Conditions | Tasks |
+| :--- | :--- | :--- |
+| A | laptop, country Germany (the free demo refused) | 1, 2, 3, 5, 10, 7, 8, 9, Settings |
+| B | phone (390×844), country Kenya | 1 to 10, Settings |
+| C | laptop, country India | 1, 2, 3, 10, 5, 6, 7, 8, 9, Settings |
+| D | keyboard and accessibility tree only, United States | 1, 2, 3, 5, 6, 8, 10, Settings |
+| E (after the fixes) | phone, country Ireland | the faults of A to D, re-checked |
+| F (after the fixes) | keyboard only, United States | the faults of D, re-checked |
+
+**Completion before the fixes** (completed / failed): tasks 1 to 9 were
+completed in every run that had them. Task 10, describing a strategy and
+watching it trade, failed in all four runs:
+
+- in A, the free demo refused the country;
+- in B, C and D, the interface lost or garbled the conversation;
+- the 1.5B model never produced a strategy that could run.
+
+**Time to first strategy watched** (sign-in to reading the sample
+strategy's balance): 9 to 14 browser steps.
+
+**Faults found and fixed** (all pushed the same day):
+
+1. Paper trading traded markets whose event was already over: a sample
+   strategy bought "No" at 0.1¢ on a match played months before. A market
+   past its end date is never traded now (`test_paper.py`).
+2. Market pages said no sample strategy had forecast a market the sample
+   held. People who read the sample now see its forecasts (migration 0034,
+   `test_platform_handlers.py`).
+3. A message to the assistant vanished if the person left the page before
+   the reply. Pending and failed messages are now shown from their job,
+   with Send it again, and unfinished conversations are listed on
+   Strategies (`test_platform_strategies.py`).
+4. On the Describe page:
+   - focus fell to the page body after Send;
+   - the status said "up to a minute" and never changed;
+   - the reply was not announced.
+
+   Now focus stays in the text box, the status counts the minutes, and the
+   reply is announced and focused.
+5. The assistant showed the parser's words ("spec.selector.where.0.values:
+   List should have at least 1 item"). A garbled answer now becomes a plain
+   question, and the parser's words appear only in Detailed
+   (`test_strategy_compiler.py`).
+6. The model form demanded an address for Anthropic and Gemini, and
+   accepted a made-up key as connected. Now a model must answer a test
+   message before it is saved, and a refusal is one plain sentence
+   (`test_platform_work.py`, `test_platform_llmops.py`).
+7. The free demo's refusal came only after the person had typed. Now it
+   comes first, with the reason and the two ways forward.
+8. Detailed mode was wider than a phone screen: a table could widen the
+   grid column. The column is now `minmax(0, 1fr)`, and tables scroll in
+   their own box with the first column held.
+9. Glossary definitions sat at the end of the page, out of reach from the
+   button. Focus now moves into the definition and Escape comes back. The
+   definitions no longer show file paths, and the terms are 24 px targets.
+10. Strategy names changed with the reading level ("Coin flip" became
+    "constant"). Detailed now shows "Coin flip (constant)".
+11. Other faults fixed:
+    - two data exports;
+    - a hidden "Show more" that stayed visible;
+    - the tour's "no markets" when markets were listed;
+    - placeholder markets ("Team A");
+    - markets long past their close listed as open;
+    - "no one is offering" beside a quoted bid and ask;
+    - "0%" for chances under 1%;
+    - the time zone typed as free text;
+    - lists that saved every option arrowed past;
+    - missing headings, field hints not tied to their fields, and names
+      run into descriptions.
+12. Task 46's open item, the play money a new strategy starts with, is now
+    a setting, and the assistant is told it.
+
+**Words changed** after people asked about them:
+
+- captured, yardstick, side bar, and "Which one should Home follow?";
+- "staked" and "positions waiting to settle" (now bets "waiting for
+  their result");
+- the notification kinds (Fill, Halt, Brief and the rest);
+- the opening of the glossary entries for skill, team ratings, coin flip,
+  Brier score, verified and ledger.
+
+axe-core (WCAG 2.0 to 2.2, A and AA) then found no violation on 44
+renders: 11 pages, phone and laptop, both reading levels.
+
+**Still open:**
+
+- Task 10 cannot be judged until a real model answers. The interface now
+  keeps, announces and explains every turn, but the 1.5B stand-in never
+  wrote a strategy that could run.
+- People in the EEA, Switzerland and the UK need their own key or their
+  own copy. Run A found the guide to running your own copy too technical
+  for a layperson.
+- In run E, "Saved." showed only at the top of a long page on a phone. It
+  now stays in sight while scrolling, but this has not been re-checked.
+- A real screen-reader pass (NVDA, VoiceOver) and sessions with real
+  newcomers, which the protocol asks for once the site is deployed.
+
 ## Not Done
 
-- **Task 49, the usability sessions**, and the screen-reader half of task
-  47: they need the deployed host and people who have never used a
-  prediction market. The protocol is written and fixed in advance
-  (`docs/usability.md`): who, how, ten tasks with success conditions, the
-  measures (completion, time to first strategy watched, words that
-  confused) and what happens after.
+- **Task 49 with real people**, and the real screen-reader pass of task
+  47: they need the deployed host. The simulated runs above found and fixed
+  what a browser can show.
 - **Flag F18**: the terms and the privacy notice are drafts until a lawyer
   has read them; public sign-up waits on it.

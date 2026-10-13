@@ -281,6 +281,14 @@ typed model address must be public https on the hosted platform
 (`check_address`). Unpriced models cost $0 here (their provider bills).
 Not yet run against Google's API; the OpenAI-compatible path ran end to
 end against llama.cpp with a small Qwen model.
+**Simulated usability runs (2026-10-13, tasks 46, 47, 49):** subagents
+drove Chromium against the platform run locally (`vp serve`, three worker
+pools, real market data, the local model as demo), under test conditions
+only (screen size, keyboard only, stated country) with a checklist; about
+forty faults were found and fixed, results in
+`tests/reports/phase14_friendly.md`. Keep such runs lean: conditions,
+checklist, pass/fail, reproducible faults; no personas. Real people and a
+real screen reader still wait on the deploy.
 
 What exists, in order of the data flow: the Polymarket client and data
 layer (`vp/venues`, `vp/markets`, `vp/domains`); forecasters behind a

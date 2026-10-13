@@ -625,7 +625,7 @@ interval. One backend, two reading levels.
     hard, citing the 2026 evidence that frontier models trail
     superforecasters by about 0.02 Brier and that the market price is a
     strong forecast (Mathematical core, references).
-46. [in-progress] Settings: interests, play money, reading level, theme,
+46. [done 2026-10-13; the model tier became "your AI model", any provider] Settings: interests, play money, reading level, theme,
     notifications; in Detailed the model tier, budget, own key, data
     refresh, export of every record the workspace holds.
     - Landed 2026-09-23: reading level, theme, language and formats,
@@ -634,10 +634,11 @@ interval. One backend, two reading levels.
       (migration 0003) under row-level security.
     - Landed with Phase 13: the month's model spending against the budget,
       one's own model key, and a data refresh per domain.
-    - Outstanding, each listed on the page with where it arrives: the
-      play-money amount (the person's own paper account), notifications
-      (Phase 18), the model tier (Phase 15).
-47. [in-progress] Internationalisation structure (message catalogues, locale
+    - Done 2026-10-13: the play money a new strategy starts with (the
+      assistant is told it), where you are (for the free demo), your own
+      AI model from any provider (`docs/models.md`); notifications live on
+      their own page (Phase 18). Checked by the simulated runs of task 49.
+47. [in-progress: the real screen-reader pass waits on the deploy] Internationalisation structure (message catalogues, locale
     switch, number and date formatting) with English shipped; accessibility
     to WCAG 2.2 AA (keyboard, contrast, screen-reader labels on charts).
     - Landed 2026-09-23: one JSON catalogue per language, plural rules and
@@ -652,8 +653,11 @@ interval. One backend, two reading levels.
       levels, read through; it found Home's main figure outside the
       heading outline and a 1,236-row table on Detailed Strategies, both
       fixed (`tests/reports/phase14_friendly.md`).
-    - Outstanding: a pass with a real screen reader, which an automated
-      audit does not replace; it is part of the usability sessions (49).
+    - 2026-10-13: a keyboard-only run through the accessibility tree, as
+      part of the simulated usability runs (49), found nine faults, all fixed
+      (focus after Send, announcements, glossary focus, headings, field
+      hints, list saves); axe-core then found none on 44 renders. Still
+      outstanding: a pass with a real screen reader.
 48. [completed] Terms of use, age gate, jurisdiction notice, privacy notice
     (export and delete per workspace), and the first-screen statement that
     this is a tool for building and testing strategies, not advice.
@@ -662,13 +666,19 @@ interval. One backend, two reading levels.
       ticked before a sign-in link is spent, a consent screen when the
       terms change, account deletion that reaches the object store and the
       archived months. The texts are drafts until legal review (flag F18).
-49. [pending, needs the deploy] Usability sessions with at least three people who have never
+49. [simulated runs done 2026-10-13; sessions with real people need the deploy] Usability sessions with at least three people who have never
     used a prediction market, the fixes they produce, and the Phase 14
     report (task completion, time to first strategy watched, words that
     confused).
     - Ready 2026-09-23: the protocol, fixed in advance (`docs/usability.md`);
       the Phase 14 report covers everything else and gains the sessions'
       section when they run.
+    - 2026-10-13: six simulated runs (subagents in a real browser, not
+      allowed to read the code: laptop and phone, keyboard only, countries
+      the free demo serves and refuses) found about forty faults, all fixed
+      the same day, among them paper trading on markets already over and a
+      lost assistant message (`tests/reports/phase14_friendly.md`). Real
+      people still to come.
 
 ## Phase 15: Research sessions and strategies from conversation
 Design: `docs/strategies.md`, written and agreed before any code; it fixes
