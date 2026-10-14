@@ -39,5 +39,5 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: worker
-          secrets: GEMINI_API_KEY
+          secrets: GEMINI_API_KEY  # pragma: allowlist secret
           command: deploy --var SITE:${{ steps.site.outputs.url }}
