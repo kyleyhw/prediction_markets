@@ -21,13 +21,13 @@ MINIMUM_AGE = 18
 #: The first-screen statement, shown on sign-in and in the app.
 STATEMENT = (
     "vibe-predict is a tool for building and testing forecasting strategies "
-    "with play money. It is not financial advice, it places no real orders, "
+    "with paper money. It is not financial advice, it places no real orders, "
     "and nothing on it is a recommendation to bet."
 )
 
 #: What the service is and is not allowed to be, wherever the person is.
 JURISDICTION = (
-    "Everything here uses play money against real market prices. The service "
+    "Everything here uses paper money against real market prices. The service "
     "is not offered where using it would break local law, and real-money "
     "trading, if it is ever added, will be offered only where the venue and "
     "the law allow it."
@@ -59,7 +59,7 @@ TERMS: list[Section] = [
         ],
     ),
     (
-        "Play money, and no advice",
+        "Paper money, and no advice",
         [
             "Balances, positions and profits are simulated. They are not "
             "money and cannot be withdrawn. Backtests show what a strategy "

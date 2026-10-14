@@ -41,7 +41,7 @@ TOOLS = (
 INSTRUCTIONS = (
     "Read-only access to one vibe-predict workspace: prediction markets, "
     "evidence as it stood before a cutoff, the workspace's forecasts, backtest "
-    "run cards, paper-trading status (play money) and the signal bench. "
+    "run cards, paper-trading status (paper money) and the signal bench. "
     "Nothing here can place or change anything."
 )
 
@@ -147,7 +147,7 @@ def build(
 
     @server.tool()
     def paper_status(ctx: Context) -> str:
-        """Each paper account (play money): positions open and settled, and
+        """Each paper account (paper money): positions open and settled, and
         realised profit or loss."""
         principal = who(ctx)
         with pool.connection() as conn, tenant_session(conn, principal):

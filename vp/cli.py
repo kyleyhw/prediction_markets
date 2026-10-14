@@ -284,6 +284,9 @@ def build_parser() -> argparse.ArgumentParser:
     dem = sub.add_parser("demo", help="build the static demo for GitHub Pages")
     dem.add_argument("--root", type=Path, default=Path("data"))
     dem.add_argument("--out", type=Path, default=Path("data/pages"))
+    dem.add_argument(
+        "--proxy", default="", help="the free AI's address (worker/), if deployed"
+    )
 
     site = sub.add_parser("site", help="build the documentation site (docs/site.md)")
     site.add_argument("--out", type=Path, default=Path("data/site"))
@@ -385,7 +388,7 @@ def main() -> None:
     if args.command == "demo":
         from vp import demo
 
-        got = demo.build(args.root, args.out)
+        got = demo.build(args.root, args.out, proxy=args.proxy or None)
         print(f"{got['markets']} markets in {got['seconds']} s, in {args.out}")
         return
 

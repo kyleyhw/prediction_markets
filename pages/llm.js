@@ -1,8 +1,8 @@
-// The visitor's own model, called from the page (docs/demo.md).
-//
-// The demo has no server, so the key a visitor types goes from this page
-// straight to the provider they chose and nowhere else; it is held in memory
-// and gone when the tab closes. The question asked is the platform's own
+// The strategy assistant's model, called from the page (docs/demo.md): the
+// free demo AI (worker/, which holds the owner's free-tier key and adds the
+// instructions itself), or the visitor's own model, whose key goes from this
+// page straight to the provider they chose and nowhere else; it is held in
+// memory and gone when the tab closes. The question asked is the platform's own
 // compiler prompt and answer schema (vp/strategy/compiler.py), exported by
 // `vp demo`; the answer is checked by engine.js as the platform checks it.
 import { conform, render, validate } from './engine.js';
@@ -11,7 +11,7 @@ export class ModelError extends Error {
   constructor(message, code) { super(message); this.code = code; }
 }
 
-async function post(url, headers, body) {
+async function post(url, headers, body, demo = false) {
   let res;
   try {
     res = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify(body) });
@@ -21,6 +21,7 @@ async function post(url, headers, body) {
   const text = await res.text();
   let data = null;
   try { data = JSON.parse(text); } catch { /* not JSON */ }
+  if (!res.ok && demo) throw new ModelError(data?.message || `The free demo AI answered ${res.status}.`, data?.code || 'server');
   if (!res.ok) {
     const detail = (data?.error?.message || data?.error || text || '').toString().slice(0, 300);
     if (res.status === 401 || res.status === 403) throw new ModelError(`The provider refused the key (${res.status}). ${detail}`, 'key');
@@ -33,7 +34,11 @@ async function post(url, headers, body) {
 
 // One call: the system prompt, the turns so far, and the answer's schema.
 // Returns the answer's text (JSON).
-async function ask(model, system, messages, schema) {
+async function ask(model, system, messages, schema, current) {
+  if (model.kind === 'demo') {
+    const data = await post(`${model.base_url.replace(/\/$/, '')}/compile`, {}, { messages, current: current || null }, true);
+    return data.text;
+  }
   if (model.kind === 'gemini') {
     const data = await post(
       `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model.model)}:generateContent`,
@@ -78,13 +83,13 @@ async function ask(model, system, messages, schema) {
 // The compiler's loop (vp/strategy/compiler.py: compile_spec): one answer,
 // checked; if the engine refuses the spec, the model is told why once.
 export async function compileSpec(words, { model, ctx, history, current }) {
-  let system = ctx.system;
+  let system = ctx.system; // the free demo AI adds it itself
   if (current) system += `\nThe person is refining this confirmed spec. Answer with the whole new spec, changing only what they ask for:\n${JSON.stringify(current)}`;
   const messages = [...history, { role: 'user', content: words }];
   let problems = [];
   let garbled = false;
   for (let attempt = 0; attempt < 2; attempt += 1) {
-    const text = await ask(model, system, messages, ctx.schema);
+    const text = await ask(model, system, messages, ctx.schema, current);
     let answer = null;
     try {
       answer = JSON.parse(text.replace(/^```(?:json)?\s*|\s*```$/g, ''));

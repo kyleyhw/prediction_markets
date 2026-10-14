@@ -162,7 +162,7 @@ function renderSize(rule, s) {
 
 function renderWhen(sch, s) {
   const every = sch.cadence_hours === 1 ? 'every hour' : `every ${sch.cadence_hours} hours`;
-  return `When: from ${g(sch.hours_before_close)} hours before a market's scheduled end, checked ${every}; a backtest forecasts each market ${g(sch.hours_before_close)} hours before it settled. Starts with ${usd(s.initial_cash)} of play money.`;
+  return `When: from ${g(sch.hours_before_close)} hours before a market's scheduled end, checked ${every}; a backtest forecasts each market ${g(sch.hours_before_close)} hours before it settled. Starts with ${usd(s.initial_cash)} of paper money.`;
 }
 
 // ------------------------------------------- vp/strategy/spec.py: validate
@@ -268,7 +268,7 @@ export function position(pol, p, ask, bid, fees) {
   let pos;
   if (pol.follow !== null) {
     const favourite = ask + bid >= 1 ? 'yes' : 'no';
-    const side = pol.follow === 'favourite' ? favourite : favourite === 'yes' ? 'no' : 'yes';
+    const side = pol.follow === 'signal' ? (p >= 0.5 ? 'yes' : 'no') : pol.follow === 'favourite' ? favourite : favourite === 'yes' ? 'no' : 'yes';
     pos = { side, price: 0, fraction: Math.min(pol.flatFraction, pol.maxFraction), edge: 0 };
   } else {
     const found = size(p, ask, bid, fees, pol.kelly, pol.maxFraction, pol.minEdge);
@@ -336,19 +336,49 @@ export function backtest(spec, data, ctx) {
     opps.push({ market: m, settled: m.settled, p, q, y: m.y, fees });
   }
   const bets = simulate(opps, policy(spec), { initialCash: spec.sizing.initial_cash, halfSpread: ctx.half_spread });
+  return summarise(domain, Number(cutoff), candidates, opps, bets, assumed, follow, spec.sizing.initial_cash);
+}
+
+function summarise(domain, cutoff, candidates, opps, bets, assumed, noForecast, initialCash) {
   const n = opps.length;
   const brier = (f) => (n ? opps.reduce((s, o) => s + (f(o) - o.y) ** 2, 0) / n : 0);
   const reference = brier((o) => clip(o.q));
   const belief = brier((o) => o.p);
-  let peak = spec.sizing.initial_cash;
+  let peak = initialCash;
   let drawdown = 0;
   for (const b of bets) { peak = Math.max(peak, b.bankroll); drawdown = Math.min(drawdown, (b.bankroll - peak) / (peak > 0 ? peak : 1)); }
   const pnl = bets.reduce((s, b) => s + b.pnl, 0);
   const staked = bets.reduce((s, b) => s + b.stake, 0);
   return {
-    domain, cutoff: Number(cutoff), candidates, scored: n, fees_assumed: assumed, bets,
-    brier: follow ? null : belief, brier_market: reference, skill: follow || !(reference > 0) ? null : 1 - belief / reference,
-    pnl, staked, roi: staked > 0 ? pnl / staked : null, final: spec.sizing.initial_cash + pnl,
+    domain, cutoff, candidates, scored: n, fees_assumed: assumed, bets,
+    brier: noForecast ? null : belief, brier_market: reference, skill: noForecast || !(reference > 0) ? null : 1 - belief / reference,
+    pnl, staked, roi: staked > 0 ? pnl / staked : null, final: initialCash + pnl,
     wins: bets.filter((b) => b.pnl > 0).length, fees: bets.reduce((s, b) => s + b.fee, 0), max_drawdown: drawdown,
   };
+}
+
+// ------------------------------------------- a code strategy's answers
+
+// The answers of a "Write your own code" strategy (pages/strategy_api.py):
+// signals buy the side named at a flat stake, as a follow rule does; chances
+// are an edge rule's belief. The same simulation as every other strategy.
+export function backtestAnswers(data, run, settings, ctx) {
+  const cutoff = String(settings.cutoff);
+  const signals = run.sort === 'signal';
+  const opps = [];
+  let assumed = 0;
+  for (const m of data.markets) {
+    const a = run.answers[m.id];
+    const q = m.price[cutoff];
+    if (a === undefined || q === undefined) continue;
+    if (m.fee === null) assumed += 1;
+    const fees = m.fee === null ? { rate: ctx.fee_rate_assumed, exponent: 1 } : { rate: m.fee[0], exponent: m.fee[1] };
+    opps.push({ market: m, settled: m.settled, p: signals ? (a === 'yes' ? 1 : 0) : a, q, y: m.y, fees });
+  }
+  const pol = {
+    kelly: 0.25, maxFraction: settings.max_fraction, minEdge: settings.min_edge, sides: 'both',
+    follow: signals ? 'signal' : null, flatFraction: settings.max_fraction, priceMin: 0, priceMax: 1, maxStake: null,
+  };
+  const bets = simulate(opps, pol, { initialCash: settings.initial_cash, halfSpread: ctx.half_spread });
+  return summarise(data.domain, Number(cutoff), opps.length, opps, bets, assumed, signals, settings.initial_cash);
 }

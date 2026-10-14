@@ -491,7 +491,7 @@ than guessed. Both are drafts until a lawyer has read them (flag F18).
   app shows nothing but the consent screen until the current version is
   accepted (`/auth/me` says whether it is current).
 - **The statement** that this is a tool for building and testing
-  strategies with play money, not advice, and the jurisdiction notice, are
+  strategies with paper money, not advice, and the jurisdiction notice, are
   on the sign-in page, on the confirm page, in the terms, and on the guided
   start's first screen.
 - **Deletion.** Settings deletes the account after the words "delete my

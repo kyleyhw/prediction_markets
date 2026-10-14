@@ -132,12 +132,12 @@ browse the market, a way to act, and a place to learn.
 
 | Screen | Newcomer sees | Expert sees (Detailed) |
 | :--- | :--- | :--- |
-| **Home** | Your play-money balance, its chart, what changed today, one next step | Per-strategy P&L, exposure, skill, settled counts |
+| **Home** | Your paper-money balance, its chart, what changed today, one next step | Per-strategy P&L, exposure, skill, settled counts |
 | **Markets** | Cards: the question in plain words, "62% chance", closes in 2 days | Quotes, book depth, parsed fields, forecasts, history chart |
 | **Strategies** | Your strategies as cards with a sentence each and a P&L line | Spec, selector counts, sizing, cost, every run |
 | **Backtests** | "Would have turned $1,000 into $427 over 167 bets; worse than following the market" | Scores, calibration, bootstrap, charts, config |
 | **Learn** | Short pages with pictures, from "what is a prediction market" up | Links into `docs/` derivations |
-| **Settings** | Interests, play-money amount, reading level, theme | Model, budget, own key, data refresh, export |
+| **Settings** | Interests, paper-money amount, reading level, theme | Model, budget, own key, data refresh, export |
 
 Design rules:
 

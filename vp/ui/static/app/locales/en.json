@@ -73,13 +73,13 @@
   },
   "home": {
     "title": "Home",
-    "lede": "A sample strategy trading with play money: how it is doing, what changed, and what to look at next.",
+    "lede": "A sample strategy trading with paper money: how it is doing, what changed, and what to look at next.",
     "resume_start": "You started the guided tour but did not finish it.",
     "resume_button": "Pick up where you left off",
     "chain_broken": "Warning: the record of trades failed its integrity check, so the figures on this page may have been altered. Treat them as unreliable until this is resolved.",
     "empty_title": "No sample strategies are running yet",
-    "empty_text": "Sample strategies trade with play money on open markets and appear here once they have started. Until then you can look at the markets and read how paper trading works.",
-    "play_money_of": "Play money: {name}",
+    "empty_text": "Sample strategies trade with paper money on open markets and appear here once they have started. Until then you can look at the markets and read how paper trading works.",
+    "play_money_of": "Paper money: {name}",
     "since_start": "{change} ({pct}) since it started with {start}.",
     "nothing_settled": "None of its bets has had its result yet. The balance counts only bets whose result is in, so it stays where it started until the first one is.",
     "level_with_nothing": "It is level with doing nothing.",
@@ -113,7 +113,7 @@
     "next_title": "Next step",
     "next_text": "One thing worth doing now.",
     "all_title": "Every sample strategy",
-    "all_caption": "Each starts with {start} of play money; balance is after every settled position.",
+    "all_caption": "Each starts with {start} of paper money; balance is after every settled position.",
     "all_chart": "Balances over time",
     "ledger_line": {
       "one": "1 entry.",
@@ -183,7 +183,7 @@
   },
   "strategies": {
     "title": "Strategies",
-    "lede": "Sample strategies trading with play money against the real order book, settled when the markets resolve.",
+    "lede": "Sample strategies trading with paper money against the real order book, settled when the markets resolve.",
     "never_bets": "It never bets: it is the measuring stick the others are compared with.",
     "counts": "{n} positions settled, {open} waiting.",
     "waiting": "Waiting to settle",
@@ -252,7 +252,7 @@
     "less_accurate": "Its forecasts were less accurate than the market's own prices on these {n} markets.",
     "as_accurate": "Its forecasts were exactly as accurate as the market's own prices.",
     "cost": "The forecasts cost {cost} to make.",
-    "equity_title": "Play money through the run",
+    "equity_title": "Paper money through the run",
     "equity_summary": "Balance of each strategy as its simulated bets settle, from {start}, against doing nothing.",
     "equity_x": "bets in settlement order",
     "equity_caption": "The simulated balance from the starting amount as each bet settles, against doing nothing. A second run, when compared, is dashed with (B).",
@@ -326,7 +326,7 @@
           "A prediction market asks a question with a yes-or-no answer that will be settled later: will it rain in London on Friday, will this team win on Sunday.",
           "People buy and sell shares in each answer. A share of the answer that turns out right pays one dollar; a share of the wrong answer pays nothing.",
           "Because a right share pays a dollar, the price of a share is what traders together think the chance is. A share at 62 cents is the market saying 62% chance.",
-          "Here you do not trade real money. You watch strategies make forecasts and trade with play money, and see how they would have done in the past."
+          "Here you do not trade real money. You watch strategies make forecasts and trade with paper money, and see how they would have done in the past."
         ],
         "detailed": [
           "A binary contract on event A pays 1 if A occurs and 0 otherwise. Its price q in (0, 1) is the market-implied probability of A, up to the spread and fees.",
@@ -360,7 +360,7 @@
         "blurb": "Replaying the past to see how a strategy would have done.",
         "simple": [
           "A backtest takes markets that have already settled, goes back to a moment before they settled (the cutoff), and asks a strategy for its forecast using only what was known then.",
-          "It then pretends to bet on those forecasts and adds up how the bets would have turned out. That gives a score and a play-money result.",
+          "It then pretends to bet on those forecasts and adds up how the bets would have turned out. That gives a score and a paper-money result.",
           "A backtest is not a promise. A strategy that did well on a few dozen markets may have been lucky, and one that had seen the answers, even by accident, will look better than it is. This is why every strategy here is also run forward, on markets that have not settled yet."
         ],
         "detailed": [
@@ -375,10 +375,10 @@
       },
       "paper": {
         "title": "Paper trading",
-        "blurb": "Trading with play money on markets that have not settled yet.",
+        "blurb": "Trading with paper money on markets that have not settled yet.",
         "simple": [
           "Paper trading runs a strategy forward: it forecasts markets that are open now and places pretend orders against the real prices on offer, paying the fees a real order would pay.",
-          "When a market settles, the position is settled too, and the strategy's play-money balance goes up or down.",
+          "When a market settles, the position is settled too, and the strategy's paper-money balance goes up or down.",
           "Because nothing about the future is known yet, paper trading cannot peek at the answer. It is the fairest test a strategy can have short of real money, and nothing here uses real money."
         ],
         "detailed": [
@@ -515,7 +515,7 @@
     "model_copy_link": "How to run your own copy",
     "prefs": "How the site looks and what it shows",
     "model_address_hint": "Only for a provider not in the list: the address its documentation gives for OpenAI-compatible access, usually ending in /v1.",
-    "play_money": "Play money for a new strategy",
+    "play_money": "Paper money for a new strategy",
     "play_money_note": "How much pretend money a strategy you describe starts with, in dollars; empty means $1,000. You can still say another amount when you describe it.",
     "country_save": "Save",
     "country_saved": "Saved: {name}."
@@ -523,14 +523,14 @@
   "start": {
     "step": "Step {n} of {total}",
     "titles": {
-      "0": "Build and test forecasting strategies, with play money",
+      "0": "Build and test forecasting strategies, with paper money",
       "1": "What are you interested in?",
       "2": "Your markets",
       "3": "Watch a sample strategy",
       "4": "How much detail do you want?"
     },
     "what_1": "Prediction markets let people trade on questions like “Will it be warmer than 17°C in London on Friday?”. The price of a share is the market's chance that the answer is yes.",
-    "what_2": "Here you can watch strategies make forecasts on those questions, see how they would have done in the past, and follow them trading with play money.",
+    "what_2": "Here you can watch strategies make forecasts on those questions, see how they would have done in the past, and follow them trading with paper money.",
     "what_3": "This is a tool for building and testing strategies, not advice. No real money is involved.",
     "interests_q": "Pick any that interest you",
     "interests_note": "You can change these at any time in Settings.",
@@ -816,7 +816,7 @@
     "run_cycle": "Trade now",
     "run_settle": "Check for settled markets",
     "export_ledger": "Download the ledger to verify it yourself",
-    "sample_shared": "These are the sample strategies, trading with play money for everyone who uses this site. Strategies of your own will have accounts of their own.",
+    "sample_shared": "These are the sample strategies, trading with paper money for everyone who uses this site. Strategies of your own will have accounts of their own.",
     "sample_waiting": "The sample strategies trade every hour and settle as markets resolve. Their first trades appear here after the next hourly run.",
     "sample_hourly": "The sample strategies trade every hour on their own."
   },
@@ -899,7 +899,7 @@
       "draft": "Confirmed, not yet looked at.",
       "previewed": "Previewed; not yet backtested.",
       "backtested": "Backtested; not trading.",
-      "paper": "Trading with play money.",
+      "paper": "Trading with paper money.",
       "retired": "Stopped. Its records stay."
     },
     "what_runs": "What runs (version {version})",
@@ -937,7 +937,7 @@
     "col_needed": "Markets needed",
     "manifest": "Run fingerprint {hash}",
     "paper_title": "In paper",
-    "no_paper": "Not trading. Start paper trading to watch it on live prices with play money.",
+    "no_paper": "Not trading. Start paper trading to watch it on live prices with paper money.",
     "paper_waiting": "Its account is open; the first cycle runs within the hour.",
     "versions": "Versions",
     "col_version": "Version",
@@ -1162,7 +1162,7 @@
     "empty": "No entries here yet",
     "empty_text": "Owners enter a strategy from its page once it is paper trading.",
     "enter": "Go to your strategies",
-    "how": "Paper trading uses play money. The leaderboards are recomputed every hour from settled paper positions only."
+    "how": "Paper trading uses paper money. The leaderboards are recomputed every hour from settled paper positions only."
   },
   "delivery": {
     "title": "Delivery",
@@ -1266,7 +1266,7 @@
   "share": {
     "title": "Share",
     "note": "A share is a public, read-only page anyone with its link can open. It is a snapshot, refreshed daily, and shows only what you tick.",
-    "show_pnl": "Show paper results (play money)",
+    "show_pnl": "Show paper results (paper money)",
     "show_spec": "Show the rules, so others can copy them",
     "show_author": "Show my name",
     "live": "Shared: {views} views, {forks} copies.",
@@ -1397,7 +1397,7 @@
     "lede_detailed": "The open paper positions of every strategy as one portfolio: exclusive events exactly, other dependence by a documented simple model, 20,000 joint draws.",
     "none": "Nothing open",
     "none_text": "When your strategies hold paper positions, their risk together appears here.",
-    "week": "The most you could lose this week is {worst} of play money; in 19 weeks out of 20 you would lose less than {q}.",
+    "week": "The most you could lose this week is {worst} of paper money; in 19 weeks out of 20 you would lose less than {q}.",
     "week_none": "Nothing you hold settles this week.",
     "meter": "The worst case this week is {pct} of your paper balance.",
     "all": "Across all {n} open positions, the worst case is a loss of {worst}. If every favourite won, you would make {fav}.",
@@ -1424,7 +1424,7 @@
     "by_date": "By resolution date",
     "by_strategy": "By strategy",
     "model": "Markets of one event that are not exclusive are correlated at {rho}; markets of one domain settling on one day share a factor of {day}; {n} draws. Probabilities are the markets' prices, not your strategies' beliefs.",
-    "play": "Paper trading uses play money."
+    "play": "Paper trading uses paper money."
   },
   "health": {
     "title": "Health",

@@ -1,0 +1,43 @@
+# The demo's free AI (docs/demo.md, worker/): deploys the Cloudflare Worker
+# that holds the owner's Gemini free-tier key. Needs three repository
+# secrets, CLOUDFLARE_API_TOKEN (the "Edit Cloudflare Workers" template),
+# CLOUDFLARE_ACCOUNT_ID and GEMINI_API_KEY (from a Google project with no
+# billing, so it can never be charged); without them it does nothing. Then
+# set the repository variable DEMO_PROXY_URL to the address it prints and
+# run the pages workflow.
+name: demo-proxy
+
+on:
+  push:
+    branches: [master]
+    paths: ["worker/**", ".github/workflows/demo-proxy.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      HAS_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
+    steps:
+      - if: env.HAS_TOKEN != 'true'
+        run: echo "::notice::No CLOUDFLARE_API_TOKEN secret; the free AI is not deployed (docs/demo.md)."
+      - if: env.HAS_TOKEN == 'true'
+        uses: actions/checkout@v4
+      - if: env.HAS_TOKEN == 'true'
+        id: site
+        run: |
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          echo "url=https://${owner}.github.io/${GITHUB_REPOSITORY#*/}" >> "$GITHUB_OUTPUT"
+      - if: env.HAS_TOKEN == 'true'
+        uses: cloudflare/wrangler-action@v3
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: worker
+          secrets: GEMINI_API_KEY
+          command: deploy --var SITE:${{ steps.site.outputs.url }}

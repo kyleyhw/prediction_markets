@@ -1,4 +1,4 @@
-// Home: the followed sample strategy's play-money balance and its chart
+// Home: the followed sample strategy's paper-money balance and its chart
 // against doing nothing, what changed in the last day, and one next step.
 // Detailed adds every strategy's figures, their curves together, and the
 // ledger's integrity.

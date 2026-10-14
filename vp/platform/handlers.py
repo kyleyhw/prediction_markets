@@ -208,7 +208,7 @@ def _charges(forecasters: Sequence[Any], domain: str | None) -> list[dict[str, A
 
 
 def _play_money_note(svc: Services, principal: Principal) -> list[str]:
-    """The person's chosen play money for new strategies, as a note the
+    """The person's chosen paper money for new strategies, as a note the
     compiler reads (Settings, task 46); none when they have not chosen."""
     if not principal.attributable:
         return []
@@ -220,7 +220,7 @@ def _play_money_note(svc: Services, principal: Principal) -> list[str]:
     if not row or not row[0]:
         return []
     return [
-        f"New strategies start with ${int(row[0]):,} of play money unless "
+        f"New strategies start with ${int(row[0]):,} of paper money unless "
         "the person says otherwise."
     ]
 

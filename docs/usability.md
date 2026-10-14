@@ -33,7 +33,7 @@ one hint, **failed** otherwise.
 | # | Task as read | Success |
 | :--- | :--- | :--- |
 | 1 | "Sign in with your email." | on Home, having ticked the age and terms box |
-| 2 | "What is this site for, in your own words?" | mentions testing strategies and play money |
+| 2 | "What is this site for, in your own words?" | mentions testing strategies and paper money |
 | 3 | "Find a market you find interesting and tell me what the site thinks will happen." | states a market's chance in words |
 | 4 | "How much would it cost to buy one 'Yes' share there?" | the price and the fee, roughly |
 | 5 | "How is the sample strategy doing?" | the balance and whether it beats doing nothing |

@@ -143,7 +143,7 @@ def _share_page(snapshot: dict[str, Any], slug: str) -> str:
         skill = paper.get("skill")
         cards += (
             f"<h2>Paper trading</h2><p>{paper['settled']} positions settled, "
-            f"{paper['realised']:+.2f} USD of play money; skill "
+            f"{paper['realised']:+.2f} USD of paper money; skill "
             f"{'n/a' if skill is None else f'{skill:+.3f}'}.</p>"
         )
     for s in snapshot.get("standing") or []:
@@ -164,7 +164,7 @@ def _share_page(snapshot: dict[str, Any], slug: str) -> str:
         + (f"<p>By {esc(author)}.</p>" if author else "")
         + f"<h2>What it does</h2><ul>{lines}</ul>{cards}"
         + f"<p class=note>Published {esc(snapshot.get('published_at', ''))}. "
-        "Paper trading uses play money. Past results do not predict future ones."
+        "Paper trading uses paper money. Past results do not predict future ones."
         f"</p>{fork}"
         + f'<p><img src="/s/{esc(slug)}/card.svg" alt="" width=300 height=100></p>'
     )

@@ -140,7 +140,9 @@ class Policy:
     max_fraction: float = 0.05
     min_edge: float = 0.0
     sides: str = "both"  # "both", "yes" or "no"
-    follow: str | None = None  # "favourite" or "underdog"
+    # "favourite" or "underdog"; or "signal": the belief names the side
+    # (above one half buys Yes), as a script's buy signal does (docs/demo.md).
+    follow: str | None = None
     flat_fraction: float = 0.01
     price_min: float = 0.0
     price_max: float = 1.0
@@ -154,7 +156,10 @@ class Policy:
         """The position to take at this touch, or ``None``."""
         if self.follow is not None:
             favourite = "yes" if ask + bid >= 1.0 else "no"
-            side = favourite if self.follow == "favourite" else _other(favourite)
+            if self.follow == "signal":
+                side = "yes" if p_hat >= 0.5 else "no"
+            else:
+                side = favourite if self.follow == "favourite" else _other(favourite)
             fraction = min(self.flat_fraction, self.max_fraction)
             position = Position(side, 0.0, fraction, 0.0)
         else:

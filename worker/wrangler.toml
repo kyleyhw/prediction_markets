@@ -1,0 +1,17 @@
+# The demo's free AI (docs/demo.md): a Cloudflare Worker that holds the
+# owner's Gemini free-tier key. Deployed by .github/workflows/demo-proxy.yml,
+# which sets SITE and the key; nothing here is secret.
+name = "vibe-predict-demo"
+main = "index.js"
+compatibility_date = "2026-09-01"
+
+[vars]
+SITE = "https://kyleyhw.github.io/prediction_markets"
+MODEL = "gemini-3.1-flash-lite"
+
+# Each visitor's address may send ten messages a minute; Google's own daily
+# free-tier quota is the ceiling across everyone, and costs nothing.
+[[ratelimits]]
+name = "PER_IP"
+namespace_id = "1001"
+simple = { limit = 10, period = 60 }

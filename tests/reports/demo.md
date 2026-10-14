@@ -102,3 +102,46 @@ Faults found and fixed:
 - **Anthropic and OpenAI-compatible calls untested in the browser.** Their
   request shapes follow `vp/llm/`, but they were not stubbed and driven in
   the browser as Google's was.
+
+## Second Round (2026-10-14)
+
+The owner asked for a demo that works with no key, "paper money" in place
+of "play money", one way at a time in tabs with the AI first, and a way to
+write the strategy as code with typed inputs and output.
+
+- **The free demo AI:** `worker/`, a Cloudflare Worker, holds the owner's
+  Gemini free-tier key. `tests/test_demo.py` runs it in Node with Google and
+  the site faked:
+  - it sends Google the compiler's own instructions and schema;
+  - it adds the strategy being refined;
+  - it refuses a person in Germany with Google's reason and a person in an
+    unserved country, before Google is called;
+  - it refuses another site, an over-long conversation, and a second burst
+    from one address;
+  - it reports Google's used-up quota plainly.
+  
+  Its country lists equal the platform's. Not deployed yet: that needs the
+  owner's Cloudflare account (docs/demo.md lists the four steps).
+- **Code strategies:**
+  - **The interface:** `pages/strategy_api.py` types it,
+    `decide(market, past) -> Signal`.
+  - **What the code can see:** in tests, `past` held only markets settled
+    before each decision, a market never carried its outcome, and every
+    wrong return (2, 1.5, True, "maybe", NaN, a complex number, mixing
+    signals and chances) stopped the run with the market named.
+  - **Same results as the Python engine:** the signal rule was added to the
+    Python engine (`Policy(follow="signal")`). Signal and chance answers
+    give the same bets in both engines.
+  - **In Chromium:** Pyodide 0.29.3 ran the example on 293 Premier League
+    markets and placed 40 bets. A wrong return, an unknown attribute (shown
+    with its line in the visitor's code only) and an endless loop (stopped
+    at 60 s) were each reported.
+- **Tabs:** they follow the ARIA tabs pattern: arrow keys, Home and End.
+  axe-core found no violations on the AI and code tabs. No page scrolls
+  sideways at 390 px.
+- **Faults found and fixed:**
+  - Pyodide's internal traceback was shown, so only the visitor's own lines
+    are shown now.
+  - The first example bet on draw markets and placed one bet. The example
+    is now Elo against the price.
+  - Code wrapped on phones, so the code box now scrolls sideways.

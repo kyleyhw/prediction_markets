@@ -89,7 +89,7 @@ A page, `#risk`, covers every paper account of the workspace:
   recorded it.
 
 In Simple the page is one sentence and a meter: "The most you could lose
-this week is $X of play money; in 19 weeks out of 20 you would lose less
+this week is $X of paper money; in 19 weeks out of 20 you would lose less
 than $Y." "This week" means positions whose events end in the next seven
 days.
 

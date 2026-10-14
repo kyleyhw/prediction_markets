@@ -241,7 +241,7 @@ def render(
     body = "\n".join(lines) if lines else "Nothing to report."
     text = (
         f"{title} ({today.isoformat()}, {timezone})\n\n{body}\n\n"
-        "Paper trading uses play money.\n\n" + _block(template, rows, today)
+        "Paper trading uses paper money.\n\n" + _block(template, rows, today)
     )
     return text, rows
 

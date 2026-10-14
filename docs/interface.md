@@ -71,7 +71,7 @@ step reached is saved, so a person who leaves half-way is offered to pick
 up where they left off. A brand-new person is taken there on their first
 visit; nobody is sent there twice.
 
-**Home (task 41).** The followed sample strategy's play-money balance,
+**Home (task 41).** The followed sample strategy's paper-money balance,
 its change since it started, how it compares with doing nothing, its open
 positions and fees paid, and its balance chart; what changed in the last
 24 hours, counted from the ledger; and one next step, chosen from the
@@ -124,7 +124,7 @@ interests, the sample strategy Home follows, and the guided start again.
 Each control saves as it changes and says so in a status line that a
 screen reader announces. Detailed adds API tokens (create, shown once;
 revoke), a download of every record the app holds for the person, and a
-list of what is not here yet and when it arrives: the play-money amount
+list of what is not here yet and when it arrives: the paper-money amount
 (with the person's own paper account) and the model tier (Phase 15).
 Under `vp serve` it links Team, Notifications and Delivery (Phase 18). They are listed rather than shown as dead
 controls, because a switch that does nothing misleads. Under `vp serve`,

@@ -10,7 +10,7 @@ which is not public yet.
 Seven short days, for someone who has never traded anything and never
 written code. Each day takes about fifteen minutes in the app and ends
 with one thing you can now do. Nothing here uses real money: every
-balance is play money, and the app is a tool for building and testing
+balance is paper money, and the app is a tool for building and testing
 ideas, not advice.
 
 The app is not open to the public yet. It runs for its developers while

@@ -143,7 +143,7 @@ Fractional Kelly on the belief, as the engine has done since Phase 9
 | `max_stake_usd` | none | at most this many dollars on one position |
 | `max_open` | none | at most this many open positions |
 | `max_per_event` | none | at most this many open positions in one event |
-| `initial_cash` | 1000 | the paper account's play money |
+| `initial_cash` | 1000 | the paper account's paper money |
 
 `max_open` and `max_per_event` apply in paper, where positions overlap.
 The backtest's simulator settles each bet before the next (docs/sizing.md),

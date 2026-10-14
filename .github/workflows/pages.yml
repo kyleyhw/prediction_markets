@@ -42,7 +42,7 @@ jobs:
         run: |
           domains=$(uv run python -c "from vp.domains import DOMAINS; print(' '.join(DOMAINS))")
           uv run vp build-dataset --domain $domains --histories 600
-      - run: uv run vp demo --out data/pages
+      - run: uv run vp demo --out data/pages --proxy "${{ vars.DEMO_PROXY_URL }}"
       - run: uv run vp site --out data/pages/docs
       - uses: actions/upload-pages-artifact@v3
         with:

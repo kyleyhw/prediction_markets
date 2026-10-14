@@ -1,6 +1,6 @@
 // Strategies: the person's own strategies (hosted), described in a
 // conversation and each with its own page; then the sample strategies
-// running on play money, each with its
+// running on paper money, each with its
 // balance against doing nothing and its open positions in words. Detailed
 // is the paper-trading record in full: accounts, open positions with the
 // fee each paid, settlements, and the hash-chained ledger itself.

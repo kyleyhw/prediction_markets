@@ -187,8 +187,14 @@ def context(domains: Iterable[str]) -> dict[str, Any]:
     }
 
 
-def build(root: Path, out: Path, domains: Iterable[str] | None = None) -> dict:
-    """Write the page and its data into ``out``; returns what was written."""
+def build(
+    root: Path,
+    out: Path,
+    domains: Iterable[str] | None = None,
+    proxy: str | None = None,
+) -> dict:
+    """Write the page and its data into ``out``; returns what was written.
+    ``proxy`` is the free AI's address (``worker/``), when one is deployed."""
     started = time.monotonic()
     out.mkdir(parents=True, exist_ok=True)
     shutil.copytree(STATIC, out, dirs_exist_ok=True)
@@ -207,6 +213,8 @@ def build(root: Path, out: Path, domains: Iterable[str] | None = None) -> dict:
         )
     built = datetime.now(timezone.utc).isoformat(timespec="seconds")
     (out / "data" / "demo.json").write_text(
-        json.dumps(context(present) | {"built": built, "markets": counts})
+        json.dumps(
+            context(present) | {"built": built, "markets": counts, "proxy": proxy}
+        )
     )
     return {"markets": counts, "seconds": round(time.monotonic() - started, 1)}

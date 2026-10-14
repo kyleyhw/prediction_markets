@@ -304,9 +304,15 @@ real screen reader still wait on the deploy.
 proof of concept over the hosted deploy: the public face is a static demo
 on GitHub Pages (`pages/`, built by `vp demo` from `vp/demo.py` and
 published with the docs site by `.github/workflows/pages.yml`; Pages must
-be enabled once, Source: GitHub Actions). Visitors bring their own model
-key (called from the browser) or use a form; nothing is saved; strategy
-and transcript download. Forecasts are precomputed at fixed cutoffs;
+be enabled once, Source: GitHub Actions). Three tabs: the AI (default; the
+free demo AI is a Cloudflare Worker in `worker/` holding the owner's
+Gemini free-tier key, forced to the compiler's schema, region-gated by
+Cloudflare's country, deployed by `demo-proxy.yml` once the owner adds the
+secrets and `DEMO_PROXY_URL`; visitors may use their own key instead), a
+form, and code (`decide(market, past) -> Signal` typed in
+`pages/strategy_api.py`, run by Pyodide in `pages/pyworker.js`); nothing
+is saved; strategy, code and transcript download. Say "paper money", never
+"play money". Forecasts are precomputed at fixed cutoffs;
 `pages/engine.js` ports the selection, sizing, simulation, checks and
 words line for line, and `tests/test_demo.py` compares it with the Python
 engine (node required; skipped without it). Change one, change both. Forks

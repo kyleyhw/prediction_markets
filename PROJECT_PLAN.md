@@ -596,7 +596,7 @@ interval. One backend, two reading levels.
     - Landed 2026-09-23: five screens (the last picks the reading level),
       the step reached saved with the person's settings, Home offering to
       resume; a first visit starts it, no visit after that forces it.
-41. [completed] Brokerage-style home: play-money balance, its chart, what
+41. [completed] Brokerage-style home: paper-money balance, its chart, what
     changed today, one next step; Detailed adds per-strategy P&L, exposure,
     skill and settled counts.
     - Landed 2026-09-23 over the paper ledger: the balance is the followed
@@ -626,7 +626,7 @@ interval. One backend, two reading levels.
     hard, citing the 2026 evidence that frontier models trail
     superforecasters by about 0.02 Brier and that the market price is a
     strong forecast (Mathematical core, references).
-46. [done 2026-10-13; the model tier became "your AI model", any provider] Settings: interests, play money, reading level, theme,
+46. [done 2026-10-13; the model tier became "your AI model", any provider] Settings: interests, paper money, reading level, theme,
     notifications; in Detailed the model tier, budget, own key, data
     refresh, export of every record the workspace holds.
     - Landed 2026-09-23: reading level, theme, language and formats,
@@ -635,7 +635,7 @@ interval. One backend, two reading levels.
       (migration 0003) under row-level security.
     - Landed with Phase 13: the month's model spending against the budget,
       one's own model key, and a data refresh per domain.
-    - Done 2026-10-13: the play money a new strategy starts with (the
+    - Done 2026-10-13: the paper money a new strategy starts with (the
       assistant is told it), where you are (for the free demo), your own
       AI model from any provider (`docs/models.md`); notifications live on
       their own page (Phase 18). Checked by the simulated runs of task 49.
@@ -1216,6 +1216,7 @@ called done.
 | 23 | The site's visual style | the "paper" default of `docs/site.md` as the placeholder; alternatives trialled later (F14) |
 | 15 | Models and who pays (2026-10-13, revised the same day) | any model from any provider plugs in (`vp/llm/`); the demo is Gemini 3.1 Flash-Lite on Google's free tier, which the owner pays nothing for, within a daily allowance of calls and only where the free tier may serve people; elsewhere people are told so and pointed to their own model or their own copy (`docs/models.md`, F19, F9) |
 | 13 | A proof of concept before the deploy (2026-10-13) | the public face is a static demo on GitHub Pages, free: visitors bring their own model key or use a form, nothing is saved, the strategy and the transcript download; forks get a harness for strategy scripts any AI can write; the hosted platform with sign-in (task 34) follows later, unchanged (`docs/demo.md`) |
+| 13 | The demo needs no key (2026-10-14) | the free demo AI runs on the owner's Gemini free-tier key inside a Cloudflare Worker on the free plan, answering only the strategy compiler's question from the demo's site, rate-limited per address and refused where the free tier may not serve; strategies can also be written as typed Python run in the browser (`docs/demo.md`) |
 
 ### Flags recorded with the decisions
 
@@ -1231,7 +1232,7 @@ called done.
   redistributing market data, and commercial use before the first
   production request; a user's own jurisdiction is attested at sign-up and
   checked again before live execution, which is offered only where the
-  venue serves that user (F13); paper trading is play money and not a
+  venue serves that user (F13); paper trading is paper money and not a
   wager, and the terms of use say so. The first task on the host confirms
   from its region that the endpoints the platform uses are served and
   records the terms review in the Phase 13 report; a written legal opinion
@@ -1399,7 +1400,7 @@ called done.
   every workspace reads (and the page shows as "the sample strategies"),
   and a person's own paper account only when they have a strategy of their
   own (Phase 15) or change something the sample cannot share, such as the
-  play-money amount. The cost of a person then falls to what their own
+  paper-money amount. The cost of a person then falls to what their own
   strategies select. The owner accepted the proposal the same day and it
   was built then (migration 0014, `vp/platform/sample.py`); accounts opened
   before it stay as they are. The measured cost is in

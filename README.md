@@ -13,13 +13,13 @@ scores −0.19 against it, EPL Elo −0.02, CS2 Elo −0.12 — which is the bar
 strategy has to clear, not a result the project is trying to explain away.
 
 **Try it: [the demo](https://kyleyhw.github.io/prediction_markets/)** runs in
-the browser with no account. Describe a strategy to an AI with your own key
-(Google gives one free) or build one from a form, and see how it would have
-done on hundreds of real markets that have ended; download the strategy and
-the conversation. To go further, fork the project and have any AI write the
-forecasting part as a short script:
+the browser with no account and no key. Describe a strategy to the free demo
+AI, build one from a form, or write it as a short Python function, and see
+how it would have done on hundreds of real markets that have ended, in paper
+money; download the strategy and the conversation. To go further, fork the
+project and have any AI write the forecasting part as a script:
 [your own strategy](docs/tutorials/your_own_strategy.md). How the demo works
-without a server: [docs/demo.md](docs/demo.md).
+without a server of its own: [docs/demo.md](docs/demo.md).
 
 ## What state it is in
 
@@ -60,7 +60,7 @@ without a server: [docs/demo.md](docs/demo.md).
   and this page will point at it.
 - **Live execution is last, and gated.** Nothing in this repository can sign
   or send a real order, and nothing will until the hosted security design is
-  agreed (Phase 22). Paper trading is play money against real prices.
+  agreed (Phase 22). Paper trading is paper money against real prices.
 
 ## Using it
 

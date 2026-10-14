@@ -471,7 +471,7 @@ def _render_when(sch: Schedule, s: Sizing) -> str:
         f"When: from {sch.hours_before_close:g} hours before a market's scheduled "
         f"end, checked {every}; a backtest forecasts each market "
         f"{sch.hours_before_close:g} hours before it settled. Starts with "
-        f"{_usd(s.initial_cash)} of play money."
+        f"{_usd(s.initial_cash)} of paper money."
     )
 
 
