@@ -321,6 +321,12 @@ get the harness: `vp strategy backtest SPEC --script FILE`
 writes the script, the `strategy` workflow). The hosted platform with
 logins comes later and is unchanged.
 
+**Next visit (owner, 2026-10-14):** take inspiration from
+<https://www.quant-builder.ai/learn> before further work on the demo or the
+learning pages. It was noted only, not yet reviewed and nothing was built
+from it; review it first, and record what is borrowed and how it stays
+non-infringing, as `docs/vibe_trading.md` does for Vibe-Trading.
+
 What exists, in order of the data flow: the Polymarket client and data
 layer (`vp/venues`, `vp/markets`, `vp/domains`); forecasters behind a
 cutoff-bounded `Evidence` object (`vp/forecast`: market price, constant,
